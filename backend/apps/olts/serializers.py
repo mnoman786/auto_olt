@@ -17,7 +17,8 @@ class OLTSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'ip_address', 'snmp_version',
             'snmp_read_community', 'snmp_write_community',
-            'telnet_enabled', 'telnet_port', 'telnet_username', 'olt_admin_username',
+            'telnet_enabled', 'telnet_port', 'telnet_username', 'telnet_password',
+            'olt_admin_username', 'olt_admin_password',
             'status', 'system_name', 'system_description', 'system_uptime',
             'last_polled', 'created_at', 'updated_at',
             'onu_count', 'registered_onu_count',

@@ -10,7 +10,7 @@ import { oltApi } from '@/lib/api';
 import type { OLT, SetupLog, OLTStatus } from '@/lib/types';
 import {
   ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw,
-  Server, Play, ChevronRight, Wifi, Terminal, Shield, FlaskConical
+  Server, Play, ChevronRight, Wifi, Terminal, Shield
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -33,7 +33,7 @@ function getStepStatus(stepId: string, logs: SetupLog[]): 'pending' | 'running' 
   if (last.level === 'success') return 'success';
   if (last.level === 'error') return 'error';
   if (last.level === 'warning') return 'warning';
-  return 'success';
+  return 'running';
 }
 
 function StepIcon({ status }: { status: string }) {
@@ -57,8 +57,6 @@ export default function OLTSetupPage() {
   const [setupStarted, setSetupStarted] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [polling, setPolling] = useState(false);
-  const [snmpDiag, setSnmpDiag] = useState<any>(null);
-  const [diagLoading, setDiagLoading] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -149,19 +147,6 @@ export default function OLTSetupPage() {
     }
   };
 
-  const runDiagnostics = async () => {
-    setDiagLoading(true);
-    setSnmpDiag(null);
-    try {
-      const res = await oltApi.testSnmp(oltId);
-      setSnmpDiag(res.data);
-    } catch {
-      toast.error('Diagnostic request failed');
-    } finally {
-      setDiagLoading(false);
-    }
-  };
-
   const levelColor: Record<string, string> = {
     info: 'text-blue-300',
     success: 'text-green-400',
@@ -177,7 +162,7 @@ export default function OLTSetupPage() {
     if (!polling) return -1;
     const logSteps = new Set(logs.map(l => l.step));
     for (let i = SETUP_STEPS.length - 1; i >= 0; i--) {
-      if (logSteps.has(SETUP_STEPS[i].id)) return i + 1;
+      if (logSteps.has(SETUP_STEPS[i].id)) return i;
     }
     return 0;
   })();
@@ -224,7 +209,7 @@ export default function OLTSetupPage() {
                 {SETUP_STEPS.map((step, idx) => {
                   const status = getStepStatus(step.id, logs);
                   const isRunning = polling && idx === runningStepIdx;
-                  const effectiveStatus = isRunning ? 'running' : status;
+                  const effectiveStatus = (isRunning && status === 'pending') ? 'running' : status;
                   return (
                     <div key={step.id} className="flex items-center gap-3">
                       <StepIcon status={effectiveStatus} />
@@ -261,16 +246,6 @@ export default function OLTSetupPage() {
                       <XCircle className="h-4 w-4" />
                       Setup failed
                     </p>
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      icon={<FlaskConical className="h-4 w-4" />}
-                      onClick={runDiagnostics}
-                      loading={diagLoading}
-                      size="sm"
-                    >
-                      Run Diagnostics
-                    </Button>
                     <Button
                       variant="outline"
                       className="w-full"
@@ -320,52 +295,6 @@ export default function OLTSetupPage() {
               </Card>
             )}
 
-            {/* SNMP Diagnostic Results */}
-            {snmpDiag && (
-              <Card padding="sm">
-                <div className="flex items-center gap-2 mb-3">
-                  <FlaskConical className="h-4 w-4 text-purple-600" />
-                  <h3 className="text-sm font-semibold text-gray-800">Diagnostic Results</h3>
-                  <span className={clsx(
-                    'ml-auto text-xs px-2 py-0.5 rounded-full font-medium',
-                    snmpDiag.overall === 'pass'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-red-100 text-red-700'
-                  )}>
-                    {snmpDiag.overall.toUpperCase()}
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {snmpDiag.checks.map((c: any, i: number) => (
-                    <div key={i} className={clsx(
-                      'rounded-lg p-2 text-xs',
-                      c.ok === true ? 'bg-green-50 border border-green-100' :
-                      c.ok === false ? 'bg-red-50 border border-red-100' :
-                      'bg-gray-50 border border-gray-100'
-                    )}>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        {c.ok === true && <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />}
-                        {c.ok === false && <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
-                        {c.ok === null && <ChevronRight className="h-3.5 w-3.5 text-gray-400 shrink-0" />}
-                        <span className="font-medium text-gray-700 uppercase tracking-wide">
-                          {c.check.replace(/_/g, ' ')}
-                        </span>
-                      </div>
-                      <p className="text-gray-600 pl-5">{c.detail}</p>
-                      {c.oid_tested && (
-                        <p className="text-gray-400 pl-5 font-mono mt-0.5">OID: {c.oid_tested}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className={clsx(
-                  'mt-3 p-2 rounded text-xs',
-                  snmpDiag.overall === 'pass' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                )}>
-                  {snmpDiag.hint}
-                </div>
-              </Card>
-            )}
           </div>
 
           {/* Log Console */}

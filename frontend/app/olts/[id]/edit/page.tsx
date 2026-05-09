@@ -60,9 +60,9 @@ export default function EditOLTPage() {
         telnet_enabled: true,
         telnet_port: d.telnet_port || 23,
         telnet_username: d.telnet_username || 'admin',
-        telnet_password: '',
+        telnet_password: d.telnet_password || '',
         olt_admin_username: d.olt_admin_username || 'admin',
-        olt_admin_password: '',
+        olt_admin_password: d.olt_admin_password || '',
       });
     } catch {
       toast.error('Failed to load OLT');

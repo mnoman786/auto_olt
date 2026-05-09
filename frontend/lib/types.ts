@@ -31,7 +31,9 @@ export interface OLT {
   telnet_enabled: boolean;
   telnet_port: number;
   telnet_username: string;
+  telnet_password: string;
   olt_admin_username: string;
+  olt_admin_password: string;
   status: OLTStatus;
   system_name: string;
   system_description: string;
