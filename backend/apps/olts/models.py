@@ -47,6 +47,38 @@ class OLT(models.Model):
         return f'{self.name} ({self.ip_address})'
 
 
+class OLTPort(models.Model):
+    PORT_TYPE_CHOICES = [
+        ('pon', 'PON / GPON'),
+        ('uplink', 'Uplink / Ethernet'),
+        ('lag', 'LAG / Trunk'),
+        ('other', 'Other'),
+    ]
+    STATUS_CHOICES = [
+        ('up', 'Up'),
+        ('down', 'Down'),
+        ('unknown', 'Unknown'),
+    ]
+
+    olt = models.ForeignKey(OLT, on_delete=models.CASCADE, related_name='ports')
+    if_index = models.IntegerField(default=0)
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=200, blank=True, default='')
+    port_type = models.CharField(max_length=10, choices=PORT_TYPE_CHOICES, default='other')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='unknown')
+    speed_mbps = models.IntegerField(default=0)
+    onu_count = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'olt_ports'
+        ordering = ['port_type', 'name']
+        unique_together = ('olt', 'if_index')
+
+    def __str__(self):
+        return f'{self.olt.name} — {self.name} ({self.port_type})'
+
+
 class SetupLog(models.Model):
     LEVEL_CHOICES = [
         ('info', 'Info'),

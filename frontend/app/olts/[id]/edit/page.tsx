@@ -18,6 +18,12 @@ const SNMP_VERSIONS = [
   { value: 'v3', label: 'SNMPv3' },
 ];
 
+function randomCommunity(prefix: string): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const rand = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `${prefix}_${rand}`;
+}
+
 export default function EditOLTPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const params = useParams();
@@ -33,8 +39,8 @@ export default function EditOLTPage() {
     name: '',
     ip_address: '',
     snmp_version: 'v2c',
-    snmp_read_community: 'autoolt_read',
-    snmp_write_community: 'autoolt_write',
+    snmp_read_community: randomCommunity('rd'),
+    snmp_write_community: randomCommunity('wr'),
     telnet_enabled: true,
     telnet_port: 23,
     telnet_username: 'admin',
@@ -55,8 +61,8 @@ export default function EditOLTPage() {
         name: d.name,
         ip_address: d.ip_address,
         snmp_version: d.snmp_version,
-        snmp_read_community: 'autoolt_read',
-        snmp_write_community: 'autoolt_write',
+        snmp_read_community: d.snmp_read_community || randomCommunity('rd'),
+        snmp_write_community: d.snmp_write_community || randomCommunity('wr'),
         telnet_enabled: true,
         telnet_port: d.telnet_port || 23,
         telnet_username: d.telnet_username || 'admin',

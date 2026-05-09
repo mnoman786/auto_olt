@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import OLT, SetupLog
+from .models import OLT, SetupLog, OLTPort
 
 
 class SetupLogSerializer(serializers.ModelSerializer):
@@ -88,3 +88,10 @@ class OLTCreateSerializer(serializers.ModelSerializer):
             if validated_data.get(password_field, None) == '':
                 validated_data.pop(password_field, None)
         return super().update(instance, validated_data)
+
+
+class OLTPortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OLTPort
+        fields = ('id', 'if_index', 'name', 'description', 'port_type',
+                  'status', 'speed_mbps', 'onu_count', 'updated_at')

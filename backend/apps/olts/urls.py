@@ -9,5 +9,6 @@ urlpatterns = [
     path('olts/<int:pk>/setup/logs/', views.setup_logs, name='olt-setup-logs'),
     path('olts/<int:pk>/poll/', views.poll_olt, name='olt-poll'),
     path('olts/<int:pk>/stats/', views.olt_stats, name='olt-stats'),
+    path('olts/<int:pk>/ports/', views.olt_ports, name='olt-ports'),
     path('olts/<int:pk>/test-snmp/', views.test_snmp, name='olt-test-snmp'),
 ]

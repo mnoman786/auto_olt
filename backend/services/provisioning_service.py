@@ -312,6 +312,26 @@ def simulate_olt_setup(olt_id: int) -> None:
     olt.status = 'active'
     olt.last_polled = timezone.now()
     olt.save(update_fields=['status', 'last_polled'])
+    # Create simulated ports
+    from apps.olts.models import OLTPort
+    sim_ports = [
+        dict(if_index=1,  name='GigabitEthernet0/0/0', description='Uplink to Core Switch', port_type='uplink', status='up',   speed_mbps=1000,  onu_count=0),
+        dict(if_index=2,  name='GigabitEthernet0/0/1', description='Uplink Backup',         port_type='uplink', status='down', speed_mbps=1000,  onu_count=0),
+        dict(if_index=3,  name='XGigabitEthernet0/0/0',description='10G Uplink',            port_type='uplink', status='up',   speed_mbps=10000, onu_count=0),
+        dict(if_index=10, name='GPON0/1',              description='PON Port 1',            port_type='pon',    status='up',   speed_mbps=2500,  onu_count=4),
+        dict(if_index=11, name='GPON0/2',              description='PON Port 2',            port_type='pon',    status='up',   speed_mbps=2500,  onu_count=7),
+        dict(if_index=12, name='GPON0/3',              description='PON Port 3',            port_type='pon',    status='up',   speed_mbps=2500,  onu_count=2),
+        dict(if_index=13, name='GPON0/4',              description='PON Port 4',            port_type='pon',    status='down', speed_mbps=2500,  onu_count=0),
+        dict(if_index=14, name='GPON0/5',              description='PON Port 5',            port_type='pon',    status='up',   speed_mbps=2500,  onu_count=12),
+        dict(if_index=15, name='GPON0/6',              description='PON Port 6',            port_type='pon',    status='up',   speed_mbps=2500,  onu_count=5),
+        dict(if_index=16, name='GPON0/7',              description='PON Port 7',            port_type='pon',    status='up',   speed_mbps=2500,  onu_count=9),
+        dict(if_index=17, name='GPON0/8',              description='PON Port 8',            port_type='pon',    status='down', speed_mbps=2500,  onu_count=0),
+        dict(if_index=50, name='Eth-Trunk0',           description='LAG to Distribution',  port_type='lag',    status='up',   speed_mbps=2000,  onu_count=0),
+    ]
+    for p in sim_ports:
+        OLTPort.objects.update_or_create(olt=olt, if_index=p['if_index'], defaults=p)
+    _create_log(olt, 'sys_info', f'Discovered {len(sim_ports)} ports (3 uplinks, 8 PON, 1 LAG)', 'info')
+
     _create_log(olt, 'setup_complete', f'[SIMULATION] OLT {olt.name} setup complete. Status: ACTIVE', 'success')
 
 

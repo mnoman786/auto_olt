@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
-  SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse
+  SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -105,6 +105,10 @@ export const oltApi = {
   stats: (id: number) => apiClient.get<OLTStats>(`/olts/${id}/stats/`),
 
   testSnmp: (id: number) => apiClient.get(`/olts/${id}/test-snmp/`),
+
+  getPorts: (id: number) => apiClient.get<OLTPortsResponse>(`/olts/${id}/ports/`),
+
+  discoverPorts: (id: number) => apiClient.post<OLTPortsResponse>(`/olts/${id}/ports/`),
 };
 
 // ONU API

@@ -10,7 +10,8 @@ import { oltApi } from '@/lib/api';
 import type { OLT, OLTStats } from '@/lib/types';
 import {
   ArrowLeft, Server, Wifi, Network, Terminal, Settings,
-  RefreshCw, Play, Loader2, Pencil, Trash2, CheckCircle, AlertCircle
+  RefreshCw, Play, Loader2, Pencil, Trash2, CheckCircle, AlertCircle,
+  Layers, PlugZap
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -131,21 +132,22 @@ export default function OLTDetailPage() {
         )}
 
         {/* Quick Links */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           {[
-            { href: `/olts/${oltId}/onus`, label: 'ONU Management', icon: Wifi, desc: 'View and provision ONUs' },
-            { href: `/olts/${oltId}/vlans`, label: 'VLAN Management', icon: Network, desc: 'Configure VLANs' },
-            { href: `/olts/${oltId}/setup`, label: 'Setup Wizard', icon: Settings, desc: 'Configure OLT' },
+            { href: `/olts/${oltId}/onus`,  label: 'ONU Management',  icon: Wifi,     desc: 'View and provision ONUs', bg: 'bg-blue-50',   fg: 'text-blue-600',   border: 'hover:border-blue-300' },
+            { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks',  icon: PlugZap,  desc: 'PON and uplink ports',   bg: 'bg-purple-50', fg: 'text-purple-600', border: 'hover:border-purple-300' },
+            { href: `/olts/${oltId}/vlans`, label: 'VLAN Management',  icon: Layers,   desc: 'Configure VLANs',        bg: 'bg-green-50',  fg: 'text-green-600',  border: 'hover:border-green-300' },
+            { href: `/olts/${oltId}/setup`, label: 'Setup Wizard',     icon: Settings, desc: 'Configure OLT',          bg: 'bg-orange-50', fg: 'text-orange-600', border: 'hover:border-orange-300' },
           ].map(item => (
             <Link key={item.href} href={item.href}>
-              <Card className="hover:border-blue-300 hover:shadow transition-all cursor-pointer">
+              <Card className={`hover:shadow transition-all cursor-pointer h-full ${item.border}`}>
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <item.icon className="h-5 w-5 text-blue-600" />
+                  <div className={`p-2 rounded-lg shrink-0 ${item.bg}`}>
+                    <item.icon className={`h-5 w-5 ${item.fg}`} />
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm">{item.label}</p>
-                    <p className="text-xs text-gray-500">{item.desc}</p>
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm leading-tight">{item.label}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 leading-tight">{item.desc}</p>
                   </div>
                 </div>
               </Card>

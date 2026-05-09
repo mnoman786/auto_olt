@@ -477,11 +477,12 @@ export default function OLTSetupPage() {
 
             {/* Next steps */}
             {isComplete && (
-              <div className="mt-4 grid grid-cols-3 gap-3">
+              <div className="mt-4 grid grid-cols-4 gap-3">
                 {[
-                  { href: `/olts/${oltId}/onus`, label: 'Manage ONUs', icon: Wifi, color: 'blue' },
-                  { href: `/olts/${oltId}/vlans`, label: 'Configure VLANs', icon: Server, color: 'purple' },
-                  { href: `/olts/${oltId}`, label: 'OLT Details', icon: Server, color: 'gray' },
+                  { href: `/olts/${oltId}/onus`,  label: 'Manage ONUs',    icon: Wifi,    color: 'blue' },
+                  { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks', icon: Terminal, color: 'purple' },
+                  { href: `/olts/${oltId}/vlans`, label: 'VLANs',           icon: Server,  color: 'green' },
+                  { href: `/olts/${oltId}`,       label: 'OLT Details',     icon: Server,  color: 'gray' },
                 ].map(item => (
                   <Link key={item.href} href={item.href}>
                     <Card padding="sm" className="hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer">

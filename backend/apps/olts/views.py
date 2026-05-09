@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import OLT, SetupLog
-from .serializers import OLTSerializer, OLTCreateSerializer, SetupLogSerializer
+from .models import OLT, SetupLog, OLTPort
+from .serializers import OLTSerializer, OLTCreateSerializer, SetupLogSerializer, OLTPortSerializer
 from services import provisioning_service
 
 
@@ -125,6 +125,35 @@ def olt_stats(request, pk):
         'registered_onus': onus.filter(status__in=('registered', 'active')).count(),
         'last_polled': olt.last_polled,
     })
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def olt_ports(request, pk):
+    """GET: list saved ports. POST: re-discover ports via SNMP and save."""
+    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+
+    if request.method == 'POST':
+        from services import snmp_service
+        discovered = snmp_service.discover_ports_snmp(
+            host=olt.ip_address,
+            community=olt.snmp_read_community,
+            version=olt.snmp_version,
+        )
+        for p in discovered:
+            # Count ONUs on this PON port
+            onu_count = 0
+            if p['port_type'] == 'pon':
+                onu_count = olt.onus.filter(pon_port__icontains=p['name']).count()
+            OLTPort.objects.update_or_create(
+                olt=olt, if_index=p['if_index'],
+                defaults={**p, 'onu_count': onu_count},
+            )
+        ports = olt.ports.all()
+        return Response({'count': ports.count(), 'ports': OLTPortSerializer(ports, many=True).data})
+
+    ports = olt.ports.all()
+    return Response({'count': ports.count(), 'ports': OLTPortSerializer(ports, many=True).data})
 
 
 @api_view(['GET'])

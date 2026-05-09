@@ -324,6 +324,85 @@ def snmp_provision_onu(host: str, write_community: str, onu_index: int,
     return result
 
 
+def discover_ports_snmp(host: str, community: str, version: str = 'v2c') -> List[Dict[str, Any]]:
+    """
+    Discover OLT ports via SNMP ifTable.
+    Returns list of dicts: {if_index, name, description, port_type, status, speed_mbps}
+
+    ifType values used:
+      6   = ethernetCsmacd  → uplink
+      161 = ieee8023adLag   → lag/trunk
+      166 = mpls / gpon     → pon (Huawei uses 166 for GPON)
+      53  = propVirtual     → virtual/other
+    """
+    OID_IF_DESCR   = '1.3.6.1.2.1.2.2.1.2'   # ifDescr
+    OID_IF_TYPE    = '1.3.6.1.2.1.2.2.1.3'   # ifType
+    OID_IF_SPEED   = '1.3.6.1.2.1.2.2.1.5'   # ifSpeed (bps)
+    OID_IF_STATUS  = '1.3.6.1.2.1.2.2.1.8'   # ifOperStatus (1=up,2=down)
+    OID_IF_ALIAS   = '1.3.6.1.2.1.31.1.1.1.18'  # ifAlias (description)
+
+    ports = []
+    try:
+        descr_rows  = snmp_walk(host, community, OID_IF_DESCR,  version=version, max_rows=128)
+        type_rows   = snmp_walk(host, community, OID_IF_TYPE,   version=version, max_rows=128)
+        speed_rows  = snmp_walk(host, community, OID_IF_SPEED,  version=version, max_rows=128)
+        status_rows = snmp_walk(host, community, OID_IF_STATUS, version=version, max_rows=128)
+        alias_rows  = snmp_walk(host, community, OID_IF_ALIAS,  version=version, max_rows=128)
+
+        # Index by if_index (last OID segment)
+        def index_by(rows):
+            result = {}
+            for oid, val in rows:
+                idx = oid.split('.')[-1]
+                result[idx] = val
+            return result
+
+        descr_map  = index_by(descr_rows)
+        type_map   = index_by(type_rows)
+        speed_map  = index_by(speed_rows)
+        status_map = index_by(status_rows)
+        alias_map  = index_by(alias_rows)
+
+        IF_TYPE_PON    = {'166', '250', '251', '252'}  # gpon/xgpon variants
+        IF_TYPE_UPLINK = {'6', '117', '26'}            # ethernet / fastEther / fibre
+        IF_TYPE_LAG    = {'161'}                       # ieee8023adLag
+
+        for idx, name in descr_map.items():
+            if not name:
+                continue
+            if_type = type_map.get(idx, '0')
+            speed_bps = int(speed_map.get(idx, 0) or 0)
+            oper_status = status_map.get(idx, '2')
+            alias = alias_map.get(idx, '')
+
+            # Classify port type
+            if if_type in IF_TYPE_PON or 'gpon' in name.lower() or 'pon' in name.lower():
+                port_type = 'pon'
+            elif if_type in IF_TYPE_LAG or 'lag' in name.lower() or 'trunk' in name.lower():
+                port_type = 'lag'
+            elif if_type in IF_TYPE_UPLINK or 'eth' in name.lower() or 'ge' in name.lower() or 'xge' in name.lower():
+                port_type = 'uplink'
+            else:
+                port_type = 'other'
+
+            # Skip loopback / virtual / management
+            if if_type in ('24', '131', '53') or 'loop' in name.lower() or 'null' in name.lower():
+                continue
+
+            ports.append({
+                'if_index': int(idx),
+                'name': name,
+                'description': alias or '',
+                'port_type': port_type,
+                'status': 'up' if oper_status == '1' else 'down',
+                'speed_mbps': speed_bps // 1_000_000,
+            })
+    except Exception as e:
+        logger.error(f"Port discovery error for {host}: {e}")
+
+    return sorted(ports, key=lambda p: (p['port_type'], p['name']))
+
+
 def _extract_pon_port(oid_str: str) -> str:
     """Extract PON port identifier from OID string."""
     parts = oid_str.split('.')

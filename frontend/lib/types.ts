@@ -59,6 +59,26 @@ export interface OLTCreatePayload {
   olt_admin_password?: string;
 }
 
+export type PortType = 'pon' | 'uplink' | 'lag' | 'other';
+export type PortStatus = 'up' | 'down' | 'unknown';
+
+export interface OLTPort {
+  id: number;
+  if_index: number;
+  name: string;
+  description: string;
+  port_type: PortType;
+  status: PortStatus;
+  speed_mbps: number;
+  onu_count: number;
+  updated_at: string;
+}
+
+export interface OLTPortsResponse {
+  count: number;
+  ports: OLTPort[];
+}
+
 export type ONUStatus = 'unregistered' | 'registered' | 'active' | 'offline' | 'provisioning';
 
 export interface ONU {

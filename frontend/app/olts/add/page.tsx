@@ -18,6 +18,12 @@ const SNMP_VERSIONS = [
   { value: 'v3', label: 'SNMPv3' },
 ];
 
+function randomCommunity(prefix: string): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const rand = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  return `${prefix}_${rand}`;
+}
+
 export default function AddOLTPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
@@ -29,8 +35,8 @@ export default function AddOLTPage() {
     name: '',
     ip_address: '',
     snmp_version: 'v2c',
-    snmp_read_community: 'autoolt_read',
-    snmp_write_community: 'autoolt_write',
+    snmp_read_community: randomCommunity('rd'),
+    snmp_write_community: randomCommunity('wr'),
     telnet_enabled: true,
     telnet_port: 23,
     telnet_username: 'admin',
@@ -119,7 +125,7 @@ export default function AddOLTPage() {
                 value={form.olt_admin_username || ''}
                 onChange={e => set('olt_admin_username', e.target.value)}
                 error={errors.olt_admin_username}
-                hint="Used for Telnet login during setup."
+                required
               />
               <Input
                 label="OLT Admin Password"
@@ -128,7 +134,7 @@ export default function AddOLTPage() {
                 value={form.olt_admin_password || ''}
                 onChange={e => set('olt_admin_password', e.target.value)}
                 error={errors.olt_admin_password}
-                hint="Used for Telnet login during setup."
+                required
                 rightAdornment={
                   <button
                     type="button"
@@ -182,16 +188,15 @@ export default function AddOLTPage() {
               Telnet is required and always enabled. Uses OLT admin credentials from Basic Information.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Input
-                  label="Telnet Port"
-                  type="number"
-                  value={form.telnet_port}
-                  onChange={e => set('telnet_port', parseInt(e.target.value) || 23)}
-                  min={1}
-                  max={65535}
-                />
-              </div>
+              <Input
+                label="Telnet Port"
+                type="number"
+                value={form.telnet_port}
+                onChange={e => set('telnet_port', parseInt(e.target.value) || 23)}
+                min={1}
+                max={65535}
+                required
+              />
               <Input
                 label="Telnet Username"
                 value={form.telnet_username || ''}
