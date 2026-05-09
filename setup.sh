@@ -33,7 +33,10 @@ fi
 section "1 — System packages"
 apt-get update -qq
 apt-get install -y -qq python3 python3-pip python3-venv curl git build-essential
-info "System packages installed"
+# Also install versioned venv package for Python 3.12 / 3.11 if present
+PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+apt-get install -y -qq "python${PY_VER}-venv" 2>/dev/null || true
+info "System packages installed (Python $PY_VER)"
 
 # ── Node.js ───────────────────────────────────────────────────────────────────
 section "2 — Node.js $NODE_VERSION"
@@ -45,9 +48,17 @@ info "Node $(node -v) / npm $(npm -v)"
 
 # ── Python venv + deps ────────────────────────────────────────────────────────
 section "3 — Python virtualenv & dependencies"
-python3 -m venv "$VENV_DIR"
+if [[ ! -d "$VENV_DIR" ]]; then
+  python3 -m venv "$VENV_DIR" || {
+    warn "python3 -m venv failed, trying python${PY_VER} directly..."
+    "python${PY_VER}" -m venv "$VENV_DIR"
+  }
+  info "Virtualenv created at $VENV_DIR"
+else
+  info "Virtualenv already exists at $VENV_DIR — skipping creation"
+fi
 "$VENV_DIR/bin/pip" install --upgrade pip -q
-"$VENV_DIR/bin/pip" install -r "$BACKEND_DIR/requirements.txt" -q
+"$VENV_DIR/bin/pip" install -r "$BACKEND_DIR/requirements.txt"
 info "Python deps installed"
 
 # ── Backend .env ──────────────────────────────────────────────────────────────
