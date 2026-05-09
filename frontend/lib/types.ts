@@ -31,6 +31,7 @@ export interface OLT {
   telnet_enabled: boolean;
   telnet_port: number;
   telnet_username: string;
+  olt_admin_username: string;
   status: OLTStatus;
   system_name: string;
   system_description: string;
@@ -52,6 +53,8 @@ export interface OLTCreatePayload {
   telnet_port?: number;
   telnet_username?: string;
   telnet_password?: string;
+  olt_admin_username?: string;
+  olt_admin_password?: string;
 }
 
 export type ONUStatus = 'unregistered' | 'registered' | 'active' | 'offline' | 'provisioning';

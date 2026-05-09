@@ -24,6 +24,10 @@ class OLT(models.Model):
     snmp_write_community = models.CharField(max_length=100, blank=True, default='')
     telnet_enabled = models.BooleanField(default=False)
     telnet_port = models.PositiveIntegerField(default=23)
+    # Credentials used to log in to the OLT during initial Telnet-based setup.
+    olt_admin_username = models.CharField(max_length=50, blank=True, default='admin')
+    olt_admin_password = models.CharField(max_length=100, blank=True, default='admin')
+    # Backward-compatible aliases used by previous versions of the app.
     telnet_username = models.CharField(max_length=50, blank=True, default='admin')
     telnet_password = models.CharField(max_length=100, blank=True, default='admin')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

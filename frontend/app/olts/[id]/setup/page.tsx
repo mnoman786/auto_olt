@@ -17,12 +17,12 @@ import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 
 const SETUP_STEPS = [
-  { id: 'snmp_check', label: 'SNMP Connectivity', icon: Shield },
-  { id: 'sys_info', label: 'System Information', icon: Server },
-  { id: 'snmp_write', label: 'SNMP Write Access', icon: Shield },
   { id: 'telnet_connect', label: 'Telnet Login', icon: Terminal },
-  { id: 'configure_snmp', label: 'Configure SNMP', icon: Shield },
   { id: 'create_user', label: 'Create Mgmt User', icon: Server },
+  { id: 'configure_snmp', label: 'Configure SNMP', icon: Shield },
+  { id: 'snmp_check', label: 'SNMP Connectivity', icon: Shield },
+  { id: 'snmp_write', label: 'SNMP Write Access', icon: Shield },
+  { id: 'sys_info', label: 'System Information', icon: Server },
   { id: 'setup_complete', label: 'Setup Complete', icon: CheckCircle2 },
 ];
 
@@ -308,6 +308,7 @@ export default function OLTSetupPage() {
                     ['SNMP', olt.snmp_version.toUpperCase()],
                     ['Community', olt.snmp_read_community],
                     ['Telnet', olt.telnet_enabled ? 'Enabled' : 'Disabled'],
+                    ['OLT Admin', olt.olt_admin_username || 'admin'],
                     olt.system_name && ['System', olt.system_name],
                   ].filter(Boolean).map(([k, v]) => (
                     <div key={k as string} className="flex justify-between">

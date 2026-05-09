@@ -28,12 +28,12 @@ def run_olt_setup(olt_id: int) -> None:
     """
     Full OLT setup workflow. Intended to run in a background thread.
     Steps:
-      1. Validate SNMP connectivity (read)
-      2. Verify SNMP write access (if write community provided)
-      3. Fetch system information
-      4. Telnet login and verify CLI (if telnet_enabled)
-      5. Configure SNMP communities via Telnet (if telnet_enabled)
-      6. Create management user (if telnet_enabled)
+      1. Telnet login and verify CLI (if telnet_enabled)
+      2. Create management user via Telnet (if telnet_enabled)
+      3. Configure SNMP communities via Telnet (if telnet_enabled)
+      4. Validate SNMP connectivity (read)
+      5. Verify SNMP write access (if write community provided)
+      6. Fetch system information
       7. Mark OLT as active
     """
     from apps.olts.models import OLT
@@ -51,78 +51,34 @@ def run_olt_setup(olt_id: int) -> None:
 
     _create_log(olt, 'setup_start', f'Starting setup for OLT: {olt.name} ({olt.ip_address})', 'info')
 
-    # Step 1: SNMP read connectivity
-    _create_log(olt, 'snmp_check', f'Testing SNMP connectivity to {olt.ip_address}...', 'info')
-    snmp_result = snmp_service.validate_snmp_connectivity(
-        host=olt.ip_address,
-        community=olt.snmp_read_community,
-        version=olt.snmp_version,
-    )
-
-    if not snmp_result['connected']:
-        err = snmp_result.get('error', 'Unknown error')
-        _create_log(olt, 'snmp_check', f'SNMP connectivity FAILED: {err}', 'error')
-        olt.status = 'error'
-        olt.save(update_fields=['status'])
-        return
-
-    _create_log(olt, 'snmp_check', 'SNMP read connectivity: OK', 'success')
-
-    # Update system info
-    olt.system_name = snmp_result.get('sys_name', '')
-    olt.system_description = snmp_result.get('sys_descr', '')[:500]
-    olt.system_uptime = snmp_result.get('sys_uptime', '')
-    olt.save(update_fields=['system_name', 'system_description', 'system_uptime'])
-    _create_log(olt, 'sys_info',
-                f'System: {olt.system_name or "Unknown"} | Uptime: {olt.system_uptime or "N/A"}',
-                'info')
-
-    # Step 2: SNMP write access
-    if olt.snmp_write_community:
-        _create_log(olt, 'snmp_write', 'Verifying SNMP write access...', 'info')
-        write_result = snmp_service.validate_snmp_write_access(
-            host=olt.ip_address,
-            write_community=olt.snmp_write_community,
-            version=olt.snmp_version,
-        )
-        if write_result['writable']:
-            _create_log(olt, 'snmp_write', 'SNMP write access: OK', 'success')
-        else:
-            _create_log(olt, 'snmp_write',
-                        f'SNMP write access WARNING: {write_result.get("error", "Not writable")}',
-                        'warning')
-    else:
-        _create_log(olt, 'snmp_write', 'No SNMP write community provided (read-only mode)', 'warning')
-
-    # Step 3: Telnet setup
+    # Step 1: Telnet-first setup
     if olt.telnet_enabled:
         _create_log(olt, 'telnet_connect', f'Connecting via Telnet to {olt.ip_address}:{olt.telnet_port}...', 'info')
 
         success, message, client = telnet_service.telnet_login(
             host=olt.ip_address,
-            username=olt.telnet_username or settings.DEFAULT_TELNET_USERNAME,
-            password=olt.telnet_password or settings.DEFAULT_TELNET_PASSWORD,
+            username=(
+                olt.olt_admin_username
+                or olt.telnet_username
+                or settings.DEFAULT_TELNET_USERNAME
+            ),
+            password=(
+                olt.olt_admin_password
+                or olt.telnet_password
+                or settings.DEFAULT_TELNET_PASSWORD
+            ),
             port=olt.telnet_port,
         )
 
         if not success:
-            _create_log(olt, 'telnet_connect', f'Telnet login FAILED: {message}', 'warning')
-            _create_log(olt, 'telnet_connect', 'Continuing with SNMP-only mode', 'info')
+            _create_log(olt, 'telnet_connect', f'Telnet login FAILED: {message}', 'error')
+            olt.status = 'error'
+            olt.save(update_fields=['status'])
+            return
         else:
             _create_log(olt, 'telnet_connect', f'Telnet login: OK - {message}', 'success')
 
             try:
-                # Configure SNMP via CLI
-                _create_log(olt, 'configure_snmp', 'Configuring SNMP via CLI...', 'info')
-                snmp_cfg = telnet_service.telnet_configure_snmp(
-                    client=client,
-                    read_community=olt.snmp_read_community,
-                    write_community=olt.snmp_write_community,
-                )
-                for step in snmp_cfg.get('steps', []):
-                    _create_log(olt, step['step'], step['message'],
-                                'success' if step.get('success') else 'warning')
-
                 # Create management user
                 mgmt_user = settings.OLT_MGMT_USER
                 mgmt_pass = settings.OLT_MGMT_PASSWORD
@@ -139,10 +95,64 @@ def run_olt_setup(olt_id: int) -> None:
                 else:
                     _create_log(olt, 'create_user',
                                 f'Could not create user {mgmt_user} (may already exist)', 'warning')
+
+                # Configure SNMP via CLI
+                _create_log(olt, 'configure_snmp', 'Configuring SNMP via CLI...', 'info')
+                snmp_cfg = telnet_service.telnet_configure_snmp(
+                    client=client,
+                    read_community=olt.snmp_read_community,
+                    write_community=olt.snmp_write_community,
+                )
+                for step in snmp_cfg.get('steps', []):
+                    _create_log(olt, step['step'], step['message'],
+                                'success' if step.get('success') else 'warning')
             finally:
                 client.disconnect()
     else:
         _create_log(olt, 'telnet_skip', 'Telnet disabled - skipping CLI configuration', 'info')
+
+    # Step 2: SNMP read connectivity (after Telnet configuration)
+    _create_log(olt, 'snmp_check', f'Testing SNMP connectivity to {olt.ip_address}...', 'info')
+    snmp_result = snmp_service.validate_snmp_connectivity(
+        host=olt.ip_address,
+        community=olt.snmp_read_community,
+        version=olt.snmp_version,
+    )
+
+    if not snmp_result['connected']:
+        err = snmp_result.get('error', 'Unknown error')
+        _create_log(olt, 'snmp_check', f'SNMP connectivity FAILED: {err}', 'error')
+        olt.status = 'error'
+        olt.save(update_fields=['status'])
+        return
+
+    _create_log(olt, 'snmp_check', 'SNMP read connectivity: OK', 'success')
+
+    # Step 3: SNMP write access
+    if olt.snmp_write_community:
+        _create_log(olt, 'snmp_write', 'Verifying SNMP write access...', 'info')
+        write_result = snmp_service.validate_snmp_write_access(
+            host=olt.ip_address,
+            write_community=olt.snmp_write_community,
+            version=olt.snmp_version,
+        )
+        if write_result['writable']:
+            _create_log(olt, 'snmp_write', 'SNMP write access: OK', 'success')
+        else:
+            _create_log(olt, 'snmp_write',
+                        f'SNMP write access WARNING: {write_result.get("error", "Not writable")}',
+                        'warning')
+    else:
+        _create_log(olt, 'snmp_write', 'No SNMP write community provided (read-only mode)', 'warning')
+
+    # Step 4: Update system info
+    olt.system_name = snmp_result.get('sys_name', '')
+    olt.system_description = snmp_result.get('sys_descr', '')[:500]
+    olt.system_uptime = snmp_result.get('sys_uptime', '')
+    olt.save(update_fields=['system_name', 'system_description', 'system_uptime'])
+    _create_log(olt, 'sys_info',
+                f'System: {olt.system_name or "Unknown"} | Uptime: {olt.system_uptime or "N/A"}',
+                'info')
 
     # Done
     olt.status = 'active'
@@ -281,8 +291,16 @@ def provision_onu(onu_id: int, vlan_id: Optional[int] = None) -> Dict[str, Any]:
         _create_prov_log(onu, 'telnet_provision', 'Attempting Telnet provisioning...', 'info')
         success, message, client = telnet_service.telnet_login(
             host=olt.ip_address,
-            username=olt.telnet_username or settings.DEFAULT_TELNET_USERNAME,
-            password=olt.telnet_password or settings.DEFAULT_TELNET_PASSWORD,
+            username=(
+                olt.olt_admin_username
+                or olt.telnet_username
+                or settings.DEFAULT_TELNET_USERNAME
+            ),
+            password=(
+                olt.olt_admin_password
+                or olt.telnet_password
+                or settings.DEFAULT_TELNET_PASSWORD
+            ),
             port=olt.telnet_port,
         )
         if not success:

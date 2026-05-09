@@ -99,6 +99,11 @@ export default function OLTDetailPage() {
             <Button variant="outline" size="sm" icon={<RefreshCw className="h-4 w-4" />} onClick={handlePoll}>
               Poll
             </Button>
+            <Link href={`/olts/${oltId}/edit`}>
+              <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />}>
+                Edit
+              </Button>
+            </Link>
             <Link href={`/olts/${oltId}/setup`}>
               <Button variant="outline" size="sm" icon={<Play className="h-4 w-4" />}>
                 Setup
@@ -162,6 +167,10 @@ export default function OLTDetailPage() {
                 ['SNMP Read Community', olt.snmp_read_community],
                 ['SNMP Write Community', olt.snmp_write_community || 'Not set'],
                 ['Telnet', olt.telnet_enabled ? `Enabled (port ${olt.telnet_port})` : 'Disabled'],
+                ['Telnet Username', olt.telnet_username || 'Not set'],
+                ['Telnet Password', '********'],
+                ['OLT Admin Username', olt.olt_admin_username || 'Not set'],
+                ['OLT Admin Password', '********'],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between py-1 border-b border-gray-50">
                   <span className="text-gray-500">{k}</span>

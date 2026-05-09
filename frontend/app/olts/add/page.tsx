@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Form';
 import { oltApi } from '@/lib/api';
 import { OLTCreatePayload } from '@/lib/types';
-import { ArrowLeft, Server, Shield, Terminal, Info } from 'lucide-react';
+import { ArrowLeft, Server, Shield, Terminal, Info, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -23,16 +23,20 @@ export default function AddOLTPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showTelnetPassword, setShowTelnetPassword] = useState(false);
   const [form, setForm] = useState<OLTCreatePayload>({
     name: '',
     ip_address: '',
     snmp_version: 'v2c',
     snmp_read_community: 'public',
     snmp_write_community: '',
-    telnet_enabled: false,
+    telnet_enabled: true,
     telnet_port: 23,
     telnet_username: 'admin',
     telnet_password: 'admin',
+    olt_admin_username: 'admin',
+    olt_admin_password: 'admin',
   });
 
   useEffect(() => {
@@ -109,6 +113,33 @@ export default function AddOLTPage() {
                 error={errors.ip_address}
                 required
               />
+              <Input
+                label="OLT Admin Username"
+                placeholder="admin"
+                value={form.olt_admin_username || ''}
+                onChange={e => set('olt_admin_username', e.target.value)}
+                error={errors.olt_admin_username}
+                hint="Used for Telnet login during setup."
+              />
+              <Input
+                label="OLT Admin Password"
+                type={showAdminPassword ? 'text' : 'password'}
+                placeholder="Enter OLT admin password"
+                value={form.olt_admin_password || ''}
+                onChange={e => set('olt_admin_password', e.target.value)}
+                error={errors.olt_admin_password}
+                hint="Used for Telnet login during setup."
+                rightAdornment={
+                  <button
+                    type="button"
+                    onClick={() => setShowAdminPassword(v => !v)}
+                    className="text-gray-400 hover:text-gray-600"
+                    aria-label={showAdminPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                }
+              />
             </div>
           </Card>
 
@@ -151,48 +182,46 @@ export default function AddOLTPage() {
               <Terminal className="h-5 w-5 text-purple-600" />
               <h2 className="font-semibold text-gray-900">Telnet / CLI Access</h2>
             </div>
-            <div className="mb-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 accent-blue-600"
-                  checked={form.telnet_enabled}
-                  onChange={e => set('telnet_enabled', e.target.checked)}
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  Enable Telnet / CLI access
-                </span>
-              </label>
-              <p className="text-xs text-gray-500 mt-1 ml-7">
-                Enables automated CLI configuration and ONU provisioning via Telnet
-              </p>
-            </div>
-
-            {form.telnet_enabled && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="col-span-2 md:col-span-1">
-                  <Input
-                    label="Telnet Port"
-                    type="number"
-                    value={form.telnet_port}
-                    onChange={e => set('telnet_port', parseInt(e.target.value) || 23)}
-                    min={1}
-                    max={65535}
-                  />
-                </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Telnet is required and always enabled. Uses OLT admin credentials from Basic Information.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <Input
-                  label="Username"
-                  value={form.telnet_username}
-                  onChange={e => set('telnet_username', e.target.value)}
-                />
-                <Input
-                  label="Password"
-                  type="password"
-                  value={form.telnet_password}
-                  onChange={e => set('telnet_password', e.target.value)}
+                  label="Telnet Port"
+                  type="number"
+                  value={form.telnet_port}
+                  onChange={e => set('telnet_port', parseInt(e.target.value) || 23)}
+                  min={1}
+                  max={65535}
                 />
               </div>
-            )}
+              <Input
+                label="Telnet Username"
+                value={form.telnet_username || ''}
+                onChange={e => set('telnet_username', e.target.value)}
+                error={errors.telnet_username}
+                required
+              />
+              <Input
+                label="Telnet Password"
+                type={showTelnetPassword ? 'text' : 'password'}
+                value={form.telnet_password || ''}
+                onChange={e => set('telnet_password', e.target.value)}
+                error={errors.telnet_password}
+                required
+                rightAdornment={
+                  <button
+                    type="button"
+                    onClick={() => setShowTelnetPassword(v => !v)}
+                    className="text-gray-400 hover:text-gray-600"
+                    aria-label={showTelnetPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showTelnetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                }
+              />
+            </div>
           </Card>
 
           {/* Info box */}
