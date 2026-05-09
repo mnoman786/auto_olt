@@ -140,7 +140,7 @@ User=$SERVICE_USER
 WorkingDirectory=$FRONTEND_DIR
 Environment=PORT=$FE_PORT
 Environment=HOSTNAME=0.0.0.0
-ExecStart=$(which npm) start -- --port $FE_PORT
+ExecStart=$(which npx) next start -p $FE_PORT -H 0.0.0.0
 Restart=always
 RestartSec=5
 StandardOutput=journal
