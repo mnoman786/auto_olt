@@ -4,7 +4,7 @@
 #  Run once on a fresh server:  sudo bash setup.sh
 #  Server IP : 198.105.112.56
 #  Backend   : http://198.105.112.56:9005
-#  Frontend  : http://198.105.112.56:6000
+#  Frontend  : http://198.105.112.56:3001
 # =============================================================================
 set -e
 
@@ -21,7 +21,7 @@ BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
 VENV_DIR="$BACKEND_DIR/venv"
 BE_PORT=9005
-FE_PORT=6000
+FE_PORT=3001
 SERVICE_USER="${SUDO_USER:-$(whoami)}"
 NODE_VERSION="20"
 
