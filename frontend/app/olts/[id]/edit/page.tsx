@@ -33,8 +33,8 @@ export default function EditOLTPage() {
     name: '',
     ip_address: '',
     snmp_version: 'v2c',
-    snmp_read_community: 'public',
-    snmp_write_community: '',
+    snmp_read_community: 'autoolt_read',
+    snmp_write_community: 'autoolt_write',
     telnet_enabled: true,
     telnet_port: 23,
     telnet_username: 'admin',
@@ -55,8 +55,8 @@ export default function EditOLTPage() {
         name: d.name,
         ip_address: d.ip_address,
         snmp_version: d.snmp_version,
-        snmp_read_community: d.snmp_read_community,
-        snmp_write_community: d.snmp_write_community || '',
+        snmp_read_community: 'autoolt_read',
+        snmp_write_community: 'autoolt_write',
         telnet_enabled: true,
         telnet_port: d.telnet_port || 23,
         telnet_username: d.telnet_username || 'admin',
@@ -167,8 +167,18 @@ export default function EditOLTPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select label="SNMP Version" options={SNMP_VERSIONS} value={form.snmp_version} onChange={e => set('snmp_version', e.target.value as any)} required />
-              <Input label="SNMP Read Community" value={form.snmp_read_community} onChange={e => set('snmp_read_community', e.target.value)} error={errors.snmp_read_community} required />
-              <Input label="SNMP Write Community" value={form.snmp_write_community || ''} onChange={e => set('snmp_write_community', e.target.value)} error={errors.snmp_write_community} />
+              <Input
+                label="SNMP Read Community"
+                value={form.snmp_read_community}
+                disabled
+                hint="Fixed system value — cannot be changed"
+              />
+              <Input
+                label="SNMP Write Community"
+                value={form.snmp_write_community || ''}
+                disabled
+                hint="Fixed system value — cannot be changed"
+              />
             </div>
           </Card>
 

@@ -20,8 +20,8 @@ class OLT(models.Model):
     name = models.CharField(max_length=100)
     ip_address = models.GenericIPAddressField()
     snmp_version = models.CharField(max_length=4, choices=SNMP_VERSION_CHOICES, default='v2c')
-    snmp_read_community = models.CharField(max_length=100, default='public')
-    snmp_write_community = models.CharField(max_length=100, blank=True, default='')
+    snmp_read_community = models.CharField(max_length=100, default='autoolt_read')
+    snmp_write_community = models.CharField(max_length=100, blank=True, default='autoolt_write')
     telnet_enabled = models.BooleanField(default=False)
     telnet_port = models.PositiveIntegerField(default=23)
     # Credentials used to log in to the OLT during initial Telnet-based setup.

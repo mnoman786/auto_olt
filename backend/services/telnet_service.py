@@ -9,16 +9,37 @@ from typing import Optional, List, Tuple, Dict, Any
 
 logger = logging.getLogger(__name__)
 
+# Prompts that mean the OLT is asking for credentials mid-session.
+# Tuples of (prompt_substring, credential_key).
+_CREDENTIAL_PROMPTS: List[Tuple[str, str]] = [
+    ('password:',           'password'),
+    ('password: ',          'password'),
+    ('enter password:',     'password'),
+    ('re-enter password:',  'password'),
+    ('confirm password:',   'password'),
+    ('old password:',       'password'),
+    ('new password:',       'password'),
+    ('enable password:',    'enable_password'),
+    ('enable secret:',      'enable_password'),
+    ('login:',              'username'),
+    ('username:',           'username'),
+    ('user:',               'username'),
+]
+
 
 class TelnetClient:
     """Simple Telnet client for OLT CLI interaction."""
 
-    def __init__(self, host: str, port: int = 23, timeout: int = 15):
+    def __init__(self, host: str, port: int = 23, timeout: int = 15,
+                 on_io=None, credentials: Optional[Dict[str, str]] = None):
         self.host = host
         self.port = port
         self.timeout = timeout
         self.sock: Optional[socket.socket] = None
         self._buffer = b''
+        self._on_io = on_io          # callback(direction: 'send'|'recv', text: str)
+        self._credentials = credentials or {}   # {'username': ..., 'password': ..., 'enable_password': ...}
+        self._last_auto_respond = ''  # debounce: avoid re-responding to same prompt twice
 
     def connect(self) -> bool:
         """Establish TCP connection."""
@@ -91,9 +112,43 @@ class TelnetClient:
                 i += 1
         return result
 
+    def _auto_respond(self, tail: str) -> bool:
+        """
+        Check the last part of received output for credential prompts.
+        If found and we have a matching credential, send it automatically.
+        Returns True if a credential was sent.
+        """
+        if not self._credentials or not self.sock:
+            return False
+
+        tail_lower = tail.lower()
+        for prompt_str, cred_key in _CREDENTIAL_PROMPTS:
+            if prompt_str in tail_lower:
+                # Debounce: don't respond to the same prompt twice in a row
+                if self._last_auto_respond == prompt_str:
+                    continue
+                value = self._credentials.get(cred_key, '')
+                if not value:
+                    continue
+                self._last_auto_respond = prompt_str
+                try:
+                    self.sock.send((value + '\r\n').encode('utf-8'))
+                    time.sleep(0.2)
+                    # Log it — mask the actual value for security
+                    display = '********' if 'password' in cred_key else value
+                    if self._on_io:
+                        self._on_io('auto', f'[auto] {prompt_str.strip()} → {display}')
+                    logger.debug(f"[TelnetClient] Auto-responded to '{prompt_str}' prompt with {cred_key}")
+                except Exception as e:
+                    logger.debug(f"Auto-respond send error: {e}")
+                return True
+        self._last_auto_respond = ''
+        return False
+
     def read_until(self, *prompts: str, timeout: int = 10) -> Tuple[bool, str]:
         """
         Read from connection until one of the prompts is found.
+        Automatically responds to credential prompts mid-session.
         Returns (found, output_text)
         """
         if not self.sock:
@@ -106,19 +161,26 @@ class TelnetClient:
         while time.time() < deadline:
             for prompt in prompts:
                 if prompt.lower() in output.lower():
+                    if self._on_io and output.strip():
+                        self._on_io('recv', output.strip())
                     return True, output
             try:
                 self.sock.settimeout(min(1.0, deadline - time.time()))
                 chunk = self.sock.recv(4096)
                 if chunk:
                     chunk = self._strip_telnet_iac(chunk)
-                    output += chunk.decode('utf-8', errors='replace')
+                    new_text = chunk.decode('utf-8', errors='replace')
+                    output += new_text
+                    # Check last 300 chars for credential prompts and auto-respond
+                    self._auto_respond(output[-300:])
             except socket.timeout:
                 pass
             except Exception as e:
                 logger.debug(f"Read error in read_until: {e}")
                 break
 
+        if self._on_io and output.strip():
+            self._on_io('recv', output.strip())
         return False, output
 
     def send(self, command: str, newline: bool = True) -> None:
@@ -129,6 +191,8 @@ class TelnetClient:
             payload = (command + ('\r\n' if newline else '')).encode('utf-8')
             self.sock.send(payload)
             time.sleep(0.1)
+            if self._on_io and command.strip():
+                self._on_io('send', command.strip())
         except Exception as e:
             logger.debug(f"Send error: {e}")
 
@@ -146,12 +210,21 @@ class TelnetClient:
 
 
 def telnet_login(host: str, username: str, password: str, port: int = 23,
-                 timeout: int = 15) -> Tuple[bool, str, Optional[TelnetClient]]:
+                 timeout: int = 15, on_io=None,
+                 enable_password: str = '') -> Tuple[bool, str, Optional[TelnetClient]]:
     """
     Attempt Telnet login to OLT.
+    Credentials are stored on the client so it can auto-respond to any
+    mid-session credential prompt (enable mode, re-auth, etc).
     Returns (success, message, client_or_none)
     """
-    client = TelnetClient(host, port=port, timeout=timeout)
+    credentials = {
+        'username': username,
+        'password': password,
+        'enable_password': enable_password or password,  # fall back to login password
+    }
+    client = TelnetClient(host, port=port, timeout=timeout, on_io=on_io,
+                          credentials=credentials)
     if not client.connect():
         return False, f'Cannot connect to {host}:{port} via Telnet', None
 

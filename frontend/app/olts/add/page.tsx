@@ -29,8 +29,8 @@ export default function AddOLTPage() {
     name: '',
     ip_address: '',
     snmp_version: 'v2c',
-    snmp_read_community: 'public',
-    snmp_write_community: '',
+    snmp_read_community: 'autoolt_read',
+    snmp_write_community: 'autoolt_write',
     telnet_enabled: true,
     telnet_port: 23,
     telnet_username: 'admin',
@@ -159,19 +159,15 @@ export default function AddOLTPage() {
               />
               <Input
                 label="SNMP Read Community"
-                placeholder="public"
                 value={form.snmp_read_community}
-                onChange={e => set('snmp_read_community', e.target.value)}
-                error={errors.snmp_read_community}
-                required
+                disabled
+                hint="Fixed system value — cannot be changed"
               />
               <Input
-                label="SNMP Write Community (optional)"
-                placeholder="private"
+                label="SNMP Write Community"
                 value={form.snmp_write_community}
-                onChange={e => set('snmp_write_community', e.target.value)}
-                error={errors.snmp_write_community}
-                hint="Required for SNMP-based ONU provisioning"
+                disabled
+                hint="Fixed system value — cannot be changed"
               />
             </div>
           </Card>

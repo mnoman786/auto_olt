@@ -10,7 +10,7 @@ import { oltApi } from '@/lib/api';
 import type { OLT, SetupLog, OLTStatus } from '@/lib/types';
 import {
   ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw,
-  Server, Play, ChevronRight, Wifi, Terminal, Shield
+  Server, Play, ChevronRight, Wifi, Terminal, Shield, FlaskConical
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -57,7 +57,9 @@ export default function OLTSetupPage() {
   const [setupStarted, setSetupStarted] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [polling, setPolling] = useState(false);
+  const [activeTab, setActiveTab] = useState<'setup' | 'terminal'>('setup');
   const logEndRef = useRef<HTMLDivElement>(null);
+  const terminalEndRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -131,6 +133,7 @@ export default function OLTSetupPage() {
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
   const triggerSetup = async () => {
@@ -143,6 +146,20 @@ export default function OLTSetupPage() {
       toast.success('Setup started!');
     } catch (err: any) {
       const msg = err?.response?.data?.detail || 'Failed to start setup';
+      toast.error(msg);
+    }
+  };
+
+  const triggerSimulate = async () => {
+    try {
+      await oltApi.simulateSetup(oltId);
+      setSetupStarted(true);
+      setOltStatus('configuring');
+      setLogs([]);
+      startPolling();
+      toast.success('Simulation started!');
+    } catch (err: any) {
+      const msg = err?.response?.data?.detail || 'Failed to start simulation';
       toast.error(msg);
     }
   };
@@ -255,16 +272,36 @@ export default function OLTSetupPage() {
                     >
                       Retry Setup
                     </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      icon={<FlaskConical className="h-4 w-4" />}
+                      onClick={triggerSimulate}
+                      size="sm"
+                    >
+                      Simulate Instead
+                    </Button>
                   </div>
                 ) : !setupStarted ? (
-                  <Button
-                    className="w-full"
-                    icon={<Play className="h-4 w-4" />}
-                    onClick={triggerSetup}
-                    size="sm"
-                  >
-                    Start Setup
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      className="w-full"
+                      icon={<Play className="h-4 w-4" />}
+                      onClick={triggerSetup}
+                      size="sm"
+                    >
+                      Start Setup
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      icon={<FlaskConical className="h-4 w-4" />}
+                      onClick={triggerSimulate}
+                      size="sm"
+                    >
+                      Simulate Setup
+                    </Button>
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2 text-blue-600 text-sm">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -300,14 +337,40 @@ export default function OLTSetupPage() {
           {/* Log Console */}
           <div className="lg:col-span-2">
             <Card padding="none" className="overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-800 text-white">
+              {/* Title bar */}
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-white">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1.5">
                     <div className="w-3 h-3 rounded-full bg-red-500" />
                     <div className="w-3 h-3 rounded-full bg-yellow-500" />
                     <div className="w-3 h-3 rounded-full bg-green-500" />
                   </div>
-                  <span className="text-sm text-gray-300 ml-2 font-mono">Setup Log</span>
+                </div>
+                {/* Tabs */}
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setActiveTab('setup')}
+                    className={clsx(
+                      'px-3 py-1 text-xs rounded font-mono transition-colors',
+                      activeTab === 'setup'
+                        ? 'bg-gray-600 text-white'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                    )}
+                  >
+                    Setup Log
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('terminal')}
+                    className={clsx(
+                      'px-3 py-1 text-xs rounded font-mono transition-colors flex items-center gap-1',
+                      activeTab === 'terminal'
+                        ? 'bg-green-700 text-white'
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                    )}
+                  >
+                    <Terminal className="h-3 w-3" />
+                    Telnet Session
+                  </button>
                 </div>
                 <div className="flex items-center gap-2">
                   {polling && (
@@ -316,43 +379,100 @@ export default function OLTSetupPage() {
                       LIVE
                     </span>
                   )}
-                  <span className="text-xs text-gray-400">{logs.length} entries</span>
+                  <span className="text-xs text-gray-400">
+                    {activeTab === 'terminal'
+                      ? `${logs.filter(l => l.step === 'telnet_terminal').length} lines`
+                      : `${logs.filter(l => l.step !== 'telnet_terminal').length} entries`}
+                  </span>
                 </div>
               </div>
 
-              <div className="bg-gray-950 font-mono text-xs overflow-y-auto h-[480px] p-4">
-                {logs.length === 0 ? (
-                  <p className="text-gray-600 italic">
-                    {setupStarted
-                      ? '⟳ Initializing setup...'
-                      : '# No setup logs yet. Click "Start Setup" to begin.'}
-                  </p>
-                ) : (
-                  <div className="space-y-0.5">
-                    {logs.map((log) => (
-                      <div key={log.id} className="flex gap-3 hover:bg-white/5 px-1 py-0.5 rounded">
-                        <span className="text-gray-600 shrink-0 w-20">
-                          {new Date(log.created_at).toLocaleTimeString()}
-                        </span>
-                        <span className={clsx(
-                          'shrink-0 w-16',
-                          levelColor[log.level] || 'text-gray-400'
-                        )}>
-                          [{log.level.toUpperCase().padEnd(7)}]
-                        </span>
-                        <span className="text-gray-300 break-all">{log.message}</span>
-                      </div>
-                    ))}
-                    {polling && (
-                      <div className="flex items-center gap-2 text-gray-500 mt-2">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span>Waiting for next step...</span>
+              {/* Setup Log tab */}
+              {activeTab === 'setup' && (
+                <div className="bg-gray-950 font-mono text-xs overflow-y-auto h-[480px] p-4">
+                  {logs.filter(l => l.step !== 'telnet_terminal').length === 0 ? (
+                    <p className="text-gray-600 italic">
+                      {setupStarted
+                        ? '⟳ Initializing setup...'
+                        : '# No setup logs yet. Click "Start Setup" to begin.'}
+                    </p>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {logs.filter(l => l.step !== 'telnet_terminal').map((log) => (
+                        <div key={log.id} className="flex gap-3 hover:bg-white/5 px-1 py-0.5 rounded">
+                          <span className="text-gray-600 shrink-0 w-20">
+                            {new Date(log.created_at).toLocaleTimeString()}
+                          </span>
+                          <span className={clsx('shrink-0 w-16', levelColor[log.level] || 'text-gray-400')}>
+                            [{log.level.toUpperCase().padEnd(7)}]
+                          </span>
+                          <span className="text-gray-300 break-all">{log.message}</span>
+                        </div>
+                      ))}
+                      {polling && (
+                        <div className="flex items-center gap-2 text-gray-500 mt-2">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span>Waiting for next step...</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div ref={logEndRef} />
+                </div>
+              )}
+
+              {/* Telnet Terminal tab */}
+              {activeTab === 'terminal' && (() => {
+                const termLogs = logs.filter(l => l.step === 'telnet_terminal');
+                return (
+                  <div className="bg-gray-950 font-mono text-xs overflow-y-auto h-[480px] p-4">
+                    {termLogs.length === 0 ? (
+                      <p className="text-gray-600 italic">
+                        {setupStarted
+                          ? '⟳ Waiting for telnet connection...'
+                          : '# Telnet session output will appear here during setup.'}
+                      </p>
+                    ) : (
+                      <div className="space-y-0">
+                        {termLogs.map((log) => {
+                          const isCmd = log.message.startsWith('> ');
+                          const isAuto = log.level === 'warning'; // auto-credential response
+                          return (
+                            <div key={log.id} className="leading-relaxed">
+                              {isCmd ? (
+                                <div className="flex items-start gap-2 mt-2">
+                                  <span className="text-green-400 shrink-0">$</span>
+                                  <span className="text-green-300 font-bold break-all">
+                                    {log.message.slice(2)}
+                                  </span>
+                                </div>
+                              ) : isAuto ? (
+                                <div className="flex items-center gap-2 mt-1 pl-4">
+                                  <span className="text-yellow-400 shrink-0">⚡</span>
+                                  <span className="text-yellow-300 text-[11px] italic">
+                                    {log.message}
+                                  </span>
+                                </div>
+                              ) : (
+                                <pre className="text-gray-400 whitespace-pre-wrap break-all pl-4 text-[11px] leading-relaxed">
+                                  {log.message}
+                                </pre>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {polling && (
+                          <div className="flex items-center gap-1 text-green-500 mt-2">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse inline-block" />
+                            <span className="text-gray-500">_</span>
+                          </div>
+                        )}
                       </div>
                     )}
+                    <div ref={terminalEndRef} />
                   </div>
-                )}
-                <div ref={logEndRef} />
-              </div>
+                );
+              })()}
             </Card>
 
             {/* Next steps */}

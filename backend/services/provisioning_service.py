@@ -18,6 +18,22 @@ def _create_log(olt, step: str, message: str, level: str = 'info'):
     logger.info(f"[OLT:{olt.id}] [{level.upper()}] {step}: {message}")
 
 
+def _make_terminal_logger(olt):
+    """Return a callback that saves raw telnet I/O as terminal logs."""
+    def on_io(direction: str, text: str):
+        clean = text.strip()
+        if not clean:
+            return
+        if direction == 'send':
+            _create_log(olt, 'telnet_terminal', f'> {clean}', 'info')
+        elif direction == 'auto':
+            # Auto-credential response — shown as a warning so UI can highlight it
+            _create_log(olt, 'telnet_terminal', clean, 'warning')
+        else:
+            _create_log(olt, 'telnet_terminal', clean, 'success')
+    return on_io
+
+
 def _create_prov_log(onu, step: str, message: str, level: str = 'info'):
     """Helper to create a ProvisioningLog entry."""
     from apps.onus.models import ProvisioningLog
@@ -55,6 +71,7 @@ def run_olt_setup(olt_id: int) -> None:
     if olt.telnet_enabled:
         _create_log(olt, 'telnet_connect', f'Connecting via Telnet to {olt.ip_address}:{olt.telnet_port}...', 'info')
 
+        terminal_log = _make_terminal_logger(olt)
         success, message, client = telnet_service.telnet_login(
             host=olt.ip_address,
             username=(
@@ -68,6 +85,7 @@ def run_olt_setup(olt_id: int) -> None:
                 or settings.DEFAULT_TELNET_PASSWORD
             ),
             port=olt.telnet_port,
+            on_io=terminal_log,
         )
 
         if not success:
@@ -152,7 +170,7 @@ def run_olt_setup(olt_id: int) -> None:
     olt.save(update_fields=['system_name', 'system_description', 'system_uptime'])
     _create_log(olt, 'sys_info',
                 f'System: {olt.system_name or "Unknown"} | Uptime: {olt.system_uptime or "N/A"}',
-                'info')
+                'success')
 
     # Done
     olt.status = 'active'
@@ -164,6 +182,142 @@ def run_olt_setup(olt_id: int) -> None:
 def start_olt_setup_async(olt_id: int) -> None:
     """Start OLT setup in a background thread."""
     thread = threading.Thread(target=run_olt_setup, args=(olt_id,), daemon=True)
+    thread.start()
+
+
+def simulate_olt_setup(olt_id: int) -> None:
+    """
+    Simulated OLT setup — no real network calls.
+    Mirrors the real setup steps with artificial delays so the UI behaves identically.
+    """
+    import time
+    from apps.olts.models import OLT
+
+    try:
+        olt = OLT.objects.get(id=olt_id)
+    except OLT.DoesNotExist:
+        return
+
+    olt.status = 'configuring'
+    olt.save(update_fields=['status'])
+    olt.setup_logs.all().delete()
+
+    def tlog(direction, text):
+        _create_log(olt, 'telnet_terminal', f'> {text}' if direction == 'send' else text, 'info' if direction == 'send' else 'success')
+
+    ip = olt.ip_address
+    port = olt.telnet_port
+    admin = olt.olt_admin_username or 'admin'
+    mgmt_user = getattr(settings, 'OLT_MGMT_USER', 'autoolt')
+    read_comm = olt.snmp_read_community
+    write_comm = olt.snmp_write_community
+
+    _create_log(olt, 'setup_start', f'[SIMULATION] Starting setup for OLT: {olt.name} ({ip})', 'info')
+    time.sleep(0.8)
+
+    # Step 1: Telnet connect
+    _create_log(olt, 'telnet_connect', f'Connecting via Telnet to {ip}:{port}...', 'info')
+    time.sleep(1.2)
+    tlog('recv', f'\r\nHuawei Versatile Routing Platform Software\r\nVRP (R) software, Version 5.160 (MA5608T V800R013C00)\r\nCopyright (C) 2000-2018 HUAWEI TECH CO., LTD\r\n\r\nLogin: ')
+    time.sleep(0.5)
+    tlog('send', admin)
+    time.sleep(0.4)
+    tlog('recv', f'\r\nPassword: ')
+    time.sleep(0.5)
+    tlog('auto', f'[auto] password: → ********')
+    time.sleep(0.8)
+    tlog('recv', f'\r\nInfo: The max number of VTY users is 5, and the number\r\n      of current VTY users on line is 1.\r\n\r\n{admin}>')
+    _create_log(olt, 'telnet_connect', f'Telnet login: OK - Authenticated as {admin}', 'success')
+    time.sleep(0.5)
+
+    # Step 2: Create management user
+    _create_log(olt, 'create_user', f'Creating management user: {mgmt_user}', 'info')
+    time.sleep(0.3)
+    tlog('send', 'enable')
+    time.sleep(0.4)
+    tlog('recv', f'Password: ')
+    tlog('auto', f'[auto] password: → ********')
+    time.sleep(0.3)
+    tlog('recv', f'{admin}#')
+    tlog('send', 'config')
+    time.sleep(0.3)
+    tlog('recv', f'Enter system view, return user view with Ctrl+Z.\r\n[~{admin}]')
+    tlog('send', 'aaa')
+    time.sleep(0.3)
+    tlog('recv', f'[~{admin}-aaa]')
+    tlog('send', f'local-user {mgmt_user} password irreversible-cipher AutoOlt@123')
+    time.sleep(0.5)
+    tlog('recv', f'Info: Add a new user.\r\n[*{admin}-aaa]')
+    tlog('send', f'local-user {mgmt_user} privilege level 15')
+    time.sleep(0.3)
+    tlog('recv', f'[*{admin}-aaa]')
+    tlog('send', f'local-user {mgmt_user} service-type terminal ssh telnet')
+    time.sleep(0.3)
+    tlog('recv', f'[*{admin}-aaa]')
+    tlog('send', 'quit')
+    time.sleep(0.3)
+    tlog('recv', f'[*{admin}]')
+    _create_log(olt, 'create_user', f'Management user {mgmt_user} created successfully', 'success')
+    time.sleep(0.4)
+
+    # Step 3: Configure SNMP
+    _create_log(olt, 'configure_snmp', 'Configuring SNMP via CLI...', 'info')
+    tlog('send', f'snmp-agent community read {read_comm}')
+    time.sleep(0.5)
+    tlog('recv', f'[*{admin}]')
+    if write_comm:
+        tlog('send', f'snmp-agent community write {write_comm}')
+        time.sleep(0.5)
+        tlog('recv', f'[*{admin}]')
+    tlog('send', 'snmp-agent')
+    time.sleep(0.3)
+    tlog('recv', f'[*{admin}]')
+    tlog('send', 'quit')
+    time.sleep(0.3)
+    tlog('recv', f'[~{admin}]')
+    tlog('send', 'save')
+    time.sleep(0.8)
+    tlog('recv', f'Warning: The current configuration will be written to the device.\r\nAre you sure to continue?[Y/N]')
+    tlog('send', 'Y')
+    time.sleep(1.0)
+    tlog('recv', f'Info: The configuration is saved to the device successfully.\r\n[~{admin}]')
+    _create_log(olt, 'configure_snmp', f'SNMP community "{read_comm}" configured', 'success')
+    time.sleep(0.4)
+
+    # Step 4: SNMP connectivity check
+    _create_log(olt, 'snmp_check', f'Testing SNMP connectivity to {ip}...', 'info')
+    time.sleep(1.5)
+    _create_log(olt, 'snmp_check', 'SNMP read connectivity: OK', 'success')
+    time.sleep(0.4)
+
+    # Step 5: SNMP write access
+    if write_comm:
+        _create_log(olt, 'snmp_write', 'Verifying SNMP write access...', 'info')
+        time.sleep(1.0)
+        _create_log(olt, 'snmp_write', 'SNMP write access: OK', 'success')
+    else:
+        _create_log(olt, 'snmp_write', 'No SNMP write community provided (read-only mode)', 'warning')
+    time.sleep(0.4)
+
+    # Step 6: System info
+    sim_name = f'MA5608T-{olt.name}'
+    olt.system_name = sim_name
+    olt.system_description = 'Huawei MA5608T GPON OLT (Simulated)'
+    olt.system_uptime = '0 days, 0:00:00'
+    olt.save(update_fields=['system_name', 'system_description', 'system_uptime'])
+    _create_log(olt, 'sys_info', f'System: {sim_name} | Uptime: 0 days, 0:00:00', 'success')
+    time.sleep(0.5)
+
+    # Done
+    olt.status = 'active'
+    olt.last_polled = timezone.now()
+    olt.save(update_fields=['status', 'last_polled'])
+    _create_log(olt, 'setup_complete', f'[SIMULATION] OLT {olt.name} setup complete. Status: ACTIVE', 'success')
+
+
+def start_simulate_setup_async(olt_id: int) -> None:
+    """Start simulated OLT setup in a background thread."""
+    thread = threading.Thread(target=simulate_olt_setup, args=(olt_id,), daemon=True)
     thread.start()
 
 
