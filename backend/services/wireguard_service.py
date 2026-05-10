@@ -15,7 +15,7 @@ WG_ENDPOINT = getattr(settings, 'WG_ENDPOINT', '')
 
 
 def _run(*cmd):
-    result = subprocess.run(list(cmd), capture_output=True, text=True)
+    result = subprocess.run(['sudo'] + list(cmd), capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or f"Command failed: {' '.join(cmd)}")
     return result.stdout.strip()
@@ -54,7 +54,7 @@ def add_peer(olt) -> tuple[bool, str]:
 
     try:
         _run('wg', 'set', WG_INTERFACE, 'peer', olt.wg_client_public_key, 'allowed-ips', allowed_ips)
-        subprocess.run(['wg-quick', 'save', WG_INTERFACE], capture_output=True)
+        subprocess.run(['sudo', 'wg-quick', 'save', WG_INTERFACE], capture_output=True)
         logger.info(f"WireGuard peer added for OLT {olt.id} ({olt.name}): {olt.wg_client_public_key[:20]}...")
         return True, 'Peer added successfully'
     except RuntimeError as e:
@@ -68,7 +68,7 @@ def remove_peer(public_key: str) -> tuple[bool, str]:
         return False, 'No public key provided'
     try:
         _run('wg', 'set', WG_INTERFACE, 'peer', public_key, 'remove')
-        subprocess.run(['wg-quick', 'save', WG_INTERFACE], capture_output=True)
+        subprocess.run(['sudo', 'wg-quick', 'save', WG_INTERFACE], capture_output=True)
         logger.info(f"WireGuard peer removed: {public_key[:20]}...")
         return True, 'Peer removed'
     except RuntimeError as e:
