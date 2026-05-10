@@ -11,6 +11,14 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def _connect_ip(olt) -> str:
+    """Return the IP the app should use to reach this OLT.
+    For VPN OLTs the WireGuard virtual IP is used; for direct OLTs the stored ip_address."""
+    if olt.connection_type == 'vpn' and olt.vpn_virtual_ip:
+        return olt.vpn_virtual_ip
+    return olt.ip_address
+
+
 def _create_log(olt, step: str, message: str, level: str = 'info'):
     """Helper to create a SetupLog entry."""
     from apps.olts.models import SetupLog
@@ -65,15 +73,16 @@ def run_olt_setup(olt_id: int) -> None:
     olt.save(update_fields=['status'])
     olt.setup_logs.all().delete()
 
-    _create_log(olt, 'setup_start', f'Starting setup for OLT: {olt.name} ({olt.ip_address})', 'info')
+    connect_ip = _connect_ip(olt)
+    _create_log(olt, 'setup_start', f'Starting setup for OLT: {olt.name} ({connect_ip})', 'info')
 
     # Step 1: Telnet-first setup
     if olt.telnet_enabled:
-        _create_log(olt, 'telnet_connect', f'Connecting via Telnet to {olt.ip_address}:{olt.telnet_port}...', 'info')
+        _create_log(olt, 'telnet_connect', f'Connecting via Telnet to {connect_ip}:{olt.telnet_port}...', 'info')
 
         terminal_log = _make_terminal_logger(olt)
         success, message, client = telnet_service.telnet_login(
-            host=olt.ip_address,
+            host=connect_ip,
             username=(
                 olt.olt_admin_username
                 or olt.telnet_username
@@ -130,9 +139,9 @@ def run_olt_setup(olt_id: int) -> None:
         _create_log(olt, 'telnet_skip', 'Telnet disabled - skipping CLI configuration', 'info')
 
     # Step 2: SNMP read connectivity (after Telnet configuration)
-    _create_log(olt, 'snmp_check', f'Testing SNMP connectivity to {olt.ip_address}...', 'info')
+    _create_log(olt, 'snmp_check', f'Testing SNMP connectivity to {connect_ip}...', 'info')
     snmp_result = snmp_service.validate_snmp_connectivity(
-        host=olt.ip_address,
+        host=connect_ip,
         community=olt.snmp_read_community,
         version=olt.snmp_version,
     )
@@ -150,7 +159,7 @@ def run_olt_setup(olt_id: int) -> None:
     if olt.snmp_write_community:
         _create_log(olt, 'snmp_write', 'Verifying SNMP write access...', 'info')
         write_result = snmp_service.validate_snmp_write_access(
-            host=olt.ip_address,
+            host=connect_ip,
             write_community=olt.snmp_write_community,
             version=olt.snmp_version,
         )
@@ -205,7 +214,7 @@ def simulate_olt_setup(olt_id: int) -> None:
     def tlog(direction, text):
         _create_log(olt, 'telnet_terminal', f'> {text}' if direction == 'send' else text, 'info' if direction == 'send' else 'success')
 
-    ip = olt.ip_address
+    ip = _connect_ip(olt)
     port = olt.telnet_port
     admin = olt.olt_admin_username or 'admin'
     mgmt_user = getattr(settings, 'OLT_MGMT_USER', 'autoolt')
@@ -362,8 +371,9 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
         result['error'] = f'OLT {olt.name} is not active (status: {olt.status})'
         return result
 
+    connect_ip = _connect_ip(olt)
     discovered_onus = snmp_service.discover_onus_snmp(
-        host=olt.ip_address,
+        host=connect_ip,
         community=olt.snmp_read_community,
         version=olt.snmp_version,
     )
@@ -376,7 +386,7 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
             continue
 
         signal = snmp_service.get_onu_signal_strength(
-            host=olt.ip_address,
+            host=connect_ip,
             community=olt.snmp_read_community,
             onu_index=onu_data.get('onu_index', 0),
             version=olt.snmp_version,
@@ -451,7 +461,7 @@ def provision_onu(onu_id: int, vlan_id: Optional[int] = None) -> Dict[str, Any]:
             return {'success': False, 'error': 'No SNMP write community configured', 'steps': []}
         _create_prov_log(onu, 'snmp_provision', 'Attempting SNMP provisioning...', 'info')
         res = snmp_service.snmp_provision_onu(
-            host=olt.ip_address,
+            host=_connect_ip(olt),
             write_community=olt.snmp_write_community,
             onu_index=onu.onu_index,
             vlan_id=effective_vlan,
@@ -464,7 +474,7 @@ def provision_onu(onu_id: int, vlan_id: Optional[int] = None) -> Dict[str, Any]:
             return {'success': False, 'error': 'Telnet not enabled on this OLT', 'steps': []}
         _create_prov_log(onu, 'telnet_provision', 'Attempting Telnet provisioning...', 'info')
         success, message, client = telnet_service.telnet_login(
-            host=olt.ip_address,
+            host=_connect_ip(olt),
             username=(
                 olt.olt_admin_username
                 or olt.telnet_username

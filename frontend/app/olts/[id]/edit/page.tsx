@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Form';
 import { oltApi } from '@/lib/api';
 import type { OLTCreatePayload } from '@/lib/types';
-import { ArrowLeft, Server, Shield, Terminal, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Server, Shield, Terminal, Eye, EyeOff, Wifi, Info } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -16,6 +16,11 @@ const SNMP_VERSIONS = [
   { value: 'v2c', label: 'SNMPv2c (recommended)' },
   { value: 'v1', label: 'SNMPv1' },
   { value: 'v3', label: 'SNMPv3' },
+];
+
+const CONNECTION_TYPES = [
+  { value: 'direct', label: 'Direct (Public IP)' },
+  { value: 'vpn', label: 'VPN (WireGuard)' },
 ];
 
 function randomCommunity(prefix: string): string {
@@ -33,11 +38,13 @@ export default function EditOLTPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [assignedVirtualIp, setAssignedVirtualIp] = useState<string | null>(null);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [showTelnetPassword, setShowTelnetPassword] = useState(false);
   const [form, setForm] = useState<OLTCreatePayload>({
     name: '',
     ip_address: '',
+    connection_type: 'direct',
     snmp_version: 'v2c',
     snmp_read_community: randomCommunity('rd'),
     snmp_write_community: randomCommunity('wr'),
@@ -57,9 +64,11 @@ export default function EditOLTPage() {
     try {
       const res = await oltApi.get(oltId);
       const d = res.data;
+      setAssignedVirtualIp(d.vpn_virtual_ip || null);
       setForm({
         name: d.name,
         ip_address: d.ip_address,
+        connection_type: d.connection_type || 'direct',
         snmp_version: d.snmp_version,
         snmp_read_community: d.snmp_read_community || randomCommunity('rd'),
         snmp_write_community: d.snmp_write_community || randomCommunity('wr'),
@@ -164,6 +173,43 @@ export default function EditOLTPage() {
                 }
               />
             </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center gap-2 mb-4">
+              <Wifi className="h-5 w-5 text-indigo-600" />
+              <h2 className="font-semibold text-gray-900">Connection Type</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="How does this OLT connect?"
+                options={CONNECTION_TYPES}
+                value={form.connection_type}
+                onChange={e => set('connection_type', e.target.value as any)}
+                required
+              />
+              {form.connection_type === 'direct' ? (
+                <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100 text-sm text-blue-700">
+                  <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                  <span>App connects directly to the public IP address above.</span>
+                </div>
+              ) : (
+                <Input
+                  label="Virtual IP (auto-assigned, read-only)"
+                  value={assignedVirtualIp || 'Will be assigned on save'}
+                  disabled
+                  hint="Assigned by system from 10.100.0.0/16 — globally unique"
+                />
+              )}
+            </div>
+            {form.connection_type === 'vpn' && (
+              <div className="flex items-start gap-2 mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100 text-sm text-indigo-700">
+                <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>
+                  <strong>IP Address</strong> = OLT&apos;s real LAN IP. App connects via the auto-assigned Virtual IP through WireGuard.
+                </span>
+              </div>
+            )}
           </Card>
 
           <Card>

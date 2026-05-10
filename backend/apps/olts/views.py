@@ -135,8 +135,9 @@ def olt_ports(request, pk):
 
     if request.method == 'POST':
         from services import snmp_service
+        from services.provisioning_service import _connect_ip
         discovered = snmp_service.discover_ports_snmp(
-            host=olt.ip_address,
+            host=_connect_ip(olt),
             community=olt.snmp_read_community,
             version=olt.snmp_version,
         )
@@ -165,7 +166,9 @@ def test_snmp(request, pk):
     """
     from services import snmp_service
 
+    from services.provisioning_service import _connect_ip
     olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    connect_ip = _connect_ip(olt)
     checks = []
 
     # 1. TCP/UDP reachability ping on port 161
@@ -173,18 +176,18 @@ def test_snmp(request, pk):
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(3)
-        sock.sendto(b'\x00', (olt.ip_address, 161))
+        sock.sendto(b'\x00', (connect_ip, 161))
         reachable = True
         sock.close()
         checks.append({'check': 'network_reach', 'ok': True,
-                        'detail': f'{olt.ip_address}:161 UDP is reachable'})
+                        'detail': f'{connect_ip}:161 UDP is reachable'})
     except Exception as e:
         checks.append({'check': 'network_reach', 'ok': False,
-                        'detail': f'Cannot reach {olt.ip_address}:161 UDP — {e}'})
+                        'detail': f'Cannot reach {connect_ip}:161 UDP — {e}'})
 
     # 2. SNMP GET sysDescr with read community
     snmp_result = snmp_service.validate_snmp_connectivity(
-        host=olt.ip_address,
+        host=connect_ip,
         community=olt.snmp_read_community,
         version=olt.snmp_version,
     )
@@ -203,7 +206,7 @@ def test_snmp(request, pk):
     # 3. SNMP write access (if write community set)
     if olt.snmp_write_community:
         write_result = snmp_service.validate_snmp_write_access(
-            host=olt.ip_address,
+            host=connect_ip,
             write_community=olt.snmp_write_community,
             version=olt.snmp_version,
         )
@@ -223,13 +226,13 @@ def test_snmp(request, pk):
     # 4. Telnet port reachability (if enabled)
     if olt.telnet_enabled:
         try:
-            s = socket.create_connection((olt.ip_address, olt.telnet_port), timeout=4)
+            s = socket.create_connection((connect_ip, olt.telnet_port), timeout=4)
             s.close()
             checks.append({'check': 'telnet_port', 'ok': True,
-                            'detail': f'TCP {olt.ip_address}:{olt.telnet_port} is open'})
+                            'detail': f'TCP {connect_ip}:{olt.telnet_port} is open'})
         except Exception as e:
             checks.append({'check': 'telnet_port', 'ok': False,
-                            'detail': f'TCP {olt.ip_address}:{olt.telnet_port} refused — {e}'})
+                            'detail': f'TCP {connect_ip}:{olt.telnet_port} refused — {e}'})
 
     overall_ok = all(c['ok'] for c in checks if c['ok'] is not None)
     return Response({

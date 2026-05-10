@@ -20,11 +20,14 @@ export interface AuthResponse {
 
 export type OLTStatus = 'pending' | 'configuring' | 'active' | 'error' | 'offline';
 export type SNMPVersion = 'v1' | 'v2c' | 'v3';
+export type ConnectionType = 'direct' | 'vpn';
 
 export interface OLT {
   id: number;
   name: string;
   ip_address: string;
+  connection_type: ConnectionType;
+  vpn_virtual_ip: string | null;
   snmp_version: SNMPVersion;
   snmp_read_community: string;
   snmp_write_community: string;
@@ -48,6 +51,7 @@ export interface OLT {
 export interface OLTCreatePayload {
   name: string;
   ip_address: string;
+  connection_type: ConnectionType;
   snmp_version: SNMPVersion;
   snmp_read_community: string;
   snmp_write_community?: string;

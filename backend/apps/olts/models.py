@@ -15,10 +15,16 @@ class OLT(models.Model):
         ('error', 'Error'),
         ('offline', 'Offline'),
     ]
+    CONNECTION_TYPE_CHOICES = [
+        ('direct', 'Direct (Public IP)'),
+        ('vpn', 'VPN (WireGuard)'),
+    ]
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='olts')
     name = models.CharField(max_length=100)
     ip_address = models.GenericIPAddressField()
+    connection_type = models.CharField(max_length=10, choices=CONNECTION_TYPE_CHOICES, default='direct')
+    vpn_virtual_ip = models.GenericIPAddressField(null=True, blank=True, unique=True, help_text='Auto-assigned virtual IP from WireGuard pool (10.100.0.0/16)')
     snmp_version = models.CharField(max_length=4, choices=SNMP_VERSION_CHOICES, default='v2c')
     snmp_read_community = models.CharField(max_length=100, default='autoolt_read')
     snmp_write_community = models.CharField(max_length=100, blank=True, default='autoolt_write')
@@ -40,7 +46,6 @@ class OLT(models.Model):
 
     class Meta:
         db_table = 'olts'
-        unique_together = ('user', 'ip_address')
         ordering = ['-created_at']
 
     def __str__(self):
