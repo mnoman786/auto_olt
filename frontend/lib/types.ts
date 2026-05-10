@@ -28,6 +28,8 @@ export interface OLT {
   ip_address: string;
   connection_type: ConnectionType;
   vpn_virtual_ip: string | null;
+  wg_client_public_key: string;
+  wg_client_subnet: string;
   snmp_version: SNMPVersion;
   snmp_read_community: string;
   snmp_write_community: string;
@@ -48,10 +50,23 @@ export interface OLT {
   registered_onu_count: number;
 }
 
+export interface WireGuardInfo {
+  server_public_key: string;
+  server_endpoint: string;
+  virtual_ip: string | null;
+  client_public_key: string;
+  client_subnet: string;
+  peer_configured: boolean;
+  peer_connected: boolean;
+  last_handshake: number;
+}
+
 export interface OLTCreatePayload {
   name: string;
   ip_address: string;
   connection_type: ConnectionType;
+  wg_client_public_key?: string;
+  wg_client_subnet?: string;
   snmp_version: SNMPVersion;
   snmp_read_community: string;
   snmp_write_community?: string;

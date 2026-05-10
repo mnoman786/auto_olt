@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
-  SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse
+  SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -109,6 +109,11 @@ export const oltApi = {
   getPorts: (id: number) => apiClient.get<OLTPortsResponse>(`/olts/${id}/ports/`),
 
   discoverPorts: (id: number) => apiClient.post<OLTPortsResponse>(`/olts/${id}/ports/`),
+
+  getWgInfo: (id: number) => apiClient.get<WireGuardInfo>(`/olts/${id}/wireguard/`),
+
+  saveWgPeer: (id: number, data: { wg_client_public_key: string; wg_client_subnet: string }) =>
+    apiClient.post<WireGuardInfo>(`/olts/${id}/wireguard/`, data),
 };
 
 // ONU API

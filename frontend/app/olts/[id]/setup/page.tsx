@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { OLTStatusBadge } from '@/components/ui/Badge';
 import { oltApi } from '@/lib/api';
-import type { OLT, SetupLog, OLTStatus } from '@/lib/types';
+import type { OLT, SetupLog, OLTStatus, WireGuardInfo } from '@/lib/types';
 import {
   ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw,
-  Server, Play, ChevronRight, Wifi, Terminal, Shield, FlaskConical
+  Server, Play, ChevronRight, Wifi, Terminal, Shield,
+  FlaskConical, ShieldCheck, Copy, Check, Pencil
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -58,6 +59,15 @@ export default function OLTSetupPage() {
   const [fetching, setFetching] = useState(true);
   const [polling, setPolling] = useState(false);
   const [activeTab, setActiveTab] = useState<'setup' | 'terminal'>('setup');
+
+  // WireGuard state (VPN OLTs only)
+  const [wgInfo, setWgInfo] = useState<WireGuardInfo | null>(null);
+  const [wgReady, setWgReady] = useState(false);   // true = peer configured, can proceed
+  const [wgEditing, setWgEditing] = useState(false);
+  const [wgForm, setWgForm] = useState({ wg_client_public_key: '', wg_client_subnet: '' });
+  const [wgSaving, setWgSaving] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+
   const logEndRef = useRef<HTMLDivElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -83,6 +93,22 @@ export default function OLTSetupPage() {
     } catch { return null; }
   }, [oltId]);
 
+  const fetchWgInfo = useCallback(async () => {
+    try {
+      const res = await oltApi.getWgInfo(oltId);
+      setWgInfo(res.data);
+      const configured = !!res.data.client_public_key;
+      setWgReady(configured);
+      if (configured) {
+        setWgForm({
+          wg_client_public_key: res.data.client_public_key,
+          wg_client_subnet: res.data.client_subnet,
+        });
+      }
+      return res.data;
+    } catch { return null; }
+  }, [oltId]);
+
   const startPolling = useCallback(() => {
     if (pollIntervalRef.current) return;
     setPolling(true);
@@ -103,9 +129,7 @@ export default function OLTSetupPage() {
     setPolling(false);
   }, []);
 
-  useEffect(() => {
-    return () => stopPolling();
-  }, [stopPolling]);
+  useEffect(() => { return () => stopPolling(); }, [stopPolling]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -113,6 +137,11 @@ export default function OLTSetupPage() {
       setFetching(true);
       const oltData = await fetchOlt();
       const logsData = await fetchLogs();
+
+      if (oltData?.connection_type === 'vpn') {
+        await fetchWgInfo();
+      }
+
       setFetching(false);
 
       if (logsData) {
@@ -123,11 +152,6 @@ export default function OLTSetupPage() {
           startPolling();
         }
       }
-
-      // Auto-start setup if this is a fresh OLT
-      if (oltData && logsData && logsData.status === 'pending' && logsData.logs.length === 0) {
-        triggerSetup();
-      }
     })();
   }, [isAuthenticated]);
 
@@ -135,6 +159,31 @@ export default function OLTSetupPage() {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleSaveWgPeer = async () => {
+    if (!wgForm.wg_client_public_key.trim()) {
+      toast.error('Public key is required');
+      return;
+    }
+    setWgSaving(true);
+    try {
+      const res = await oltApi.saveWgPeer(oltId, wgForm);
+      setWgInfo(res.data);
+      setWgReady(true);
+      setWgEditing(false);
+      toast.success('WireGuard peer configured');
+    } catch {
+      toast.error('Failed to configure WireGuard peer');
+    } finally {
+      setWgSaving(false);
+    }
+  };
 
   const triggerSetup = async () => {
     try {
@@ -145,8 +194,7 @@ export default function OLTSetupPage() {
       startPolling();
       toast.success('Setup started!');
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Failed to start setup';
-      toast.error(msg);
+      toast.error(err?.response?.data?.detail || 'Failed to start setup');
     }
   };
 
@@ -159,8 +207,7 @@ export default function OLTSetupPage() {
       startPolling();
       toast.success('Simulation started!');
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Failed to start simulation';
-      toast.error(msg);
+      toast.error(err?.response?.data?.detail || 'Failed to start simulation');
     }
   };
 
@@ -173,8 +220,9 @@ export default function OLTSetupPage() {
 
   const isComplete = oltStatus === 'active';
   const hasError = oltStatus === 'error';
+  const isVpn = olt?.connection_type === 'vpn';
+  const canStartSetup = !isVpn || wgReady;
 
-  // Determine which step is currently running
   const runningStepIdx = (() => {
     if (!polling) return -1;
     const logSteps = new Set(logs.map(l => l.step));
@@ -209,18 +257,149 @@ export default function OLTSetupPage() {
               <h1 className="text-2xl font-bold text-gray-900">OLT Setup Wizard</h1>
               <OLTStatusBadge status={oltStatus} />
             </div>
-            <p className="text-gray-500 text-sm">
-              {olt?.name} — {olt?.ip_address}
-            </p>
+            <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
           </div>
         </div>
 
+        {/* ── WireGuard Step (VPN OLTs only) ───────────────────────────────── */}
+        {isVpn && (
+          <Card className="mb-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                <ShieldCheck className={clsx('h-5 w-5', wgReady ? 'text-green-500' : 'text-gray-400')} />
+                Step 1 — WireGuard Peer Configuration
+              </h2>
+              <div className="flex items-center gap-2">
+                <span className={clsx(
+                  'text-xs px-2 py-1 rounded-full font-medium',
+                  wgReady ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                )}>
+                  {wgReady ? 'Configured' : 'Required'}
+                </span>
+                {wgReady && !wgEditing && (
+                  <button
+                    onClick={() => setWgEditing(true)}
+                    className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1"
+                  >
+                    <Pencil className="h-3 w-3" /> Edit
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left: Server info to give customer */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                  Give these to customer (for MikroTik)
+                </p>
+                <div className="space-y-2">
+                  {[
+                    { label: 'Server Endpoint', value: wgInfo?.server_endpoint, key: 'ep' },
+                    { label: 'Server Public Key', value: wgInfo?.server_public_key, key: 'spk' },
+                    { label: 'Assigned Virtual IP', value: wgInfo?.virtual_ip ? `${wgInfo.virtual_ip}/32` : '—', key: 'vip' },
+                  ].map(({ label, value, key }) => (
+                    <div key={key} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-500">{label}</p>
+                        <p className="text-xs font-mono font-medium text-gray-800 break-all">{value || '—'}</p>
+                      </div>
+                      {value && value !== '—' && (
+                        <button
+                          onClick={() => copyToClipboard(value, key)}
+                          className="text-gray-400 hover:text-blue-600 shrink-0"
+                        >
+                          {copied === key
+                            ? <Check className="h-4 w-4 text-green-500" />
+                            : <Copy className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right: Customer public key input */}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                  Get these from customer
+                </p>
+
+                {wgReady && !wgEditing ? (
+                  <div className="space-y-2">
+                    <div className="p-2 bg-green-50 rounded-lg border border-green-100">
+                      <p className="text-xs text-gray-500">Customer Public Key</p>
+                      <p className="text-xs font-mono text-gray-700 break-all mt-0.5">
+                        {wgInfo?.client_public_key}
+                      </p>
+                    </div>
+                    {wgInfo?.client_subnet && (
+                      <div className="p-2 bg-green-50 rounded-lg border border-green-100">
+                        <p className="text-xs text-gray-500">LAN Subnet</p>
+                        <p className="text-xs font-mono text-gray-700 mt-0.5">{wgInfo.client_subnet}</p>
+                      </div>
+                    )}
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Peer added to WireGuard. Ready to proceed.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">
+                        Customer WireGuard Public Key <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        placeholder="Paste MikroTik WireGuard public key here..."
+                        value={wgForm.wg_client_public_key}
+                        onChange={e => setWgForm(f => ({ ...f, wg_client_public_key: e.target.value.trim() }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Customer LAN Subnet</label>
+                      <input
+                        className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="192.168.1.0/24"
+                        value={wgForm.wg_client_subnet}
+                        onChange={e => setWgForm(f => ({ ...f, wg_client_subnet: e.target.value }))}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleSaveWgPeer} loading={wgSaving} size="sm" className="flex-1">
+                        Save & Configure Peer
+                      </Button>
+                      {wgEditing && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setWgEditing(false)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                    {!wgReady && (
+                      <p className="text-xs text-yellow-600">
+                        ⚠ Configure WireGuard peer before starting setup.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ── Setup Steps + Console ─────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Steps Panel */}
           <div className="space-y-3">
             <Card padding="md">
               <h2 className="font-semibold text-gray-800 mb-4 text-sm uppercase tracking-wide">
-                Setup Steps
+                {isVpn ? 'Step 2 — OLT Setup' : 'Setup Steps'}
               </h2>
               <div className="space-y-3">
                 {SETUP_STEPS.map((step, idx) => {
@@ -260,24 +439,20 @@ export default function OLTSetupPage() {
                 ) : hasError ? (
                   <div className="space-y-2">
                     <p className="text-red-500 text-sm flex items-center gap-2">
-                      <XCircle className="h-4 w-4" />
-                      Setup failed
+                      <XCircle className="h-4 w-4" /> Setup failed
                     </p>
                     <Button
-                      variant="outline"
-                      className="w-full"
+                      variant="outline" className="w-full"
                       icon={<RefreshCw className="h-4 w-4" />}
-                      onClick={triggerSetup}
-                      size="sm"
+                      onClick={triggerSetup} size="sm"
+                      disabled={!canStartSetup}
                     >
                       Retry Setup
                     </Button>
                     <Button
-                      variant="outline"
-                      className="w-full"
+                      variant="outline" className="w-full"
                       icon={<FlaskConical className="h-4 w-4" />}
-                      onClick={triggerSimulate}
-                      size="sm"
+                      onClick={triggerSimulate} size="sm"
                     >
                       Simulate Instead
                     </Button>
@@ -289,18 +464,23 @@ export default function OLTSetupPage() {
                       icon={<Play className="h-4 w-4" />}
                       onClick={triggerSetup}
                       size="sm"
+                      disabled={!canStartSetup}
+                      title={!canStartSetup ? 'Configure WireGuard peer first' : undefined}
                     >
                       Start Setup
                     </Button>
                     <Button
-                      variant="outline"
-                      className="w-full"
+                      variant="outline" className="w-full"
                       icon={<FlaskConical className="h-4 w-4" />}
-                      onClick={triggerSimulate}
-                      size="sm"
+                      onClick={triggerSimulate} size="sm"
                     >
                       Simulate Setup
                     </Button>
+                    {!canStartSetup && (
+                      <p className="text-xs text-yellow-600 text-center">
+                        Configure WireGuard peer above first
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 text-blue-600 text-sm">
@@ -317,6 +497,7 @@ export default function OLTSetupPage() {
                 <div className="space-y-2 text-sm">
                   {[
                     ['IP', olt.ip_address],
+                    ['Type', olt.connection_type === 'vpn' ? 'VPN (WireGuard)' : 'Direct'],
                     ['SNMP', olt.snmp_version.toUpperCase()],
                     ['Community', olt.snmp_read_community],
                     ['Telnet', olt.telnet_enabled ? 'Enabled' : 'Disabled'],
@@ -331,30 +512,23 @@ export default function OLTSetupPage() {
                 </div>
               </Card>
             )}
-
           </div>
 
           {/* Log Console */}
           <div className="lg:col-span-2">
             <Card padding="none" className="overflow-hidden">
-              {/* Title bar */}
               <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-white">
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                  </div>
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
                 </div>
-                {/* Tabs */}
                 <div className="flex gap-1">
                   <button
                     onClick={() => setActiveTab('setup')}
                     className={clsx(
                       'px-3 py-1 text-xs rounded font-mono transition-colors',
-                      activeTab === 'setup'
-                        ? 'bg-gray-600 text-white'
-                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                      activeTab === 'setup' ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                     )}
                   >
                     Setup Log
@@ -363,13 +537,10 @@ export default function OLTSetupPage() {
                     onClick={() => setActiveTab('terminal')}
                     className={clsx(
                       'px-3 py-1 text-xs rounded font-mono transition-colors flex items-center gap-1',
-                      activeTab === 'terminal'
-                        ? 'bg-green-700 text-white'
-                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
+                      activeTab === 'terminal' ? 'bg-green-700 text-white' : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
                     )}
                   >
-                    <Terminal className="h-3 w-3" />
-                    Telnet Session
+                    <Terminal className="h-3 w-3" /> Telnet Session
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -387,14 +558,11 @@ export default function OLTSetupPage() {
                 </div>
               </div>
 
-              {/* Setup Log tab */}
               {activeTab === 'setup' && (
                 <div className="bg-gray-950 font-mono text-xs overflow-y-auto h-[480px] p-4">
                   {logs.filter(l => l.step !== 'telnet_terminal').length === 0 ? (
                     <p className="text-gray-600 italic">
-                      {setupStarted
-                        ? '⟳ Initializing setup...'
-                        : '# No setup logs yet. Click "Start Setup" to begin.'}
+                      {setupStarted ? '⟳ Initializing setup...' : '# No setup logs yet. Click "Start Setup" to begin.'}
                     </p>
                   ) : (
                     <div className="space-y-0.5">
@@ -421,37 +589,30 @@ export default function OLTSetupPage() {
                 </div>
               )}
 
-              {/* Telnet Terminal tab */}
               {activeTab === 'terminal' && (() => {
                 const termLogs = logs.filter(l => l.step === 'telnet_terminal');
                 return (
                   <div className="bg-gray-950 font-mono text-xs overflow-y-auto h-[480px] p-4">
                     {termLogs.length === 0 ? (
                       <p className="text-gray-600 italic">
-                        {setupStarted
-                          ? '⟳ Waiting for telnet connection...'
-                          : '# Telnet session output will appear here during setup.'}
+                        {setupStarted ? '⟳ Waiting for telnet connection...' : '# Telnet session output will appear here during setup.'}
                       </p>
                     ) : (
                       <div className="space-y-0">
                         {termLogs.map((log) => {
                           const isCmd = log.message.startsWith('> ');
-                          const isAuto = log.level === 'warning'; // auto-credential response
+                          const isAuto = log.level === 'warning';
                           return (
                             <div key={log.id} className="leading-relaxed">
                               {isCmd ? (
                                 <div className="flex items-start gap-2 mt-2">
                                   <span className="text-green-400 shrink-0">$</span>
-                                  <span className="text-green-300 font-bold break-all">
-                                    {log.message.slice(2)}
-                                  </span>
+                                  <span className="text-green-300 font-bold break-all">{log.message.slice(2)}</span>
                                 </div>
                               ) : isAuto ? (
                                 <div className="flex items-center gap-2 mt-1 pl-4">
                                   <span className="text-yellow-400 shrink-0">⚡</span>
-                                  <span className="text-yellow-300 text-[11px] italic">
-                                    {log.message}
-                                  </span>
+                                  <span className="text-yellow-300 text-[11px] italic">{log.message}</span>
                                 </div>
                               ) : (
                                 <pre className="text-gray-400 whitespace-pre-wrap break-all pl-4 text-[11px] leading-relaxed">
@@ -475,14 +636,13 @@ export default function OLTSetupPage() {
               })()}
             </Card>
 
-            {/* Next steps */}
             {isComplete && (
               <div className="mt-4 grid grid-cols-4 gap-3">
                 {[
-                  { href: `/olts/${oltId}/onus`,  label: 'Manage ONUs',    icon: Wifi,    color: 'blue' },
-                  { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks', icon: Terminal, color: 'purple' },
-                  { href: `/olts/${oltId}/vlans`, label: 'VLANs',           icon: Server,  color: 'green' },
-                  { href: `/olts/${oltId}`,       label: 'OLT Details',     icon: Server,  color: 'gray' },
+                  { href: `/olts/${oltId}/onus`, label: 'Manage ONUs', icon: Wifi },
+                  { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks', icon: Terminal },
+                  { href: `/olts/${oltId}/vlans`, label: 'VLANs', icon: Server },
+                  { href: `/olts/${oltId}`, label: 'OLT Details', icon: Server },
                 ].map(item => (
                   <Link key={item.href} href={item.href}>
                     <Card padding="sm" className="hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer">

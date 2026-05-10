@@ -29,7 +29,9 @@ class OLTListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         olt = self.perform_create(serializer)
-        # Return with full OLT data
+        if olt.connection_type == 'vpn' and olt.wg_client_public_key:
+            from services import wireguard_service
+            wireguard_service.add_peer(olt)
         output = OLTSerializer(olt, context={'request': request})
         headers = self.get_success_headers(output.data)
         return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -46,6 +48,12 @@ class OLTDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return OLT.objects.filter(user=self.request.user)
 
+    def perform_destroy(self, instance):
+        if instance.connection_type == 'vpn' and instance.wg_client_public_key:
+            from services import wireguard_service
+            wireguard_service.remove_peer(instance.wg_client_public_key)
+        instance.delete()
+
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
@@ -54,7 +62,14 @@ class OLTDetailView(generics.RetrieveUpdateDestroyAPIView):
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
+        old_pubkey = instance.wg_client_public_key
         olt = serializer.save()
+        if olt.connection_type == 'vpn':
+            from services import wireguard_service
+            if old_pubkey and old_pubkey != olt.wg_client_public_key:
+                wireguard_service.remove_peer(old_pubkey)
+            if olt.wg_client_public_key:
+                wireguard_service.add_peer(olt)
         output = OLTSerializer(olt, context={'request': request})
         return Response(output.data)
 
@@ -250,3 +265,34 @@ def test_snmp(request, pk):
             '(4) SNMP agent not enabled on the OLT device itself.'
         ),
     })
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def wg_info(request, pk):
+    """
+    GET: Return WireGuard connection info for this OLT (server pubkey, endpoint, peer status).
+    POST: Update client public key + subnet, then sync WireGuard peer.
+    """
+    from services import wireguard_service
+    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+
+    if request.method == 'POST':
+        old_pubkey = olt.wg_client_public_key
+        new_pubkey = request.data.get('wg_client_public_key', '').strip()
+        new_subnet = request.data.get('wg_client_subnet', '').strip()
+
+        if old_pubkey and old_pubkey != new_pubkey:
+            wireguard_service.remove_peer(old_pubkey)
+
+        olt.wg_client_public_key = new_pubkey
+        olt.wg_client_subnet = new_subnet
+        olt.save(update_fields=['wg_client_public_key', 'wg_client_subnet'])
+
+        if new_pubkey:
+            success, msg = wireguard_service.add_peer(olt)
+            if not success:
+                return Response({'error': msg}, status=400)
+
+    info = wireguard_service.get_wg_info(olt)
+    return Response(info)

@@ -124,6 +124,11 @@ CORS_ALLOW_HEADERS = [
 ]
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 
+# WireGuard
+WG_INTERFACE = config('WG_INTERFACE', default='wg0')
+WG_ENDPOINT = config('WG_ENDPOINT', default=f'{ALLOWED_HOSTS[-1]}:51820')
+WG_SERVER_PUBLIC_KEY = config('WG_SERVER_PUBLIC_KEY', default='')
+
 # ONU provisioning
 ONU_REGISTER_METHOD = config('ONU_REGISTER_METHOD', default='hybrid')
 DEFAULT_TELNET_USERNAME = config('DEFAULT_TELNET_USERNAME', default='admin')

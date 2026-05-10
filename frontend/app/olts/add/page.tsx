@@ -188,9 +188,7 @@ export default function AddOLTPage() {
             {form.connection_type === 'vpn' && (
               <div className="flex items-start gap-2 mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100 text-sm text-yellow-800">
                 <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>
-                  After saving, configure your WireGuard server to route the assigned virtual IP to this OLT&apos;s MikroTik peer.
-                </span>
+                <span>After adding, the Setup Wizard will ask for the customer&apos;s WireGuard public key before proceeding.</span>
               </div>
             )}
           </Card>

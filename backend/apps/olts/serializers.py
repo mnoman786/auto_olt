@@ -29,6 +29,7 @@ class OLTSerializer(serializers.ModelSerializer):
         model = OLT
         fields = (
             'id', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
+            'wg_client_public_key', 'wg_client_subnet',
             'snmp_version', 'snmp_read_community', 'snmp_write_community',
             'telnet_enabled', 'telnet_port', 'telnet_username', 'telnet_password',
             'olt_admin_username', 'olt_admin_password',
@@ -56,6 +57,7 @@ class OLTCreateSerializer(serializers.ModelSerializer):
         model = OLT
         fields = (
             'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
+            'wg_client_public_key', 'wg_client_subnet',
             'snmp_version', 'snmp_read_community', 'snmp_write_community',
             'telnet_enabled', 'telnet_port', 'telnet_username', 'telnet_password',
             'olt_admin_username', 'olt_admin_password',
@@ -63,6 +65,8 @@ class OLTCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'connection_type': {'required': False},
             'vpn_virtual_ip': {'required': False, 'allow_null': True, 'read_only': False},
+            'wg_client_public_key': {'required': False, 'allow_blank': True},
+            'wg_client_subnet': {'required': False, 'allow_blank': True},
             'snmp_write_community': {'required': False, 'allow_blank': True},
             'telnet_username': {'required': False, 'allow_blank': True},
             'telnet_password': {'required': False, 'allow_blank': True},

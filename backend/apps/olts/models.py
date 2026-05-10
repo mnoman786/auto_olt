@@ -25,6 +25,8 @@ class OLT(models.Model):
     ip_address = models.GenericIPAddressField()
     connection_type = models.CharField(max_length=10, choices=CONNECTION_TYPE_CHOICES, default='direct')
     vpn_virtual_ip = models.GenericIPAddressField(null=True, blank=True, unique=True, help_text='Auto-assigned virtual IP from WireGuard pool (10.100.0.0/16)')
+    wg_client_public_key = models.CharField(max_length=200, blank=True, default='', help_text="Customer MikroTik's WireGuard public key")
+    wg_client_subnet = models.CharField(max_length=50, blank=True, default='', help_text="Customer LAN subnet e.g. 192.168.1.0/24")
     snmp_version = models.CharField(max_length=4, choices=SNMP_VERSION_CHOICES, default='v2c')
     snmp_read_community = models.CharField(max_length=100, default='autoolt_read')
     snmp_write_community = models.CharField(max_length=100, blank=True, default='autoolt_write')
