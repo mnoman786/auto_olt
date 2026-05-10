@@ -86,8 +86,8 @@ def get_wg_info(olt) -> dict:
     last_handshake = 0
     if olt.wg_client_public_key:
         last_handshake = get_peer_handshake(olt.wg_client_public_key)
-        # Connected if handshake within last 3 minutes
-        peer_connected = (time.time() - last_handshake) < 180 if last_handshake else False
+        # Connected if handshake within last 10 minutes
+        peer_connected = (time.time() - last_handshake) < 600 if last_handshake else False
 
     return {
         'server_public_key': server_pubkey,
