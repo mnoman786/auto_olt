@@ -66,6 +66,8 @@ export default function OLTSetupPage() {
   const [wgEditing, setWgEditing] = useState(false);
   const [wgForm, setWgForm] = useState({ wg_client_public_key: '', wg_client_subnet: '' });
   const [wgSaving, setWgSaving] = useState(false);
+  const [wgTesting, setWgTesting] = useState(false);
+  const [wgConnected, setWgConnected] = useState<boolean | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
   const logEndRef = useRef<HTMLDivElement>(null);
@@ -177,11 +179,32 @@ export default function OLTSetupPage() {
       setWgInfo(res.data);
       setWgReady(true);
       setWgEditing(false);
+      setWgConnected(null);
       toast.success('WireGuard peer configured');
     } catch {
       toast.error('Failed to configure WireGuard peer');
     } finally {
       setWgSaving(false);
+    }
+  };
+
+  const handleTestWgPeer = async () => {
+    setWgTesting(true);
+    setWgConnected(null);
+    try {
+      const res = await oltApi.getWgInfo(oltId);
+      setWgInfo(res.data);
+      const connected = res.data.peer_connected;
+      setWgConnected(connected);
+      if (connected) {
+        toast.success('WireGuard peer is connected!');
+      } else {
+        toast.error('Peer not connected yet — check MikroTik config');
+      }
+    } catch {
+      toast.error('Failed to test connection');
+    } finally {
+      setWgTesting(false);
     }
   };
 
@@ -339,10 +362,33 @@ export default function OLTSetupPage() {
                         <p className="text-xs font-mono text-gray-700 mt-0.5">{wgInfo.client_subnet}</p>
                       </div>
                     )}
-                    <p className="text-xs text-green-600 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Peer added to WireGuard. Ready to proceed.
-                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleTestWgPeer}
+                      loading={wgTesting}
+                      className="w-full"
+                    >
+                      {wgTesting ? 'Testing...' : 'Test Connection'}
+                    </Button>
+                    {wgConnected === true && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Connected — handshake confirmed.
+                      </p>
+                    )}
+                    {wgConnected === false && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <XCircle className="h-3 w-3" />
+                        Not connected — check MikroTik WireGuard config.
+                      </p>
+                    )}
+                    {wgConnected === null && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Peer added to WireGuard. Test connection before setup.
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -372,11 +418,7 @@ export default function OLTSetupPage() {
                         Save & Configure Peer
                       </Button>
                       {wgEditing && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setWgEditing(false)}
-                        >
+                        <Button variant="outline" size="sm" onClick={() => setWgEditing(false)}>
                           Cancel
                         </Button>
                       )}
