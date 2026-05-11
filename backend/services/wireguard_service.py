@@ -6,6 +6,7 @@ Add to sudoers: <service_user> ALL=(ALL) NOPASSWD: /usr/bin/wg, /usr/bin/wg-quic
 """
 import subprocess
 import logging
+import time
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,11 @@ def add_peer(olt) -> tuple[bool, str]:
 
     try:
         _run('wg', 'set', WG_INTERFACE, 'peer', olt.wg_client_public_key, 'allowed-ips', allowed_ips)
-        subprocess.run(['sudo', 'wg-quick', 'save', WG_INTERFACE], capture_output=True)
+        save = subprocess.run(['sudo', 'wg-quick', 'save', WG_INTERFACE], capture_output=True)
+        if save.returncode != 0:
+            err = save.stderr.decode().strip()
+            logger.error(f"wg-quick save failed for OLT {olt.id}: {err}")
+            return False, f'Peer added in memory but config not saved to disk: {err}'
         logger.info(f"WireGuard peer added for OLT {olt.id} ({olt.name}): {olt.wg_client_public_key[:20]}...")
         return True, 'Peer added successfully'
     except RuntimeError as e:
@@ -68,7 +73,10 @@ def remove_peer(public_key: str) -> tuple[bool, str]:
         return False, 'No public key provided'
     try:
         _run('wg', 'set', WG_INTERFACE, 'peer', public_key, 'remove')
-        subprocess.run(['sudo', 'wg-quick', 'save', WG_INTERFACE], capture_output=True)
+        save = subprocess.run(['sudo', 'wg-quick', 'save', WG_INTERFACE], capture_output=True)
+        if save.returncode != 0:
+            err = save.stderr.decode().strip()
+            logger.error(f"wg-quick save failed after peer removal: {err}")
         logger.info(f"WireGuard peer removed: {public_key[:20]}...")
         return True, 'Peer removed'
     except RuntimeError as e:
@@ -78,7 +86,6 @@ def remove_peer(public_key: str) -> tuple[bool, str]:
 
 def get_wg_info(olt) -> dict:
     """Return all WireGuard info needed to configure a MikroTik peer."""
-    import time
     server_pubkey = get_server_public_key()
     endpoint = WG_ENDPOINT or getattr(settings, 'WG_ENDPOINT', '')
 

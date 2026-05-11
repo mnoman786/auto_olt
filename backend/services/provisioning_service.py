@@ -393,12 +393,15 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
         )
         onu_data['signal_strength'] = signal
 
+        onu_index = onu_data.get('onu_index', 0)
         onu, created = ONU.objects.get_or_create(
             olt=olt,
             serial_number=serial,
             defaults={
                 'pon_port': onu_data.get('pon_port', ''),
-                'onu_index': onu_data.get('onu_index', 0),
+                'onu_index': onu_index,
+                # onu_id = CLI ont-id on the PON port (last segment of SNMP OID index)
+                'onu_id': onu_index,
                 'status': 'unregistered',
                 'signal_strength': signal,
                 'last_seen': timezone.now(),
@@ -416,8 +419,9 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
             if not onu.pon_port and onu_data.get('pon_port'):
                 onu.pon_port = onu_data['pon_port']
                 update_fields.append('pon_port')
-            # Mark active if was offline and just seen
-            if onu.status == 'offline' and onu.registered_at:
+            # Only mark active if ONU has optical signal (confirms it is truly online)
+            # Appearing in SNMP table alone does not mean the ONU is active
+            if onu.status == 'offline' and onu.registered_at and signal is not None:
                 onu.status = 'active'
                 update_fields.append('status')
             onu.save(update_fields=update_fields)
@@ -431,7 +435,8 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
     return result
 
 
-def provision_onu(onu_id: int, vlan_id: Optional[int] = None) -> Dict[str, Any]:
+def provision_onu(onu_id: int, vlan_id: Optional[int] = None,
+                  line_profile_id: int = 1, srv_profile_id: int = 1) -> Dict[str, Any]:
     """
     Provision an ONU using the configured method (snmp/telnet/hybrid).
     Returns result dict with success, method_used, steps, error.
@@ -496,6 +501,8 @@ def provision_onu(onu_id: int, vlan_id: Optional[int] = None) -> Dict[str, Any]:
                 pon_port=onu.pon_port,
                 vlan_id=effective_vlan,
                 onu_id=onu.onu_id or 1,
+                line_profile_id=line_profile_id,
+                srv_profile_id=srv_profile_id,
             )
         finally:
             client.disconnect()

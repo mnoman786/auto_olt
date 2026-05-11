@@ -58,6 +58,8 @@ def register_onu(request, olt_pk, pk):
     vlan_id_param = serializer.validated_data.get('vlan_id')
     description = serializer.validated_data.get('description', '')
     service_profile = serializer.validated_data.get('service_profile', '')
+    line_profile_id = serializer.validated_data.get('line_profile_id', 1)
+    srv_profile_id = serializer.validated_data.get('srv_profile_id', 1)
 
     # Resolve VLAN
     vlan_db_id = None
@@ -67,7 +69,10 @@ def register_onu(request, olt_pk, pk):
             onu.vlan = vlan_obj
             vlan_db_id = vlan_obj.id
         except VLAN.DoesNotExist:
-            pass
+            return Response(
+                {'detail': f'VLAN {vlan_id_param} does not exist on this OLT. Create it first.'},
+                status=400
+            )
 
     if description:
         onu.description = description
@@ -76,7 +81,12 @@ def register_onu(request, olt_pk, pk):
     onu.save()
 
     def _provision():
-        provisioning_service.provision_onu(onu.id, vlan_id=vlan_id_param)
+        provisioning_service.provision_onu(
+            onu.id,
+            vlan_id=vlan_id_param,
+            line_profile_id=line_profile_id,
+            srv_profile_id=srv_profile_id,
+        )
 
     thread = threading.Thread(target=_provision, daemon=True)
     thread.start()
@@ -105,6 +115,11 @@ def deregister_onu(request, olt_pk, pk):
     """Move ONU back to unregistered status."""
     olt = get_olt_for_user(olt_pk, request.user)
     onu = get_object_or_404(ONU, pk=pk, olt=olt)
+    if onu.status == 'provisioning':
+        return Response(
+            {'detail': 'Cannot deregister while provisioning is in progress.'},
+            status=400
+        )
     onu.status = 'unregistered'
     onu.registered_at = None
     onu.vlan = None

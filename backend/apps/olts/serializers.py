@@ -41,15 +41,18 @@ class OLTSerializer(serializers.ModelSerializer):
                             'system_uptime', 'last_polled', 'created_at', 'updated_at',
                             'vpn_virtual_ip')
         extra_kwargs = {
-            'olt_admin_username': {'write_only': False},
             'snmp_write_community': {'required': False, 'allow_blank': True},
+            'telnet_password': {'write_only': True},
+            'olt_admin_password': {'write_only': True},
         }
 
     def get_onu_count(self, obj):
-        return obj.onus.count()
+        # Use annotation from queryset to avoid N+1; fall back for single-object retrieval
+        return getattr(obj, '_onu_count', obj.onus.count())
 
     def get_registered_onu_count(self, obj):
-        return obj.onus.filter(status__in=('registered', 'active')).count()
+        return getattr(obj, '_registered_onu_count',
+                       obj.onus.filter(status__in=('registered', 'active')).count())
 
 
 class OLTCreateSerializer(serializers.ModelSerializer):

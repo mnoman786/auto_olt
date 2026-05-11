@@ -425,14 +425,24 @@ def telnet_provision_onu(client: TelnetClient, onu_serial: str, pon_port: str,
     client.send('config')
     client.read_until('config)', 'config#', '(config', '#', timeout=5)
 
-    # Try Huawei-style ONU provisioning
-    intf_cmd = f'interface gpon {pon_port}' if pon_port else 'interface gpon 0/1'
-    found, out = client.send_and_read(intf_cmd, 'gpon', '#', '>', timeout=5)
+    # Parse pon_port "frame/slot/port" (e.g. "0/1/0") into its components.
+    # Huawei CLI: "interface gpon frame/slot" then "ont add port_id onu_id sn-auth ..."
+    port_parts = pon_port.split('/') if pon_port else []
+    if len(port_parts) >= 3:
+        huawei_intf = f'{port_parts[0]}/{port_parts[1]}'   # e.g. "0/1"
+        huawei_port_id = int(port_parts[2])                # e.g. 0
+    else:
+        huawei_intf = pon_port or '0/1'
+        huawei_port_id = 0
+
+    found, out = client.send_and_read(
+        f'interface gpon {huawei_intf}', 'gpon', '#', '>', timeout=5
+    )
 
     if found and 'gpon' in out.lower():
-        # Add ONU by serial number with configured line/service profiles
+        # Huawei: ont add <port_id> <ont_id> sn-auth <serial> ...
         add_cmd = (
-            f'ont add {onu_id} sn-auth {onu_serial} omci '
+            f'ont add {huawei_port_id} {onu_id} sn-auth {onu_serial} omci '
             f'ont-lineprofile-id {line_profile_id} '
             f'ont-srvprofile-id {srv_profile_id} desc "AutoOLT"'
         )
@@ -441,14 +451,14 @@ def telnet_provision_onu(client: TelnetClient, onu_serial: str, pon_port: str,
         steps.append({
             'step': 'add_onu_huawei',
             'success': onu_added,
-            'message': f'ONU {onu_serial} added on port {pon_port}' if onu_added
+            'message': f'ONU {onu_serial} added on {huawei_intf} port {huawei_port_id}' if onu_added
                        else f'Failed to add ONU — verify line-profile-id {line_profile_id} and srv-profile-id {srv_profile_id} exist on OLT'
         })
 
-        # Configure service VLAN
+        # Configure service VLAN: ont port native-vlan <port_id> <ont_id> eth 1 vlan <vlan>
         if vlan_id > 0:
-            found_vlan, _ = client.send_and_read(
-                f'ont port native-vlan {onu_id} eth 1 vlan {vlan_id}',
+            client.send_and_read(
+                f'ont port native-vlan {huawei_port_id} {onu_id} eth 1 vlan {vlan_id}',
                 '#', '>', timeout=5
             )
             steps.append({'step': 'vlan_binding', 'success': True,
@@ -459,7 +469,7 @@ def telnet_provision_onu(client: TelnetClient, onu_serial: str, pon_port: str,
         if not onu_added:
             result['error'] = f'Huawei ont add failed — check profile IDs (line:{line_profile_id} srv:{srv_profile_id})'
     else:
-        # Try ZTE-style — use actual pon_port, not hardcoded 1/1/1
+        # Try ZTE-style — use actual pon_port
         zte_port = pon_port if pon_port else '1/1/1'
         client.send('quit')
         client.read_until('#', '>', timeout=3)
@@ -472,7 +482,7 @@ def telnet_provision_onu(client: TelnetClient, onu_serial: str, pon_port: str,
                           'message': f'ONU {onu_serial} provisioned on port {zte_port} (ZTE-style)'})
             result['success'] = True
         else:
-            result['error'] = f'Could not provision ONU — tried Huawei (port {pon_port}) and ZTE (port {zte_port}) CLI syntax'
+            result['error'] = f'Could not provision ONU — tried Huawei ({huawei_intf} port {huawei_port_id}) and ZTE ({zte_port}) CLI syntax'
             steps.append({'step': 'provision_onu', 'success': False,
                           'message': result['error']})
 

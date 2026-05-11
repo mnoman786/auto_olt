@@ -1,5 +1,6 @@
 import socket
 import threading
+from django.db.models import Count, Q
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -19,7 +20,14 @@ class OLTListCreateView(generics.ListCreateAPIView):
         return OLTSerializer
 
     def get_queryset(self):
-        return OLT.objects.filter(user=self.request.user).prefetch_related('onus')
+        return OLT.objects.filter(user=self.request.user).annotate(
+            _onu_count=Count('onus', distinct=True),
+            _registered_onu_count=Count(
+                'onus',
+                filter=Q(onus__status__in=('registered', 'active')),
+                distinct=True,
+            ),
+        )
 
     def perform_create(self, serializer):
         olt = serializer.save(user=self.request.user)
@@ -186,19 +194,18 @@ def test_snmp(request, pk):
     connect_ip = _connect_ip(olt)
     checks = []
 
-    # 1. TCP/UDP reachability ping on port 161
-    reachable = False
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.settimeout(3)
-        sock.sendto(b'\x00', (connect_ip, 161))
-        reachable = True
-        sock.close()
-        checks.append({'check': 'network_reach', 'ok': True,
-                        'detail': f'{connect_ip}:161 UDP is reachable'})
-    except Exception as e:
-        checks.append({'check': 'network_reach', 'ok': False,
-                        'detail': f'Cannot reach {connect_ip}:161 UDP — {e}'})
+    # 1. ICMP-free reachability: attempt a TCP connection to the Telnet port (23)
+    # UDP port 161 cannot be reliably probed (connectionless) so we use Telnet port
+    # if enabled, otherwise skip and let the SNMP GET below prove connectivity.
+    if olt.telnet_enabled:
+        try:
+            s = socket.create_connection((connect_ip, olt.telnet_port), timeout=3)
+            s.close()
+            checks.append({'check': 'network_reach', 'ok': True,
+                            'detail': f'TCP {connect_ip}:{olt.telnet_port} is reachable'})
+        except Exception as e:
+            checks.append({'check': 'network_reach', 'ok': False,
+                            'detail': f'TCP {connect_ip}:{olt.telnet_port} unreachable — {e}'})
 
     # 2. SNMP GET sysDescr with read community
     snmp_result = snmp_service.validate_snmp_connectivity(
@@ -276,6 +283,9 @@ def wg_info(request, pk):
     """
     from services import wireguard_service
     olt = get_object_or_404(OLT, pk=pk, user=request.user)
+
+    if olt.connection_type != 'vpn':
+        return Response({'detail': 'This OLT is not configured for VPN (WireGuard).'}, status=400)
 
     if request.method == 'POST':
         old_pubkey = olt.wg_client_public_key
