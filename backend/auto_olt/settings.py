@@ -127,7 +127,9 @@ CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 
 # WireGuard
 WG_INTERFACE = config('WG_INTERFACE', default='wg0')
-WG_ENDPOINT = config('WG_ENDPOINT', default=f'{ALLOWED_HOSTS[-1]}:51820')
+# WG_ENDPOINT must be the public server IP and UDP port (e.g. "203.0.113.10:51820").
+# If unset, the app will derive it from ALLOWED_HOSTS but warn loudly in get_wg_info.
+WG_ENDPOINT = config('WG_ENDPOINT', default='')
 WG_SERVER_PUBLIC_KEY = config('WG_SERVER_PUBLIC_KEY', default='')
 
 # ONU provisioning

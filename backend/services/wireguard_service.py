@@ -43,15 +43,20 @@ def get_peer_handshake(public_key: str) -> int:
 
 
 def add_peer(olt) -> tuple[bool, str]:
-    """Add or update WireGuard peer for a VPN OLT."""
+    """Add or update WireGuard peer for a VPN OLT.
+
+    Design: each customer's MikroTik gets a unique virtual IP from 10.100.0.0/16.
+    Routing uses ONLY that virtual IP — the customer LAN subnet is NOT added to
+    allowed-ips because multiple customers commonly share 192.168.1.0/24 and
+    WireGuard treats allowed-ips as a routing key (last wg-set wins → collision).
+    Customer's MikroTik must instead DNAT vpn_virtual_ip → olt.ip_address.
+    """
     if not olt.wg_client_public_key:
         return False, 'No client public key provided'
     if not olt.vpn_virtual_ip:
         return False, 'No virtual IP assigned'
 
     allowed_ips = f"{olt.vpn_virtual_ip}/32"
-    if olt.wg_client_subnet:
-        allowed_ips += f",{olt.wg_client_subnet}"
 
     try:
         _run('wg', 'set', WG_INTERFACE, 'peer', olt.wg_client_public_key, 'allowed-ips', allowed_ips)
@@ -88,6 +93,10 @@ def get_wg_info(olt) -> dict:
     """Return all WireGuard info needed to configure a MikroTik peer."""
     server_pubkey = get_server_public_key()
     endpoint = WG_ENDPOINT or getattr(settings, 'WG_ENDPOINT', '')
+    endpoint_warning = '' if endpoint else (
+        'WG_ENDPOINT is not configured on the server — set it in backend/.env '
+        'to "<public-server-ip>:51820" so customers can paste the right value.'
+    )
 
     peer_connected = False
     last_handshake = 0
@@ -96,13 +105,32 @@ def get_wg_info(olt) -> dict:
         # Connected if handshake within last 10 minutes
         peer_connected = (time.time() - last_handshake) < 600 if last_handshake else False
 
+    # Ready-to-paste MikroTik DNAT/masquerade rules so the OLT is reachable
+    # via the virtual IP through the WireGuard tunnel.
+    mikrotik_dnat = ''
+    mikrotik_masq = ''
+    if olt.vpn_virtual_ip and olt.ip_address:
+        mikrotik_dnat = (
+            f'/ip firewall nat add chain=dstnat in-interface=wg-autoolt '
+            f'dst-address={olt.vpn_virtual_ip} action=dst-nat '
+            f'to-addresses={olt.ip_address}'
+        )
+        mikrotik_masq = (
+            f'/ip firewall nat add chain=srcnat '
+            f'src-address={olt.vpn_virtual_ip} action=masquerade'
+        )
+
     return {
         'server_public_key': server_pubkey,
         'server_endpoint': endpoint,
+        'server_endpoint_warning': endpoint_warning,
         'virtual_ip': olt.vpn_virtual_ip,
+        'olt_lan_ip': olt.ip_address,
         'client_public_key': olt.wg_client_public_key,
         'client_subnet': olt.wg_client_subnet,
         'peer_configured': bool(olt.wg_client_public_key),
         'peer_connected': peer_connected,
         'last_handshake': last_handshake,
+        'mikrotik_dnat_cmd': mikrotik_dnat,
+        'mikrotik_masquerade_cmd': mikrotik_masq,
     }
