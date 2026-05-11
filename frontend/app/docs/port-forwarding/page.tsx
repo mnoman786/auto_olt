@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/Card';
 import Link from 'next/link';
 import { useState } from 'react';
 import {
-  Globe, Router, Server, CheckCircle2, Copy, Check,
+  Router, Server, CheckCircle2, Copy, Check,
   ChevronDown, ChevronUp, AlertTriangle, ArrowLeft, Monitor, Layers
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -85,13 +85,13 @@ export default function PortForwardingDocsPage() {
             <ArrowLeft className="h-3 w-3" /> Back to Documentation
           </Link>
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-blue-600 rounded-lg">
-              <Globe className="h-6 w-6 text-white" />
+            <div className="p-2 bg-orange-500 rounded-lg">
+              <Layers className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Public IP / Port Forwarding Setup</h1>
+            <h1 className="text-2xl font-bold text-gray-900">MikroTik Port Forwarding Setup</h1>
           </div>
           <p className="text-gray-500 ml-14">
-            Connect your OLT directly to Auto OLT using a public IP or port forwarding — no VPN required.
+            Forward OLT ports (SNMP / Telnet) through a MikroTik router so Auto OLT can reach your OLT.
           </p>
         </div>
 
@@ -102,10 +102,10 @@ export default function PortForwardingDocsPage() {
               <CheckCircle2 className="h-4 w-4" /> Use this method when:
             </p>
             <ul className="text-sm text-green-700 space-y-1">
-              <li>• OLT has a public/static IP address</li>
-              <li>• Your router supports port forwarding</li>
+              <li>• You have a MikroTik router with a public IP</li>
+              <li>• OLT sits behind the MikroTik on the LAN</li>
               <li>• ISP gives you a static IP</li>
-              <li>• You want the simplest setup</li>
+              <li>• You want the simplest setup without VPN</li>
             </ul>
           </div>
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -113,10 +113,10 @@ export default function PortForwardingDocsPage() {
               <AlertTriangle className="h-4 w-4" /> Not suitable when:
             </p>
             <ul className="text-sm text-red-700 space-y-1">
-              <li>• OLT is behind double NAT (CGNAT)</li>
+              <li>• MikroTik is behind double NAT (CGNAT)</li>
               <li>• ISP blocks inbound ports</li>
               <li>• You only have a dynamic IP</li>
-              <li>• Router doesn't support port forwarding</li>
+              <li>• No public IP at all</li>
             </ul>
           </div>
         </div>
@@ -128,7 +128,7 @@ export default function PortForwardingDocsPage() {
             {[
               { icon: Monitor, label: 'OLT Device', sub: '192.168.1.1 (LAN)', color: 'bg-orange-100 text-orange-600' },
               { label: '→', color: '' },
-              { icon: Router, label: 'Router', sub: 'Port Forwarding', color: 'bg-purple-100 text-purple-600' },
+              { icon: Router, label: 'MikroTik', sub: 'Port Forwarding', color: 'bg-purple-100 text-purple-600' },
               { label: '→ Internet →', color: '' },
               { icon: Server, label: 'Auto OLT Server', sub: '162.217.248.75', color: 'bg-blue-100 text-blue-600' },
             ].map((item, i) => (
@@ -146,75 +146,6 @@ export default function PortForwardingDocsPage() {
             ))}
           </div>
         </div>
-
-        {/* Option 1 — Public IP */}
-        <Section title="Option 1 — OLT Has a Public IP" icon={Globe} color="bg-green-500">
-          <Note>This is the simplest method. Use it if your ISP gave you a static public IP on the OLT or its uplink.</Note>
-          <div className="space-y-6">
-            <Step num={1} title="Find your OLT's public IP">
-              <p>Check the IP address assigned to the OLT's WAN/uplink interface.</p>
-              <p>Or ask your upstream ISP for the static IP assigned to your connection.</p>
-            </Step>
-            <Step num={2} title="Add OLT in Auto OLT">
-              <p>Go to <strong>Add OLT</strong> → select <strong>Connection Type: Direct (Public IP)</strong></p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">IP Address:</span><span className="text-blue-600">{'<Your public IP>'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Connection Type:</span><span>Direct (Public IP)</span></div>
-              </div>
-            </Step>
-            <Step num={3} title="Run Setup Wizard">
-              <p>Click <strong>Start Setup</strong> — the system will connect directly to the OLT via SNMP and Telnet.</p>
-              <Note>Make sure UDP port 161 (SNMP) and TCP port 23 (Telnet) are open on the OLT's firewall.</Note>
-            </Step>
-          </div>
-        </Section>
-
-        {/* Option 2 — Port Forwarding */}
-        <Section title="Option 2 — OLT Behind Router (Port Forwarding)" icon={Router} color="bg-blue-500">
-          <Note type="warn">Your router must have a public/static IP. If your ISP uses CGNAT, port forwarding will not work — use WireGuard VPN instead.</Note>
-          <div className="space-y-6 mt-2">
-            <Step num={1} title="Check your router has a public IP">
-              <p>Log into your router → check the WAN IP address.</p>
-              <p>Go to a site like <strong>whatismyip.com</strong> from the router's network and compare — if they match, you have a public IP.</p>
-              <Note type="warn">If they don't match, your ISP is using CGNAT and port forwarding won't work.</Note>
-            </Step>
-
-            <Step num={2} title="Forward SNMP port (UDP 161) to OLT">
-              <p>Log into your router admin panel → find <strong>Port Forwarding / NAT / Virtual Server</strong></p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs mt-2">
-                <div className="flex justify-between"><span className="text-gray-500">Protocol:</span><span>UDP</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">External Port:</span><span>161</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Internal IP:</span><span className="text-blue-600">{'<OLT LAN IP e.g. 192.168.1.1>'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Internal Port:</span><span>161</span></div>
-              </div>
-            </Step>
-
-            <Step num={3} title="Forward Telnet port (TCP 23) to OLT">
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Protocol:</span><span>TCP</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">External Port:</span><span>23</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Internal IP:</span><span className="text-blue-600">{'<OLT LAN IP e.g. 192.168.1.1>'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Internal Port:</span><span>23</span></div>
-              </div>
-              <Note type="warn">If port 23 is blocked by your ISP, use a different external port (e.g. 2323) and set Telnet Port in the app to 2323.</Note>
-            </Step>
-
-            <Step num={4} title="Add OLT in Auto OLT">
-              <p>Go to <strong>Add OLT</strong> → select <strong>Connection Type: Direct (Public IP)</strong></p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">IP Address:</span><span className="text-blue-600">{'<Router public IP>'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Telnet Port:</span><span>23 (or your custom external port)</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Connection Type:</span><span>Direct (Public IP)</span></div>
-              </div>
-            </Step>
-
-            <Step num={5} title="Test SNMP from the server">
-              <p>SSH into your Auto OLT server and run:</p>
-              <CodeBlock code={`snmpget -v2c -c public <router_public_ip> 1.3.6.1.2.1.1.1.0`} />
-              <p>If it returns a value, SNMP is working correctly.</p>
-            </Step>
-          </div>
-        </Section>
 
         {/* MikroTik Port Forwarding */}
         <Section title="MikroTik Router — Port Forwarding Setup" icon={Layers} color="bg-orange-500">
@@ -307,27 +238,11 @@ export default function PortForwardingDocsPage() {
                 <div className="flex justify-between"><span className="text-gray-500">Connection Type:</span><span>Direct (Public IP)</span></div>
               </div>
             </Step>
-          </div>
-        </Section>
 
-        {/* Option 3 — Dynamic IP + DDNS */}
-        <Section title="Option 3 — Dynamic IP with DDNS" icon={Globe} color="bg-yellow-500" defaultOpen={false}>
-          <Note type="warn">Dynamic IPs change periodically. Use DDNS to map a hostname to your changing IP.</Note>
-          <div className="space-y-6">
-            <Step num={1} title="Set up a DDNS service">
-              <p>Popular free options: <strong>No-IP</strong>, <strong>DuckDNS</strong>, <strong>Dynu</strong></p>
-              <p>Register and get a hostname like <code className="bg-gray-100 px-1 rounded">myolt.duckdns.org</code></p>
-            </Step>
-            <Step num={2} title="Enable DDNS on your router">
-              <p>Most routers have built-in DDNS support under <strong>WAN / Dynamic DNS</strong> settings.</p>
-              <p>Enter your DDNS provider credentials — the router will auto-update the hostname when IP changes.</p>
-            </Step>
-            <Step num={3} title="Add OLT using hostname">
-              <p>In Auto OLT → Add OLT → use the DDNS hostname as IP Address:</p>
-              <div className="bg-gray-50 rounded-lg p-3 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">IP Address:</span><span className="text-blue-600">myolt.duckdns.org</span></div>
-              </div>
-              <Note type="warn">Django's <code>GenericIPAddressField</code> only accepts IPs, not hostnames. You may need to resolve the hostname to IP first and update it when it changes.</Note>
+            <Step num={6} title="Test SNMP from the server">
+              <p>SSH into your Auto OLT server and run:</p>
+              <CodeBlock code={`snmpget -v2c -c public <mikrotik_public_ip> 1.3.6.1.2.1.1.1.0`} />
+              <p>If it returns a value, SNMP is working correctly.</p>
             </Step>
           </div>
         </Section>
@@ -339,7 +254,7 @@ export default function PortForwardingDocsPage() {
               {
                 problem: 'SNMP connectivity fails',
                 solutions: [
-                  'Verify UDP port 161 is forwarded to the OLT',
+                  'Verify UDP port 161 is forwarded to the OLT in MikroTik NAT rules',
                   'Check OLT SNMP is enabled and community string is correct',
                   'Test: snmpget -v2c -c <community> <ip> 1.3.6.1.2.1.1.1.0 from server',
                   'Check OLT firewall is not blocking UDP 161',
@@ -348,16 +263,17 @@ export default function PortForwardingDocsPage() {
               {
                 problem: 'Telnet connection refused',
                 solutions: [
-                  'Verify TCP port 23 is forwarded to the OLT',
+                  'Verify TCP port 23 is forwarded to the OLT in MikroTik NAT rules',
+                  'Make sure MikroTik\'s own Telnet service is disabled (or moved to a different port)',
                   'Check Telnet is enabled on the OLT',
-                  'Try: telnet <public_ip> 23 from server',
+                  'Try: telnet <mikrotik_public_ip> 23 from server',
                   'If ISP blocks port 23, use a different external port (e.g. 2323)',
                 ]
               },
               {
                 problem: 'Port forwarding set up but still cannot connect',
                 solutions: [
-                  'Your ISP may be using CGNAT — check if WAN IP matches whatismyip.com',
+                  'Your ISP may be using CGNAT — check if MikroTik WAN IP matches whatismyip.com',
                   'Some ISPs block inbound connections on port 23 and 161',
                   'Try the WireGuard VPN method instead — it works behind any NAT',
                 ]

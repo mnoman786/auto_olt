@@ -372,6 +372,20 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
         return result
 
     connect_ip = _connect_ip(olt)
+
+    # Verify OLT is reachable via SNMP before attempting discovery
+    snmp_check = snmp_service.validate_snmp_connectivity(
+        host=connect_ip,
+        community=olt.snmp_read_community,
+        version=olt.snmp_version,
+    )
+    if not snmp_check['connected']:
+        result['error'] = snmp_check.get('error') or f'SNMP not responding from {connect_ip}'
+        olt.status = 'offline'
+        olt.last_polled = timezone.now()
+        olt.save(update_fields=['status', 'last_polled'])
+        return result
+
     discovered_onus = snmp_service.discover_onus_snmp(
         host=connect_ip,
         community=olt.snmp_read_community,
@@ -474,6 +488,18 @@ def provision_onu(onu_id: int, vlan_id: Optional[int] = None,
         )
         return res
 
+    def _prov_io(direction: str, text: str):
+        """Stream raw Telnet I/O into the ONU's provisioning log."""
+        clean = text.strip()
+        if not clean:
+            return
+        if direction == 'send':
+            _create_prov_log(onu, 'telnet_terminal', f'> {clean}', 'info')
+        elif direction == 'auto':
+            _create_prov_log(onu, 'telnet_terminal', clean, 'warning')
+        else:
+            _create_prov_log(onu, 'telnet_terminal', clean, 'success')
+
     def try_telnet() -> Dict[str, Any]:
         if not olt.telnet_enabled:
             return {'success': False, 'error': 'Telnet not enabled on this OLT', 'steps': []}
@@ -491,6 +517,7 @@ def provision_onu(onu_id: int, vlan_id: Optional[int] = None,
                 or settings.DEFAULT_TELNET_PASSWORD
             ),
             port=olt.telnet_port,
+            on_io=_prov_io,
         )
         if not success:
             return {'success': False, 'error': f'Telnet login failed: {message}', 'steps': []}

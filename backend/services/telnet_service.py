@@ -145,10 +145,23 @@ class TelnetClient:
         self._last_auto_respond = ''
         return False
 
+    def _handle_pager(self, tail: str) -> bool:
+        """If output ends in a --More-- pager, send space to advance. Returns True if handled."""
+        tail_lower = tail.lower()
+        pager_markers = ['---- more ----', '--more--', ' --more-- ', '<--more-->', 'press any key']
+        if any(m in tail_lower for m in pager_markers):
+            try:
+                self.sock.send(b' ')
+                time.sleep(0.1)
+                return True
+            except Exception:
+                pass
+        return False
+
     def read_until(self, *prompts: str, timeout: int = 10) -> Tuple[bool, str]:
         """
         Read from connection until one of the prompts is found.
-        Automatically responds to credential prompts mid-session.
+        Automatically responds to credential prompts and --More-- pagers mid-session.
         Returns (found, output_text)
         """
         if not self.sock:
@@ -171,7 +184,9 @@ class TelnetClient:
                     chunk = self._strip_telnet_iac(chunk)
                     new_text = chunk.decode('utf-8', errors='replace')
                     output += new_text
-                    # Check last 300 chars for credential prompts and auto-respond
+                    # Auto-advance --More-- pagers (Huawei VRP, ZTE)
+                    self._handle_pager(output[-200:])
+                    # Auto-respond to credential prompts
                     self._auto_respond(output[-300:])
             except socket.timeout:
                 pass
@@ -316,7 +331,9 @@ def telnet_configure_snmp(client: TelnetClient, read_community: str,
                           'message': f'Set SNMP write community: {write_community}'})
 
         found, out = client.send_and_read('snmp-server enable traps', '#', '>', timeout=5)
-        steps.append({'step': 'enable_snmp_agent', 'success': found, 'message': 'SNMP traps enabled (ZTE)'})
+        ok = found and not any(e in out.lower() for e in ['error', 'invalid', 'unknown', '% '])
+        steps.append({'step': 'enable_snmp_agent', 'success': ok,
+                      'message': 'SNMP traps enabled (ZTE)' if ok else 'snmp-server command rejected by OLT'})
 
         # Save ZTE config
         client.send_and_read('exit', '#', '>', timeout=3)
@@ -340,7 +357,9 @@ def telnet_configure_snmp(client: TelnetClient, read_community: str,
                           'message': f'Set SNMP write community: {write_community}'})
 
         found, out = client.send_and_read('snmp-agent', '#', '>', timeout=5)
-        steps.append({'step': 'enable_snmp_agent', 'success': True, 'message': 'SNMP agent enabled (Huawei)'})
+        ok = found and not any(e in out.lower() for e in ['error', 'invalid', 'unknown', '% '])
+        steps.append({'step': 'enable_snmp_agent', 'success': ok,
+                      'message': 'SNMP agent enabled (Huawei)' if ok else 'snmp-agent command rejected by OLT'})
 
         # Save Huawei config
         client.send_and_read('quit', '>', '#', timeout=3)
@@ -387,14 +406,18 @@ def telnet_create_mgmt_user(client: TelnetClient, username: str, password: str,
                       'message': f'User {username} created (Huawei-style)'})
         result['success'] = True
     else:
-        # Try Cisco-style
-        client.send_and_read(
+        # Try Cisco-style — verify command was accepted
+        found_c, out_c = client.send_and_read(
             f'username {username} privilege {privilege} password 0 {password}',
             '#', '>', timeout=5
         )
-        steps.append({'step': 'create_user_cisco', 'success': True,
-                      'message': f'User {username} created (Cisco-style)'})
-        result['success'] = True
+        created = found_c and not any(
+            err in out_c.lower() for err in ['error', 'invalid', 'unknown', '% ', 'incomplete']
+        )
+        steps.append({'step': 'create_user_cisco', 'success': created,
+                      'message': f'User {username} created (Cisco-style)' if created
+                                 else f'Failed to create user {username} — OLT rejected command'})
+        result['success'] = created
 
     # Save config
     client.send_and_read('quit', '#', '>', timeout=3)
