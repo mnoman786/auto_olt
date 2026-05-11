@@ -16,9 +16,10 @@ OID_SYS_CONTACT = '1.3.6.1.2.1.1.4.0'
 OID_SYS_LOCATION = '1.3.6.1.2.1.1.6.0'
 
 # GPON ONU OIDs (generic - covers common OLT vendors like Huawei, ZTE, FiberHome)
-OID_GPON_ONU_TABLE = '1.3.6.1.4.1.2011.6.128.1.1.2'   # Huawei GPON ONU table
-OID_ZTE_ONU_TABLE = '1.3.6.1.4.1.3902.1012.3.28'       # ZTE ONU table
-OID_ONU_SERIAL_PREFIX = '1.3.6.1.4.1.2011.6.128.1.1.2.43'  # Huawei ONU serial
+OID_GPON_ONU_TABLE   = '1.3.6.1.4.1.2011.6.128.1.1.2'        # Huawei GPON ONU table
+OID_ZTE_ONU_TABLE    = '1.3.6.1.4.1.3902.1012.3.28'          # ZTE hwGponOnuTable base
+OID_ZTE_ONU_SERIAL   = '1.3.6.1.4.1.3902.1012.3.28.1.1.3'   # ZTE ONU serial number column
+OID_ONU_SERIAL_PREFIX = '1.3.6.1.4.1.2011.6.128.1.1.2.43'   # Huawei ONU serial
 
 # SNMP community OIDs (for configuration)
 OID_SNMP_COMMUNITY_RO = '1.3.6.1.6.3.18.1.1.1.2'
@@ -237,8 +238,7 @@ def discover_onus_snmp(host: str, community: str, version: str = 'v2c',
 
     # Try ZTE-style ONU discovery if no Huawei results
     if not onus:
-        zte_onu_oid = '1.3.6.1.4.1.3902.1012.3.50.11.1.1.10'
-        zte_results = snmp_walk(host, community, zte_onu_oid, port=port, version=version)
+        zte_results = snmp_walk(host, community, OID_ZTE_ONU_SERIAL, port=port, version=version)
         for oid_str, value in zte_results:
             if value and value not in ('No Such Object', 'No Such Instance', ''):
                 parts = oid_str.split('.')
@@ -303,24 +303,24 @@ def snmp_provision_onu(host: str, write_community: str, onu_index: int,
     steps = []
     result = {'success': False, 'error': None, 'steps': steps}
 
-    # Step 1: Set ONU operational state to enabled (1)
+    # Step 1: Set ONU admin state to enabled (1) via hwGponDeviceOntTable column 15
+    # hwGponDeviceOntAdminState — Huawei MA5600/MA5800 VRP MIB
     oid_onu_enable = f'1.3.6.1.4.1.2011.6.128.1.1.2.43.1.15.{onu_index}'
     success = snmp_set(host, write_community, oid_onu_enable, 1, 'Integer32', port=port, version=version)
     steps.append({'step': 'enable_onu', 'success': success,
-                  'message': 'ONU enabled via SNMP' if success else 'Failed to enable ONU via SNMP'})
+                  'message': 'ONU admin state set to enabled via SNMP' if success else 'Failed to set ONU admin state (check Huawei MIB version)'})
 
-    # Step 2: Bind VLAN to ONU
+    # Step 2: Bind service VLAN via hwGponDeviceOntEthPortTable column 6
     if vlan_id > 0:
         oid_vlan = f'1.3.6.1.4.1.2011.6.128.1.1.2.46.1.6.{onu_index}'
         vlan_success = snmp_set(host, write_community, oid_vlan, vlan_id, 'Integer32',
                                 port=port, version=version)
         steps.append({'step': 'bind_vlan', 'success': vlan_success,
-                      'message': f'VLAN {vlan_id} bound' if vlan_success else f'Failed to bind VLAN {vlan_id}'})
+                      'message': f'VLAN {vlan_id} bound via SNMP' if vlan_success else f'Failed to bind VLAN {vlan_id} via SNMP'})
 
-    # Consider success if ONU enable worked
     result['success'] = success
     if not success:
-        result['error'] = 'SNMP ONU provisioning failed - check write community and OID support'
+        result['error'] = 'SNMP ONU provisioning failed — check write community and that Huawei GPON MIB is supported'
     return result
 
 
@@ -404,8 +404,11 @@ def discover_ports_snmp(host: str, community: str, version: str = 'v2c') -> List
 
 
 def _extract_pon_port(oid_str: str) -> str:
-    """Extract PON port identifier from OID string."""
+    """Extract PON port identifier from OID string.
+    Huawei ONU table index is frame.slot.port.onu — last 4 segments of OID.
+    Returns frame/slot/port string (e.g. '0/1/0').
+    """
     parts = oid_str.split('.')
     if len(parts) >= 4:
-        return f'{parts[-4]}/{parts[-3]}/{parts[-2]}' if len(parts) >= 4 else parts[-1]
-    return ''
+        return f'{parts[-4]}/{parts[-3]}/{parts[-2]}'
+    return parts[-1] if parts else ''
