@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
-  LayoutDashboard, Server, Network, LogOut, User, ChevronRight, Menu, X
+  LayoutDashboard, Server, Network, LogOut, User, ChevronRight, Menu, X, BookOpen
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState } from 'react';
@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/olts', label: 'OLT Devices', icon: Server },
+  { href: '/docs', label: 'Documentation', icon: BookOpen },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

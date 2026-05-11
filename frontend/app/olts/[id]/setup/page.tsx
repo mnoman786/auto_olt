@@ -313,9 +313,14 @@ export default function OLTSetupPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left: Server info to give customer */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                  Give these to customer (for MikroTik)
-                </p>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Give these to customer (for MikroTik)
+                  </p>
+                  <Link href="/docs/wireguard" target="_blank" className="text-xs text-blue-600 hover:underline">
+                    Setup Guide →
+                  </Link>
+                </div>
                 <div className="space-y-2">
                   {[
                     { label: 'Server Endpoint', value: wgInfo?.server_endpoint, key: 'ep' },
