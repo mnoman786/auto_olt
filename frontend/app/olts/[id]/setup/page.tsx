@@ -289,15 +289,25 @@ export default function OLTSetupPage() {
           <Card className="mb-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                <ShieldCheck className={clsx('h-5 w-5', wgReady ? 'text-green-500' : 'text-gray-400')} />
+                <ShieldCheck className={clsx(
+                  'h-5 w-5',
+                  wgConnected === true ? 'text-green-500' :
+                  wgConnected === false ? 'text-red-500' :
+                  wgReady ? 'text-yellow-500' : 'text-gray-400'
+                )} />
                 Step 1 — WireGuard Peer Configuration
               </h2>
               <div className="flex items-center gap-2">
                 <span className={clsx(
                   'text-xs px-2 py-1 rounded-full font-medium',
-                  wgReady ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                  wgConnected === true ? 'bg-green-100 text-green-700' :
+                  wgConnected === false ? 'bg-red-100 text-red-700' :
+                  wgReady ? 'bg-yellow-100 text-yellow-700' :
+                  'bg-gray-100 text-gray-600'
                 )}>
-                  {wgReady ? 'Configured' : 'Required'}
+                  {wgConnected === true ? 'Connected' :
+                   wgConnected === false ? 'Not Connected' :
+                   wgReady ? 'Configured (pending)' : 'Not Configured'}
                 </span>
                 {wgReady && !wgEditing && (
                   <button
@@ -377,22 +387,30 @@ export default function OLTSetupPage() {
                       {wgTesting ? 'Testing...' : 'Test Connection'}
                     </Button>
                     {wgConnected === true && (
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Connected — handshake confirmed.
-                      </p>
+                      <div className="p-2 bg-green-50 border border-green-100 rounded-lg">
+                        <p className="text-xs text-green-700 flex items-center gap-1 font-medium">
+                          <CheckCircle2 className="h-3 w-3" />
+                          ✓ Connected — handshake confirmed.
+                        </p>
+                      </div>
                     )}
                     {wgConnected === false && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
-                        <XCircle className="h-3 w-3" />
-                        Not connected — check MikroTik WireGuard config.
-                      </p>
+                      <div className="p-2 bg-red-50 border border-red-100 rounded-lg">
+                        <p className="text-xs text-red-700 flex items-center gap-1 font-medium">
+                          <XCircle className="h-3 w-3" />
+                          ✗ Not connected — check MikroTik config.
+                        </p>
+                      </div>
                     )}
                     {wgConnected === null && (
-                      <p className="text-xs text-green-600 flex items-center gap-1">
-                        <CheckCircle2 className="h-3 w-3" />
-                        Peer added to WireGuard. Test connection before setup.
-                      </p>
+                      <div className="p-2 bg-yellow-50 border border-yellow-100 rounded-lg">
+                        <p className="text-xs text-yellow-700 flex items-center gap-1">
+                          ⏳ Peer configured but handshake not yet established.
+                        </p>
+                        <p className="text-xs text-yellow-600 mt-1">
+                          Click "Test Connection" to verify the peer is connected.
+                        </p>
+                      </div>
                     )}
                   </div>
                 ) : (
