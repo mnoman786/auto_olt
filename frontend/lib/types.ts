@@ -127,6 +127,8 @@ export interface VLAN {
   name: string;
   description: string;
   onu_count: number;
+  pushed_to_olt: boolean;
+  push_error: string;
   created_at: string;
   updated_at: string;
 }

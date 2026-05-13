@@ -1,4 +1,6 @@
+import threading
 from rest_framework import generics, status
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -26,7 +28,11 @@ class VLANListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         olt = get_olt_for_user(self.kwargs['olt_pk'], self.request.user)
-        serializer.save(olt=olt)
+        vlan = serializer.save(olt=olt)
+        # Auto-push to OLT in background if telnet is enabled and OLT is active
+        if olt.telnet_enabled and olt.status == 'active':
+            from services import provisioning_service
+            provisioning_service.push_vlan_to_olt_async(vlan.id)
 
 
 class VLANDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -51,3 +57,18 @@ class VLANDetailView(generics.RetrieveUpdateDestroyAPIView):
             )
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def push_vlan(request, olt_pk, pk):
+    """Manually push a VLAN to the OLT via Telnet. Runs in background."""
+    olt = get_olt_for_user(olt_pk, request.user)
+    vlan = get_object_or_404(VLAN, pk=pk, olt=olt)
+
+    if not olt.telnet_enabled:
+        return Response({'detail': 'Telnet not enabled on this OLT.'}, status=400)
+
+    from services import provisioning_service
+    provisioning_service.push_vlan_to_olt_async(vlan.id)
+    return Response({'detail': f'Pushing VLAN {vlan.vlan_id} to OLT in background.', 'vlan_id': vlan.id})

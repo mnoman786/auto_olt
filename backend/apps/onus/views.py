@@ -111,6 +111,67 @@ def onu_provisioning_logs(request, olt_pk, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def bulk_register_onus(request, olt_pk):
+    """
+    Register multiple unregistered ONUs at once.
+    Body: { onu_ids: [1,2,3], vlan_id: 100, description: '' }
+    Spawns a provisioning thread for each ONU.
+    """
+    olt = get_olt_for_user(olt_pk, request.user)
+
+    onu_ids = request.data.get('onu_ids', [])
+    vlan_id_param = request.data.get('vlan_id')
+    description = request.data.get('description', '')
+
+    if not onu_ids or not isinstance(onu_ids, list):
+        return Response({'detail': 'onu_ids must be a non-empty list.'}, status=400)
+
+    # Resolve VLAN upfront
+    vlan_obj = None
+    if vlan_id_param:
+        try:
+            vlan_obj = VLAN.objects.get(olt=olt, vlan_id=vlan_id_param)
+        except VLAN.DoesNotExist:
+            return Response(
+                {'detail': f'VLAN {vlan_id_param} does not exist on this OLT. Create it first.'},
+                status=400
+            )
+
+    started = []
+    skipped = []
+
+    for onu_id in onu_ids:
+        try:
+            onu = ONU.objects.get(pk=onu_id, olt=olt)
+        except ONU.DoesNotExist:
+            skipped.append({'onu_id': onu_id, 'reason': 'not found'})
+            continue
+
+        if onu.status in ('active', 'registered', 'provisioning'):
+            skipped.append({'onu_id': onu_id, 'serial': onu.serial_number, 'reason': f'already {onu.status}'})
+            continue
+
+        if vlan_obj:
+            onu.vlan = vlan_obj
+        if description:
+            onu.description = description
+        onu.save()
+
+        def _provision(oid=onu.id):
+            provisioning_service.provision_onu(oid, vlan_id=vlan_id_param)
+
+        threading.Thread(target=_provision, daemon=True).start()
+        started.append({'onu_id': onu_id, 'serial': onu.serial_number})
+
+    return Response({
+        'detail': f'Bulk provisioning started for {len(started)} ONU(s).',
+        'started': started,
+        'skipped': skipped,
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def deregister_onu(request, olt_pk, pk):
     """Move ONU back to unregistered status."""
     olt = get_olt_for_user(olt_pk, request.user)

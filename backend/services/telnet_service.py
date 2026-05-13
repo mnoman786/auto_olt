@@ -428,6 +428,42 @@ def telnet_create_mgmt_user(client: TelnetClient, username: str, password: str,
     return result
 
 
+def telnet_push_vlan(client: TelnetClient, vlan_id: int, vendor: str = 'auto') -> Dict[str, Any]:
+    """Push a VLAN to the OLT via Telnet CLI. Supports Huawei and ZTE."""
+    steps = []
+    result = {'success': False, 'steps': steps}
+
+    if vendor == 'auto':
+        vendor = _detect_vendor(client)
+
+    try:
+        if vendor == 'zte':
+            client.send_and_read('enable', '#', timeout=5)
+            client.send_and_read('configure terminal', '#', timeout=5)
+            client.send_and_read(f'vlan {vlan_id}', '#', timeout=5)
+            client.send_and_read('exit', '#', timeout=5)
+            client.send_and_read('write', '#', timeout=10)
+            steps.append({'step': 'push_vlan', 'success': True,
+                          'message': f'VLAN {vlan_id} created on OLT (ZTE)'})
+        else:
+            # Huawei MA5600/MA5800
+            client.send_and_read('enable', '#', timeout=5)
+            client.send_and_read('config', '#', timeout=5)
+            client.send_and_read(f'vlan {vlan_id} smart', '#', timeout=5)
+            client.send_and_read('quit', '#', timeout=5)
+            client.send_and_read('save', '#', 'Y/N', timeout=5)
+            client.send_and_read('Y', '#', timeout=10)
+            steps.append({'step': 'push_vlan', 'success': True,
+                          'message': f'VLAN {vlan_id} created on OLT (Huawei)'})
+        result['success'] = True
+    except Exception as e:
+        steps.append({'step': 'push_vlan', 'success': False, 'message': str(e)})
+        result['error'] = str(e)
+
+    result['steps'] = steps
+    return result
+
+
 def telnet_provision_onu(client: TelnetClient, onu_serial: str, pon_port: str,
                           vlan_id: int = 100, service_profile: str = '',
                           onu_id: int = 1, line_profile_id: int = 1,

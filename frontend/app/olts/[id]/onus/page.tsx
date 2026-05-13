@@ -6,13 +6,12 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ONUStatusBadge } from '@/components/ui/Badge';
-import { Select } from '@/components/ui/Form';
 import { oltApi, onuApi, vlanApi } from '@/lib/api';
 import type { OLT, ONU, VLAN } from '@/lib/types';
 import {
   ArrowLeft, RefreshCw, Wifi, Signal, Clock, Play,
-  CheckCircle, XCircle, AlertCircle, Loader2, Search, Filter,
-  Server
+  CheckCircle, XCircle, AlertCircle, Loader2, Search,
+  Server, CheckSquare, Square, Users
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -97,6 +96,92 @@ function RegisterModal({ onu, oltId, vlans, onClose, onSuccess }: RegisterModalP
   );
 }
 
+interface BulkRegisterModalProps {
+  selectedOnus: ONU[];
+  oltId: number;
+  vlans: VLAN[];
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+function BulkRegisterModal({ selectedOnus, oltId, vlans, onClose, onSuccess }: BulkRegisterModalProps) {
+  const [vlanId, setVlanId] = useState<string>('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleBulkRegister = async () => {
+    setLoading(true);
+    try {
+      const res = await onuApi.bulkRegister(oltId, {
+        onu_ids: selectedOnus.map(o => o.id),
+        vlan_id: vlanId ? parseInt(vlanId) : undefined,
+        description: description || undefined,
+      });
+      const { started, skipped } = res.data;
+      toast.success(`Provisioning started for ${started.length} ONU(s)${skipped.length ? `, ${skipped.length} skipped` : ''}`);
+      onSuccess();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Bulk registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Bulk Register ONUs</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          {selectedOnus.length} ONU(s) selected for provisioning
+        </p>
+
+        <div className="bg-gray-50 rounded-lg p-3 mb-4 max-h-32 overflow-y-auto">
+          {selectedOnus.map(o => (
+            <div key={o.id} className="text-xs font-mono text-gray-700">{o.serial_number}</div>
+          ))}
+        </div>
+
+        <div className="space-y-3 mb-5">
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">VLAN (applied to all)</label>
+            <select
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              value={vlanId}
+              onChange={e => setVlanId(e.target.value)}
+            >
+              <option value="">No VLAN</option>
+              {vlans.map(v => (
+                <option key={v.id} value={v.vlan_id}>{v.name} (VLAN {v.vlan_id})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium text-gray-700 block mb-1">Description (applied to all, optional)</label>
+            <input
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              placeholder="e.g., Bulk provisioned"
+            />
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-xs text-blue-700">
+          Each ONU will be provisioned in parallel using the configured method (SNMP / Telnet / Hybrid).
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+          <Button className="flex-1" loading={loading} onClick={handleBulkRegister}
+            icon={<Users className="h-4 w-4" />}>
+            Register {selectedOnus.length} ONUs
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SignalBar({ strength }: { strength: number | null }) {
   if (strength === null) return <span className="text-gray-400 text-xs">N/A</span>;
   const dBm = strength;
@@ -118,7 +203,8 @@ export default function ONUManagementPage() {
   const [polling, setPolling] = useState(false);
   const [search, setSearch] = useState('');
   const [registerTarget, setRegisterTarget] = useState<ONU | null>(null);
-  const pollRef = useRef<NodeJS.Timeout | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showBulkModal, setShowBulkModal] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
@@ -145,12 +231,14 @@ export default function ONUManagementPage() {
     if (isAuthenticated) fetchData();
   }, [isAuthenticated, fetchData]);
 
+  // Clear selection when tab changes
+  useEffect(() => { setSelectedIds(new Set()); }, [activeTab]);
+
   const handlePoll = async () => {
     setPolling(true);
     try {
       await oltApi.poll(oltId);
       toast.success('SNMP poll started...');
-      // Refresh data after 5 seconds
       setTimeout(fetchData, 5000);
     } catch {
       toast.error('Poll failed');
@@ -169,6 +257,28 @@ export default function ONUManagementPage() {
     if (activeTab === 'unregistered') return matchSearch && onu.status === 'unregistered';
     return matchSearch;
   });
+
+  const unregisteredInView = filteredOnus.filter(o => o.status === 'unregistered');
+  const allUnregSelected = unregisteredInView.length > 0 &&
+    unregisteredInView.every(o => selectedIds.has(o.id));
+
+  const toggleSelectAll = () => {
+    if (allUnregSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(unregisteredInView.map(o => o.id)));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const selectedOnus = onus.filter(o => selectedIds.has(o.id));
 
   const counts = {
     all: onus.length,
@@ -191,6 +301,15 @@ export default function ONUManagementPage() {
             <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
           </div>
           <div className="flex gap-2">
+            {selectedIds.size > 0 && (
+              <Button
+                size="sm"
+                icon={<Users className="h-4 w-4" />}
+                onClick={() => setShowBulkModal(true)}
+              >
+                Register Selected ({selectedIds.size})
+              </Button>
+            )}
             <Button
               variant="outline" size="sm"
               icon={<RefreshCw className={clsx('h-4 w-4', polling && 'animate-spin')} />}
@@ -227,7 +346,6 @@ export default function ONUManagementPage() {
               </span>
             </button>
           ))}
-          {/* OLT nav links */}
           <div className="ml-auto flex gap-2 pb-1">
             <Link href={`/olts/${oltId}/vlans`}>
               <Button variant="ghost" size="sm">VLANs</Button>
@@ -273,6 +391,16 @@ export default function ONUManagementPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    {/* Checkbox header — only visible on unregistered tab */}
+                    <th className="px-4 py-3 w-10">
+                      {unregisteredInView.length > 0 && (
+                        <button onClick={toggleSelectAll} className="text-gray-400 hover:text-gray-700">
+                          {allUnregSelected
+                            ? <CheckSquare className="h-4 w-4 text-blue-600" />
+                            : <Square className="h-4 w-4" />}
+                        </button>
+                      )}
+                    </th>
                     <th className="px-4 py-3">Serial Number</th>
                     <th className="px-4 py-3">PON Port</th>
                     <th className="px-4 py-3">Signal</th>
@@ -284,7 +412,22 @@ export default function ONUManagementPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredOnus.map(onu => (
-                    <tr key={onu.id} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={onu.id}
+                      className={clsx(
+                        'hover:bg-gray-50 transition-colors',
+                        selectedIds.has(onu.id) && 'bg-blue-50 hover:bg-blue-50'
+                      )}
+                    >
+                      <td className="px-4 py-3">
+                        {onu.status === 'unregistered' && (
+                          <button onClick={() => toggleSelect(onu.id)} className="text-gray-400 hover:text-gray-700">
+                            {selectedIds.has(onu.id)
+                              ? <CheckSquare className="h-4 w-4 text-blue-600" />
+                              : <Square className="h-4 w-4" />}
+                          </button>
+                        )}
+                      </td>
                       <td className="px-4 py-3">
                         <div>
                           <code className="font-mono text-sm text-gray-900">{onu.serial_number}</code>
@@ -353,7 +496,7 @@ export default function ONUManagementPage() {
         </Card>
       </div>
 
-      {/* Register Modal */}
+      {/* Single Register Modal */}
       {registerTarget && (
         <RegisterModal
           onu={registerTarget}
@@ -362,6 +505,21 @@ export default function ONUManagementPage() {
           onClose={() => setRegisterTarget(null)}
           onSuccess={() => {
             setRegisterTarget(null);
+            setTimeout(fetchData, 3000);
+          }}
+        />
+      )}
+
+      {/* Bulk Register Modal */}
+      {showBulkModal && (
+        <BulkRegisterModal
+          selectedOnus={selectedOnus}
+          oltId={oltId}
+          vlans={vlans}
+          onClose={() => setShowBulkModal(false)}
+          onSuccess={() => {
+            setShowBulkModal(false);
+            setSelectedIds(new Set());
             setTimeout(fetchData, 3000);
           }}
         />

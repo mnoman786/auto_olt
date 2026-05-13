@@ -6,6 +6,8 @@ class VLAN(models.Model):
     vlan_id = models.PositiveIntegerField()
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, default='')
+    pushed_to_olt = models.BooleanField(default=False)
+    push_error = models.CharField(max_length=300, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

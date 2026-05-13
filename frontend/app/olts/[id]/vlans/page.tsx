@@ -9,7 +9,8 @@ import { Input, Textarea } from '@/components/ui/Form';
 import { oltApi, vlanApi } from '@/lib/api';
 import type { OLT, VLAN } from '@/lib/types';
 import {
-  ArrowLeft, Plus, Pencil, Trash2, Network, Loader2, Save, X
+  ArrowLeft, Plus, Pencil, Trash2, Network, Loader2, Save, X,
+  Upload, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -36,6 +37,7 @@ export default function VLANManagementPage() {
   const [form, setForm] = useState<VLANFormData>(defaultForm);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pushingId, setPushingId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
@@ -106,6 +108,19 @@ export default function VLANManagementPage() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePush = async (vlan: VLAN) => {
+    setPushingId(vlan.id);
+    try {
+      await vlanApi.push(oltId, vlan.id);
+      toast.success(`Pushing VLAN ${vlan.vlan_id} to OLT...`);
+      setTimeout(fetchData, 4000);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Push failed');
+    } finally {
+      setTimeout(() => setPushingId(null), 4000);
     }
   };
 
@@ -226,6 +241,7 @@ export default function VLANManagementPage() {
                     <th className="px-6 py-3">Name</th>
                     <th className="px-6 py-3">Description</th>
                     <th className="px-6 py-3">ONUs</th>
+                    <th className="px-6 py-3">OLT Status</th>
                     <th className="px-6 py-3">Created</th>
                     <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
@@ -243,11 +259,36 @@ export default function VLANManagementPage() {
                           {vlan.onu_count} ONUs
                         </span>
                       </td>
+                      <td className="px-6 py-3">
+                        {vlan.pushed_to_olt ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Pushed
+                          </span>
+                        ) : vlan.push_error ? (
+                          <span className="inline-flex items-center gap-1 text-xs text-red-600" title={vlan.push_error}>
+                            <AlertCircle className="h-3.5 w-3.5" /> Failed
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">Not pushed</span>
+                        )}
+                      </td>
                       <td className="px-6 py-3 text-gray-500 text-xs">
                         {new Date(vlan.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center gap-2 justify-end">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            icon={pushingId === vlan.id
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <Upload className="h-3.5 w-3.5" />}
+                            onClick={() => handlePush(vlan)}
+                            disabled={pushingId === vlan.id}
+                            title="Push VLAN to OLT via Telnet"
+                          >
+                            Push
+                          </Button>
                           <Button
                             size="sm"
                             variant="ghost"

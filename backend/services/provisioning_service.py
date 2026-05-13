@@ -449,6 +449,71 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
     return result
 
 
+def push_vlan_to_olt(vlan_db_id: int) -> Dict[str, Any]:
+    """
+    Push a VLAN to the OLT via Telnet CLI.
+    Updates vlan.pushed_to_olt and vlan.push_error in the DB.
+    """
+    from apps.vlans.models import VLAN
+    from services import telnet_service
+
+    result = {'success': False, 'error': None}
+
+    try:
+        vlan = VLAN.objects.select_related('olt').get(id=vlan_db_id)
+    except VLAN.DoesNotExist:
+        result['error'] = f'VLAN {vlan_db_id} not found'
+        return result
+
+    olt = vlan.olt
+
+    if not olt.telnet_enabled:
+        result['error'] = 'Telnet not enabled on this OLT — cannot push VLAN'
+        vlan.pushed_to_olt = False
+        vlan.push_error = result['error']
+        vlan.save(update_fields=['pushed_to_olt', 'push_error'])
+        return result
+
+    connect_ip = _connect_ip(olt)
+    success, message, client = telnet_service.telnet_login(
+        host=connect_ip,
+        username=(olt.olt_admin_username or olt.telnet_username or settings.DEFAULT_TELNET_USERNAME),
+        password=(olt.olt_admin_password or olt.telnet_password or settings.DEFAULT_TELNET_PASSWORD),
+        port=olt.telnet_port,
+    )
+
+    if not success:
+        result['error'] = f'Telnet login failed: {message}'
+        vlan.pushed_to_olt = False
+        vlan.push_error = result['error'][:300]
+        vlan.save(update_fields=['pushed_to_olt', 'push_error'])
+        return result
+
+    try:
+        push_result = telnet_service.telnet_push_vlan(client, vlan.vlan_id)
+    finally:
+        client.disconnect()
+
+    if push_result.get('success'):
+        vlan.pushed_to_olt = True
+        vlan.push_error = ''
+        vlan.save(update_fields=['pushed_to_olt', 'push_error'])
+        result['success'] = True
+    else:
+        err = push_result.get('error', 'Unknown error')
+        vlan.pushed_to_olt = False
+        vlan.push_error = str(err)[:300]
+        vlan.save(update_fields=['pushed_to_olt', 'push_error'])
+        result['error'] = err
+
+    return result
+
+
+def push_vlan_to_olt_async(vlan_db_id: int) -> None:
+    thread = threading.Thread(target=push_vlan_to_olt, args=(vlan_db_id,), daemon=True)
+    thread.start()
+
+
 def provision_onu(onu_id: int, vlan_id: Optional[int] = None,
                   line_profile_id: int = 1, srv_profile_id: int = 1) -> Dict[str, Any]:
     """

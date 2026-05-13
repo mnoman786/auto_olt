@@ -7,8 +7,9 @@ class VLANSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VLAN
-        fields = ('id', 'vlan_id', 'name', 'description', 'onu_count', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
+        fields = ('id', 'vlan_id', 'name', 'description', 'onu_count',
+                  'pushed_to_olt', 'push_error', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'pushed_to_olt', 'push_error', 'created_at', 'updated_at')
 
     def get_onu_count(self, obj):
         return obj.onus.count()

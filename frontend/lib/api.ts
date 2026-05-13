@@ -136,6 +136,9 @@ export const onuApi = {
     apiClient.get<{ onu_id: number; status: string; logs: ProvisioningLog[] }>(
       `/olts/${oltId}/onus/${onuId}/logs/`
     ),
+
+  bulkRegister: (oltId: number, data: { onu_ids: number[]; vlan_id?: number; description?: string }) =>
+    apiClient.post(`/olts/${oltId}/onus/bulk-register/`, data),
 };
 
 // VLAN API
@@ -151,6 +154,9 @@ export const vlanApi = {
 
   delete: (oltId: number, vlanId: number) =>
     apiClient.delete(`/olts/${oltId}/vlans/${vlanId}/`),
+
+  push: (oltId: number, vlanId: number) =>
+    apiClient.post(`/olts/${oltId}/vlans/${vlanId}/push/`),
 };
 
 export default apiClient;
