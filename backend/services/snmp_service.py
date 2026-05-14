@@ -294,6 +294,23 @@ def get_onu_signal_strength(host: str, community: str, onu_index: int,
     return None
 
 
+def get_onu_admin_state(host: str, community: str, onu_index: int,
+                        version: str = 'v2c', port: int = 161) -> bool:
+    """
+    Check if an ONU is already enabled/registered on the OLT via SNMP.
+    Huawei hwGponDeviceOntAdminState: 1 = enabled, 0 = disabled.
+    Returns True if ONU is enabled (already registered on OLT).
+    """
+    oid = f'1.3.6.1.4.1.2011.6.128.1.1.2.43.1.15.{onu_index}'
+    value = snmp_get(host, community, oid, port=port, version=version)
+    if value and value not in ('No Such Object', 'No Such Instance', 'None'):
+        try:
+            return int(value) == 1
+        except (ValueError, TypeError):
+            pass
+    return False
+
+
 def snmp_provision_onu(host: str, write_community: str, onu_index: int,
                         vlan_id: int = 100, version: str = 'v2c', port: int = 161) -> Dict[str, Any]:
     """

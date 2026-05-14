@@ -408,6 +408,16 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
         onu_data['signal_strength'] = signal
 
         onu_index = onu_data.get('onu_index', 0)
+
+        # Check if ONU is already enabled on the OLT (pre-existing registration)
+        already_registered = snmp_service.get_onu_admin_state(
+            host=connect_ip,
+            community=olt.snmp_read_community,
+            onu_index=onu_index,
+            version=olt.snmp_version,
+        )
+        initial_status = 'registered' if already_registered else 'unregistered'
+
         onu, created = ONU.objects.get_or_create(
             olt=olt,
             serial_number=serial,
@@ -416,7 +426,7 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
                 'onu_index': onu_index,
                 # onu_id = CLI ont-id on the PON port (last segment of SNMP OID index)
                 'onu_id': onu_index,
-                'status': 'unregistered',
+                'status': initial_status,
                 'signal_strength': signal,
                 'last_seen': timezone.now(),
             }
@@ -433,9 +443,11 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
             if not onu.pon_port and onu_data.get('pon_port'):
                 onu.pon_port = onu_data['pon_port']
                 update_fields.append('pon_port')
-            # Only mark active if ONU has optical signal (confirms it is truly online)
-            # Appearing in SNMP table alone does not mean the ONU is active
-            if onu.status == 'offline' and onu.registered_at and signal is not None:
+            # Sync status with OLT admin state
+            if onu.status == 'unregistered' and already_registered:
+                onu.status = 'registered'
+                update_fields.append('status')
+            elif onu.status == 'offline' and onu.registered_at and signal is not None:
                 onu.status = 'active'
                 update_fields.append('status')
             onu.save(update_fields=update_fields)
