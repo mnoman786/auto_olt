@@ -187,6 +187,16 @@ def run_olt_setup(olt_id: int) -> None:
     olt.save(update_fields=['status', 'last_polled'])
     _create_log(olt, 'setup_complete', f'OLT {olt.name} setup complete. Status: ACTIVE', 'success')
 
+    # Auto-discover ONUs on first setup
+    _create_log(olt, 'onu_discovery', 'Starting initial ONU discovery via SNMP...', 'info')
+    poll_result = poll_olt_onus(olt_id)
+    if poll_result.get('error'):
+        _create_log(olt, 'onu_discovery', f'ONU discovery warning: {poll_result["error"]}', 'warning')
+    else:
+        _create_log(olt, 'onu_discovery',
+                    f'ONU discovery complete: {poll_result["discovered"]} found, '
+                    f'{poll_result["new"]} new, {poll_result["updated"]} updated', 'success')
+
 
 def start_olt_setup_async(olt_id: int) -> None:
     """Start OLT setup in a background thread."""
@@ -342,6 +352,16 @@ def simulate_olt_setup(olt_id: int) -> None:
     _create_log(olt, 'sys_info', f'Discovered {len(sim_ports)} ports (3 uplinks, 8 PON, 1 LAG)', 'info')
 
     _create_log(olt, 'setup_complete', f'[SIMULATION] OLT {olt.name} setup complete. Status: ACTIVE', 'success')
+
+    # Auto-discover ONUs after simulation (will attempt real SNMP if OLT is reachable)
+    _create_log(olt, 'onu_discovery', 'Starting initial ONU discovery via SNMP...', 'info')
+    poll_result = poll_olt_onus(olt_id)
+    if poll_result.get('error'):
+        _create_log(olt, 'onu_discovery', f'ONU discovery warning: {poll_result["error"]}', 'warning')
+    else:
+        _create_log(olt, 'onu_discovery',
+                    f'ONU discovery complete: {poll_result["discovered"]} found, '
+                    f'{poll_result["new"]} new, {poll_result["updated"]} updated', 'success')
 
 
 def start_simulate_setup_async(olt_id: int) -> None:

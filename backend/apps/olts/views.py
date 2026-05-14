@@ -31,6 +31,7 @@ class OLTListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         olt = serializer.save(user=self.request.user)
+        provisioning_service.start_olt_setup_async(olt.id)
         return olt
 
     def create(self, request, *args, **kwargs):

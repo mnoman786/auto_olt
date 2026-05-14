@@ -458,34 +458,39 @@ export default function ONUManagementPage() {
                           : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {onu.status === 'unregistered' && (
-                          <Button
-                            size="sm"
-                            icon={<Play className="h-3.5 w-3.5" />}
-                            onClick={() => setRegisterTarget(onu)}
-                          >
-                            Register
-                          </Button>
-                        )}
-                        {onu.status === 'provisioning' && (
-                          <span className="text-xs text-blue-600 flex items-center gap-1">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Provisioning...
-                          </span>
-                        )}
-                        {['active', 'registered'].includes(onu.status) && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={async () => {
-                              await onuApi.deregister(oltId, onu.id);
-                              toast.success('ONU deregistered');
-                              fetchData();
-                            }}
-                          >
-                            Deregister
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-2">
+                          <Link href={`/olts/${oltId}/onus/${onu.id}`}>
+                            <Button size="sm" variant="outline">View</Button>
+                          </Link>
+                          {onu.status === 'unregistered' && (
+                            <Button
+                              size="sm"
+                              icon={<Play className="h-3.5 w-3.5" />}
+                              onClick={() => setRegisterTarget(onu)}
+                            >
+                              Register
+                            </Button>
+                          )}
+                          {onu.status === 'provisioning' && (
+                            <span className="text-xs text-blue-600 flex items-center gap-1">
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                              Provisioning...
+                            </span>
+                          )}
+                          {['active', 'registered'].includes(onu.status) && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                await onuApi.deregister(oltId, onu.id);
+                                toast.success('ONU deregistered');
+                                fetchData();
+                              }}
+                            >
+                              Deregister
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
