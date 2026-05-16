@@ -4,7 +4,7 @@ Implements the full setup workflow and SNMP-first hybrid provisioning logic.
 """
 import logging
 import threading
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from django.conf import settings
 from django.utils import timezone
 
@@ -133,6 +133,30 @@ def run_olt_setup(olt_id: int) -> None:
                 for step in snmp_cfg.get('steps', []):
                     _create_log(olt, step['step'], step['message'],
                                 'success' if step.get('success') else 'warning')
+
+                # Discover ONU profiles so ONU registration knows which IDs are valid
+                _create_log(olt, 'discover_profiles',
+                            'Discovering ONU line + service profiles on OLT...', 'info')
+                prof_result = telnet_service.telnet_discover_profiles(client)
+                if prof_result.get('success'):
+                    olt.line_profiles = prof_result['line_profiles']
+                    olt.srv_profiles = prof_result['srv_profiles']
+                    olt.profiles_last_synced = timezone.now()
+                    olt.save(update_fields=['line_profiles', 'srv_profiles',
+                                            'profiles_last_synced'])
+                    line_ids = [str(p['id']) for p in prof_result['line_profiles']]
+                    srv_ids = [str(p['id']) for p in prof_result['srv_profiles']]
+                    _create_log(
+                        olt, 'discover_profiles',
+                        f'Found {len(line_ids)} line profile(s) [{", ".join(line_ids) or "none"}] '
+                        f'and {len(srv_ids)} service profile(s) [{", ".join(srv_ids) or "none"}]',
+                        'success',
+                    )
+                else:
+                    _create_log(olt, 'discover_profiles',
+                                f'Profile discovery: {prof_result.get("error", "unknown error")} '
+                                '(ONU registration will fall back to profile ID 1)',
+                                'warning')
             finally:
                 client.disconnect()
     else:
@@ -531,6 +555,11 @@ def push_vlan_to_olt(vlan_db_id: int) -> Dict[str, Any]:
         vlan.push_error = ''
         vlan.save(update_fields=['pushed_to_olt', 'push_error'])
         result['success'] = True
+        result['already_existed'] = bool(push_result.get('already_existed'))
+        if result['already_existed']:
+            result['message'] = f'VLAN {vlan.vlan_id} was already present on OLT; no change made'
+        else:
+            result['message'] = f'VLAN {vlan.vlan_id} created on OLT'
     else:
         err = push_result.get('error', 'Unknown error')
         vlan.pushed_to_olt = False
@@ -539,6 +568,190 @@ def push_vlan_to_olt(vlan_db_id: int) -> Dict[str, Any]:
         result['error'] = err
 
     return result
+
+
+def sync_vlans_from_olt(olt_id: int) -> Dict[str, Any]:
+    """
+    Read all VLANs from the OLT and upsert them into the DB.
+
+    Tries SNMP first (Q-BRIDGE-MIB), falls back to Telnet (`display vlan all` /
+    `show vlan`) if SNMP returns nothing.
+
+    Existing rows are kept; their `last_seen_on_olt` is bumped and
+    `pushed_to_olt` is set to True (since the device confirms they exist).
+    New rows are created with `source='discovered'`.
+    """
+    from apps.olts.models import OLT
+    from apps.vlans.models import VLAN
+    from services import snmp_service, telnet_service
+
+    result: Dict[str, Any] = {
+        'success': False,
+        'method': None,
+        'discovered': 0,
+        'created': 0,
+        'updated': 0,
+        'error': None,
+    }
+
+    try:
+        olt = OLT.objects.get(id=olt_id)
+    except OLT.DoesNotExist:
+        result['error'] = f'OLT {olt_id} not found'
+        return result
+
+    host = _connect_ip(olt)
+    vlans_found: List[Dict[str, Any]] = []
+
+    # ── Try SNMP first ───────────────────────────────────────────────────
+    if olt.snmp_read_community:
+        try:
+            snmp_vlans = snmp_service.discover_vlans_snmp(
+                host=host,
+                community=olt.snmp_read_community,
+                version=olt.snmp_version or 'v2c',
+            )
+            if snmp_vlans:
+                vlans_found = snmp_vlans
+                result['method'] = 'snmp'
+        except Exception as e:
+            logger.debug(f"SNMP VLAN discovery failed for OLT {olt_id}: {e}")
+
+    # ── Telnet fallback ──────────────────────────────────────────────────
+    if not vlans_found and olt.telnet_enabled:
+        success, message, client = telnet_service.telnet_login(
+            host=host,
+            username=(olt.olt_admin_username or olt.telnet_username or settings.DEFAULT_TELNET_USERNAME),
+            password=(olt.olt_admin_password or olt.telnet_password or settings.DEFAULT_TELNET_PASSWORD),
+            port=olt.telnet_port,
+        )
+        if not success:
+            result['error'] = f'Telnet login failed: {message}'
+            return result
+        try:
+            disco = telnet_service.telnet_discover_vlans(client)
+        finally:
+            client.disconnect()
+        if disco.get('success') and disco.get('vlans'):
+            vlans_found = disco['vlans']
+            result['method'] = 'telnet'
+        elif disco.get('error'):
+            result['error'] = f'Telnet discovery error: {disco["error"]}'
+            return result
+
+    if not vlans_found:
+        result['error'] = 'No VLANs returned by SNMP or Telnet'
+        return result
+
+    # ── Upsert into DB ───────────────────────────────────────────────────
+    now = timezone.now()
+    created = 0
+    updated = 0
+    for v in vlans_found:
+        vid = v['vlan_id']
+        defaults = {
+            'name': v.get('name') or f'VLAN{vid}',
+            'description': v.get('description') or '',
+            'last_seen_on_olt': now,
+            'pushed_to_olt': True,
+            'push_error': '',
+        }
+        obj, was_created = VLAN.objects.get_or_create(
+            olt=olt, vlan_id=vid,
+            defaults={**defaults, 'source': 'discovered'},
+        )
+        if was_created:
+            created += 1
+        else:
+            # Refresh metadata but do not overwrite a managed VLAN's name/description
+            # unless they're empty — operator intent wins.
+            obj.last_seen_on_olt = now
+            obj.pushed_to_olt = True
+            obj.push_error = ''
+            if not obj.name or obj.name == f'VLAN{vid}':
+                obj.name = defaults['name']
+            if not obj.description and defaults['description']:
+                obj.description = defaults['description']
+            obj.save(update_fields=['last_seen_on_olt', 'pushed_to_olt',
+                                    'push_error', 'name', 'description', 'updated_at'])
+            updated += 1
+
+    result['success'] = True
+    result['discovered'] = len(vlans_found)
+    result['created'] = created
+    result['updated'] = updated
+    return result
+
+
+def sync_vlans_from_olt_async(olt_id: int) -> None:
+    thread = threading.Thread(target=sync_vlans_from_olt, args=(olt_id,), daemon=True)
+    thread.start()
+
+
+def sync_profiles_from_olt(olt_id: int) -> Dict[str, Any]:
+    """
+    Read ONU line + service profiles from the OLT and cache them on the model.
+    Synchronous; returns {success, line_profiles, srv_profiles, error}.
+    """
+    from apps.olts.models import OLT
+    from services import telnet_service
+
+    result: Dict[str, Any] = {
+        'success': False,
+        'line_profiles': [],
+        'srv_profiles': [],
+        'error': None,
+    }
+
+    try:
+        olt = OLT.objects.get(id=olt_id)
+    except OLT.DoesNotExist:
+        result['error'] = f'OLT {olt_id} not found'
+        return result
+
+    if not olt.telnet_enabled:
+        result['error'] = 'Telnet must be enabled to discover profiles'
+        return result
+
+    host = _connect_ip(olt)
+    success, message, client = telnet_service.telnet_login(
+        host=host,
+        username=(olt.olt_admin_username or olt.telnet_username or settings.DEFAULT_TELNET_USERNAME),
+        password=(olt.olt_admin_password or olt.telnet_password or settings.DEFAULT_TELNET_PASSWORD),
+        port=olt.telnet_port,
+    )
+    if not success:
+        result['error'] = f'Telnet login failed: {message}'
+        return result
+
+    try:
+        disco = telnet_service.telnet_discover_profiles(client)
+    finally:
+        client.disconnect()
+
+    if not disco.get('success'):
+        result['error'] = disco.get('error') or 'Profile discovery returned no results'
+        return result
+
+    olt.line_profiles = disco['line_profiles']
+    olt.srv_profiles = disco['srv_profiles']
+    olt.profiles_last_synced = timezone.now()
+    olt.save(update_fields=['line_profiles', 'srv_profiles', 'profiles_last_synced'])
+
+    result['success'] = True
+    result['line_profiles'] = disco['line_profiles']
+    result['srv_profiles'] = disco['srv_profiles']
+    return result
+
+
+def pick_default_profile_ids(olt) -> Tuple[int, int]:
+    """
+    Pick the line + service profile IDs to use when registering a new ONU.
+    Returns (line_profile_id, srv_profile_id). Falls back to 1/1 if none cached.
+    """
+    line_id = olt.line_profiles[0]['id'] if olt.line_profiles else 1
+    srv_id = olt.srv_profiles[0]['id'] if olt.srv_profiles else 1
+    return line_id, srv_id
 
 
 def push_vlan_to_olt_async(vlan_db_id: int) -> None:

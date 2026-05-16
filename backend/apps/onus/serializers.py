@@ -32,6 +32,7 @@ class ONURegisterSerializer(serializers.Serializer):
     vlan_id = serializers.IntegerField(required=False, allow_null=True)
     description = serializers.CharField(required=False, allow_blank=True, max_length=200)
     service_profile = serializers.CharField(required=False, allow_blank=True, max_length=100)
-    # Huawei ont-lineprofile-id and ont-srvprofile-id — must match profiles on the OLT
-    line_profile_id = serializers.IntegerField(required=False, min_value=1, default=1)
-    srv_profile_id = serializers.IntegerField(required=False, min_value=1, default=1)
+    # Huawei ont-lineprofile-id and ont-srvprofile-id. If omitted, the OLT's
+    # auto-discovered profile IDs are used (falls back to 1/1 if none cached).
+    line_profile_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)
+    srv_profile_id = serializers.IntegerField(required=False, allow_null=True, min_value=1)

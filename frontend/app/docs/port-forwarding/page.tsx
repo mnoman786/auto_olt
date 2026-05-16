@@ -78,21 +78,24 @@ function Note({ type = 'info', children }: { type?: 'info' | 'warn'; children: R
 export default function PortForwardingDocsPage() {
   return (
     <AppLayout>
-      <div className="p-6 max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-2">
-          <Link href="/docs" className="text-sm text-gray-500 hover:text-blue-600 flex items-center gap-1 mb-4">
-            <ArrowLeft className="h-3 w-3" /> Back to Documentation
-          </Link>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-orange-500 rounded-lg">
-              <Layers className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">MikroTik Port Forwarding Setup</h1>
+      <div className="relative">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-amber-50/70 via-orange-50/40 to-transparent pointer-events-none" />
+        <div className="relative p-6 max-w-4xl mx-auto">
+        <Link href="/docs" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Documentation
+        </Link>
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-amber-50 to-orange-100 flex items-center justify-center text-orange-600 shadow-sm shrink-0">
+            <Layers className="h-6 w-6" />
           </div>
-          <p className="text-gray-500 ml-14">
-            Forward OLT ports (SNMP / Telnet) through a MikroTik router so Auto OLT can reach your OLT.
-          </p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-600/80">Guide</p>
+            <h1 className="text-2xl font-bold text-gray-900 mt-0.5">MikroTik Port Forwarding</h1>
+            <p className="text-gray-500 text-sm">
+              Forward OLT ports (SNMP / Telnet) through a MikroTik router so Auto OLT can reach your OLT.
+            </p>
+          </div>
         </div>
 
         {/* When to use this */}
@@ -304,6 +307,7 @@ export default function PortForwardingDocsPage() {
               {' '}— it works behind any NAT, CGNAT, or firewall without requiring port forwarding.
             </p>
           </div>
+        </div>
         </div>
       </div>
     </AppLayout>

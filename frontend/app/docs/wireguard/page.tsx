@@ -80,18 +80,21 @@ function Note({ type = 'info', children }: { type?: 'info' | 'warn'; children: R
 export default function WireGuardDocsPage() {
   return (
     <AppLayout>
-      <div className="p-6 max-w-4xl mx-auto">
+      <div className="relative">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-indigo-50/70 via-blue-50/40 to-transparent pointer-events-none" />
+        <div className="relative p-6 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-indigo-600 rounded-lg">
-              <ShieldCheck className="h-6 w-6 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">WireGuard VPN Setup Guide</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-indigo-50 to-blue-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+            <ShieldCheck className="h-6 w-6" />
           </div>
-          <p className="text-gray-500 ml-14">
-            Step-by-step guide to connect your OLT to Auto OLT via WireGuard VPN using MikroTik router.
-          </p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600/80">Guide</p>
+            <h1 className="text-2xl font-bold text-gray-900 mt-0.5">WireGuard VPN Setup</h1>
+            <p className="text-gray-500 text-sm">
+              Step-by-step guide to connect your OLT via WireGuard VPN using MikroTik.
+            </p>
+          </div>
         </div>
 
         {/* Architecture overview */}
@@ -296,6 +299,7 @@ export default function WireGuardDocsPage() {
             ))}
           </div>
         </Section>
+        </div>
       </div>
     </AppLayout>
   );

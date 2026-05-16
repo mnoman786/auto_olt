@@ -24,6 +24,8 @@ class SetupLogSerializer(serializers.ModelSerializer):
 class OLTSerializer(serializers.ModelSerializer):
     onu_count = serializers.SerializerMethodField()
     registered_onu_count = serializers.SerializerMethodField()
+    vlan_count = serializers.SerializerMethodField()
+    discovered_vlan_count = serializers.SerializerMethodField()
 
     class Meta:
         model = OLT
@@ -36,10 +38,13 @@ class OLTSerializer(serializers.ModelSerializer):
             'status', 'system_name', 'system_description', 'system_uptime',
             'last_polled', 'created_at', 'updated_at',
             'onu_count', 'registered_onu_count',
+            'vlan_count', 'discovered_vlan_count',
+            'line_profiles', 'srv_profiles', 'profiles_last_synced',
         )
         read_only_fields = ('id', 'status', 'system_name', 'system_description',
                             'system_uptime', 'last_polled', 'created_at', 'updated_at',
-                            'vpn_virtual_ip')
+                            'vpn_virtual_ip',
+                            'line_profiles', 'srv_profiles', 'profiles_last_synced')
         extra_kwargs = {
             'snmp_write_community': {'required': False, 'allow_blank': True},
             'telnet_password': {'write_only': True},
@@ -53,6 +58,13 @@ class OLTSerializer(serializers.ModelSerializer):
     def get_registered_onu_count(self, obj):
         return getattr(obj, '_registered_onu_count',
                        obj.onus.filter(status__in=('registered', 'active')).count())
+
+    def get_vlan_count(self, obj):
+        return getattr(obj, '_vlan_count', obj.vlans.count())
+
+    def get_discovered_vlan_count(self, obj):
+        return getattr(obj, '_discovered_vlan_count',
+                       obj.vlans.filter(source='discovered').count())
 
 
 class OLTCreateSerializer(serializers.ModelSerializer):

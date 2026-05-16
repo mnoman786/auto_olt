@@ -10,7 +10,7 @@ import { oltApi, vlanApi } from '@/lib/api';
 import type { OLT, VLAN } from '@/lib/types';
 import {
   ArrowLeft, Plus, Pencil, Trash2, Network, Loader2, Save, X,
-  Upload, CheckCircle2, AlertCircle
+  Upload, CheckCircle2, AlertCircle, RefreshCw, Cloud, Wrench
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -38,6 +38,7 @@ export default function VLANManagementPage() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pushingId, setPushingId] = useState<number | null>(null);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
@@ -124,6 +125,22 @@ export default function VLANManagementPage() {
     }
   };
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const res = await vlanApi.sync(oltId);
+      const { method, discovered, created, updated } = res.data;
+      toast.success(
+        `Synced via ${method.toUpperCase()}: ${discovered} on OLT • ${created} new, ${updated} updated`
+      );
+      fetchData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'VLAN sync failed');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleDelete = async (vlan: VLAN) => {
     if (!confirm(`Delete VLAN ${vlan.vlan_id} (${vlan.name})?`)) return;
     try {
@@ -139,20 +156,38 @@ export default function VLANManagementPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>Dashboard</Button>
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">VLAN Management</h1>
-            <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+      <div className="relative">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-emerald-50/70 via-green-50/40 to-transparent pointer-events-none" />
+        <div className="relative p-6 max-w-5xl mx-auto">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to OLT
+        </Link>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-emerald-50 to-green-100 flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
+              <Network className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Network Segmentation</p>
+              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">VLAN Management</h1>
+              <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Link href={`/olts/${oltId}/onus`}>
               <Button variant="outline" size="sm">ONUs</Button>
             </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />}
+              loading={syncing}
+              onClick={handleSync}
+              title="Read all VLANs from the OLT and import them"
+            >
+              Sync from OLT
+            </Button>
             <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>
               Add VLAN
             </Button>
@@ -215,10 +250,10 @@ export default function VLANManagementPage() {
         )}
 
         {/* VLAN List */}
-        <Card padding="none">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <Card padding="none" className="overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 bg-linear-to-r from-emerald-50/40 to-transparent flex items-center justify-between">
             <h2 className="font-semibold text-gray-900">VLANs</h2>
-            <span className="text-sm text-gray-500">{vlans.length} configured</span>
+            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">{vlans.length} configured</span>
           </div>
 
           {fetching ? (
@@ -229,8 +264,18 @@ export default function VLANManagementPage() {
             <div className="text-center py-16">
               <Network className="h-10 w-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">No VLANs configured</p>
-              <p className="text-gray-400 text-sm mb-4">Add VLANs to use during ONU provisioning</p>
-              <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add VLAN</Button>
+              <p className="text-gray-400 text-sm mb-4">Sync existing VLANs from the OLT, or add a new one manually</p>
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  icon={<RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />}
+                  loading={syncing}
+                  onClick={handleSync}
+                >
+                  Sync from OLT
+                </Button>
+                <Button icon={<Plus className="h-4 w-4" />} onClick={openAdd}>Add VLAN</Button>
+              </div>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -239,10 +284,11 @@ export default function VLANManagementPage() {
                   <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                     <th className="px-6 py-3">VLAN ID</th>
                     <th className="px-6 py-3">Name</th>
+                    <th className="px-6 py-3">Source</th>
                     <th className="px-6 py-3">Description</th>
                     <th className="px-6 py-3">ONUs</th>
                     <th className="px-6 py-3">OLT Status</th>
-                    <th className="px-6 py-3">Created</th>
+                    <th className="px-6 py-3">Last Seen</th>
                     <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -253,6 +299,17 @@ export default function VLANManagementPage() {
                         <span className="font-mono font-bold text-gray-900">{vlan.vlan_id}</span>
                       </td>
                       <td className="px-6 py-3 font-medium text-gray-800">{vlan.name}</td>
+                      <td className="px-6 py-3">
+                        {vlan.source === 'discovered' ? (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 font-medium">
+                            <Cloud className="h-3 w-3" /> Discovered
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">
+                            <Wrench className="h-3 w-3" /> Managed
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-3 text-gray-500">{vlan.description || '—'}</td>
                       <td className="px-6 py-3">
                         <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full">
@@ -273,7 +330,9 @@ export default function VLANManagementPage() {
                         )}
                       </td>
                       <td className="px-6 py-3 text-gray-500 text-xs">
-                        {new Date(vlan.created_at).toLocaleDateString()}
+                        {vlan.last_seen_on_olt
+                          ? new Date(vlan.last_seen_on_olt).toLocaleString()
+                          : <span className="text-gray-400">Never</span>}
                       </td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center gap-2 justify-end">
@@ -315,6 +374,7 @@ export default function VLANManagementPage() {
             </div>
           )}
         </Card>
+        </div>
       </div>
     </AppLayout>
   );

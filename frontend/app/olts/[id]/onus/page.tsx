@@ -290,17 +290,28 @@ export default function ONUManagementPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="relative">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none" />
+        <div className="relative p-6 max-w-7xl mx-auto">
+        {/* Back link */}
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to OLT
+        </Link>
+
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>Dashboard</Button>
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">ONU Management</h1>
-            <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+              <Wifi className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Subscribers</p>
+              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">ONU Management</h1>
+              <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+            </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {selectedIds.size > 0 && (
               <Button
                 size="sm"
@@ -321,6 +332,37 @@ export default function ONUManagementPage() {
             <Button variant="outline" size="sm" onClick={fetchData}>
               Refresh
             </Button>
+          </div>
+        </div>
+
+        {/* Stat summary chips */}
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="rounded-xl bg-white border border-gray-200 p-3 flex items-center gap-3 shadow-sm">
+            <div className="p-2 rounded-lg bg-linear-to-br from-blue-50 to-indigo-100 text-blue-600">
+              <Wifi className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-lg font-bold text-gray-900 leading-none">{counts.all}</p>
+            </div>
+          </div>
+          <div className="rounded-xl bg-white border border-gray-200 p-3 flex items-center gap-3 shadow-sm">
+            <div className="p-2 rounded-lg bg-linear-to-br from-emerald-50 to-green-100 text-emerald-600">
+              <CheckCircle className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Registered</p>
+              <p className="text-lg font-bold text-gray-900 leading-none">{counts.registered}</p>
+            </div>
+          </div>
+          <div className="rounded-xl bg-white border border-gray-200 p-3 flex items-center gap-3 shadow-sm">
+            <div className="p-2 rounded-lg bg-linear-to-br from-amber-50 to-orange-100 text-orange-600">
+              <AlertCircle className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500">Unregistered</p>
+              <p className="text-lg font-bold text-gray-900 leading-none">{counts.unregistered}</p>
+            </div>
           </div>
         </div>
 
@@ -368,7 +410,7 @@ export default function ONUManagementPage() {
         </div>
 
         {/* Table */}
-        <Card padding="none">
+        <Card padding="none" className="overflow-hidden">
           {fetching ? (
             <div className="flex items-center justify-center py-16">
               <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
@@ -499,6 +541,7 @@ export default function ONUManagementPage() {
             </div>
           )}
         </Card>
+        </div>
       </div>
 
       {/* Single Register Modal */}

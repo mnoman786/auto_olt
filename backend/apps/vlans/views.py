@@ -72,3 +72,19 @@ def push_vlan(request, olt_pk, pk):
     from services import provisioning_service
     provisioning_service.push_vlan_to_olt_async(vlan.id)
     return Response({'detail': f'Pushing VLAN {vlan.vlan_id} to OLT in background.', 'vlan_id': vlan.id})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def sync_vlans(request, olt_pk):
+    """
+    Read all VLANs from the OLT and upsert them into the DB.
+    Tries SNMP first, falls back to Telnet. Runs synchronously so the caller
+    sees the count immediately.
+    """
+    olt = get_olt_for_user(olt_pk, request.user)
+    from services import provisioning_service
+    result = provisioning_service.sync_vlans_from_olt(olt.id)
+    if not result.get('success'):
+        return Response({'detail': result.get('error') or 'Sync failed', **result}, status=400)
+    return Response(result)

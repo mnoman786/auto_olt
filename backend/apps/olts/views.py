@@ -307,3 +307,21 @@ def wg_info(request, pk):
 
     info = wireguard_service.get_wg_info(olt)
     return Response(info)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def sync_profiles(request, pk):
+    """
+    Re-read ONU line + service profiles from the OLT and cache them.
+    Used so ONU registration can auto-pick a valid profile ID without
+    the user having to know what IDs exist on the device.
+    """
+    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    result = provisioning_service.sync_profiles_from_olt(olt.id)
+    if not result.get('success'):
+        return Response(
+            {'detail': result.get('error') or 'Profile sync failed', **result},
+            status=400,
+        )
+    return Response(result)

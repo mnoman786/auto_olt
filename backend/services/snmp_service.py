@@ -429,3 +429,66 @@ def _extract_pon_port(oid_str: str) -> str:
     if len(parts) >= 4:
         return f'{parts[-4]}/{parts[-3]}/{parts[-2]}'
     return parts[-1] if parts else ''
+
+
+# ─── VLAN discovery ──────────────────────────────────────────────────────────
+#
+# Q-BRIDGE-MIB (RFC 4363) — vendor-neutral, supported by most modern OLTs.
+#   dot1qVlanStaticName  : 1.3.6.1.2.1.17.7.1.4.3.1.1.<vid>  → octet string
+#   dot1qVlanStaticRowStatus: 1.3.6.1.2.1.17.7.1.4.3.1.5.<vid>  → row status (1=active)
+#
+# Huawei-specific fallback (HUAWEI-VLAN-MIB):
+#   hwL2VlanDescription  : 1.3.6.1.4.1.2011.5.25.42.1.1.2.1.1.<vid>
+OID_DOT1Q_VLAN_NAME       = '1.3.6.1.2.1.17.7.1.4.3.1.1'
+OID_DOT1Q_VLAN_ROW_STATUS = '1.3.6.1.2.1.17.7.1.4.3.1.5'
+OID_HUAWEI_VLAN_DESCR     = '1.3.6.1.4.1.2011.5.25.42.1.1.2.1.1'
+
+
+def discover_vlans_snmp(host: str, community: str, version: str = 'v2c',
+                        port: int = 161) -> List[Dict[str, Any]]:
+    """
+    Discover VLANs on the OLT via Q-BRIDGE-MIB (RFC 4363) with a Huawei fallback.
+
+    Returns a list of dicts: {'vlan_id': int, 'name': str, 'description': str}.
+    Returns an empty list if the OLT does not respond on either MIB — caller
+    should fall back to telnet discovery in that case.
+    """
+    vlans: Dict[int, Dict[str, Any]] = {}
+
+    # ── Try Q-BRIDGE-MIB (vendor-neutral) ───────────────────────────────────
+    name_rows = snmp_walk(host, community, OID_DOT1Q_VLAN_NAME,
+                          version=version, port=port, max_rows=4096)
+    for oid, value in name_rows:
+        try:
+            vid = int(oid.split('.')[-1])
+        except (ValueError, IndexError):
+            continue
+        if not (1 <= vid <= 4094):
+            continue
+        vlans[vid] = {'vlan_id': vid, 'name': value or f'VLAN{vid}', 'description': ''}
+
+    # ── Huawei fallback / enrichment ────────────────────────────────────────
+    if not vlans:
+        huawei_rows = snmp_walk(host, community, OID_HUAWEI_VLAN_DESCR,
+                                version=version, port=port, max_rows=4096)
+        for oid, value in huawei_rows:
+            try:
+                vid = int(oid.split('.')[-1])
+            except (ValueError, IndexError):
+                continue
+            if not (1 <= vid <= 4094):
+                continue
+            vlans[vid] = {'vlan_id': vid, 'name': f'VLAN{vid}', 'description': value or ''}
+    else:
+        # Try to enrich with Huawei descriptions if available
+        huawei_rows = snmp_walk(host, community, OID_HUAWEI_VLAN_DESCR,
+                                version=version, port=port, max_rows=4096)
+        for oid, value in huawei_rows:
+            try:
+                vid = int(oid.split('.')[-1])
+            except (ValueError, IndexError):
+                continue
+            if vid in vlans and value:
+                vlans[vid]['description'] = value
+
+    return sorted(vlans.values(), key=lambda v: v['vlan_id'])

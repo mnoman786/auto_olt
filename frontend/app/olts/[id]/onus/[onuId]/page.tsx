@@ -177,28 +177,35 @@ export default function ONUDetailPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="relative">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none" />
+        <div className="relative p-6 max-w-5xl mx-auto">
+        <Link href={`/olts/${oltId}/onus`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to ONUs
+        </Link>
 
         {/* Header */}
-        <div className="flex items-start gap-3 mb-6">
-          <Link href={`/olts/${oltId}/onus`}>
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>
-              ONUs
-            </Button>
-          </Link>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900 font-mono truncate">
-                {onu?.serial_number}
-              </h1>
-              {onu && <ONUStatusBadge status={onu.status} />}
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+              <Wifi className="h-6 w-6" />
             </div>
-            <p className="text-gray-500 text-sm mt-0.5">
-              {olt?.name} — {olt?.ip_address}
-              {onu?.pon_port && <span> · PON Port {onu.pon_port}</span>}
-            </p>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">ONU Device</p>
+              <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                <h1 className="text-2xl font-bold text-gray-900 font-mono truncate">
+                  {onu?.serial_number}
+                </h1>
+                {onu && <ONUStatusBadge status={onu.status} />}
+              </div>
+              <p className="text-gray-500 text-sm mt-0.5">
+                {olt?.name} — {olt?.ip_address}
+                {onu?.pon_port && <span> · PON Port {onu.pon_port}</span>}
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap">
             <Button variant="outline" size="sm"
               icon={<RefreshCw className="h-4 w-4" />}
               onClick={fetchData}
@@ -329,11 +336,11 @@ export default function ONUDetailPage() {
         </div>
 
         {/* Provisioning Logs */}
-        <Card padding="none">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+        <Card padding="none" className="overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-linear-to-r from-gray-50/60 to-transparent">
             <List className="h-4 w-4 text-gray-400" />
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Provisioning Logs</h2>
-            <span className="ml-auto text-xs text-gray-400">{logs.length} entries</span>
+            <span className="ml-auto text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{logs.length} entries</span>
           </div>
           {logs.length === 0 ? (
             <div className="text-center py-10">
@@ -369,6 +376,7 @@ export default function ONUDetailPage() {
             </div>
           )}
         </Card>
+        </div>
       </div>
 
       {showRegister && onu && (

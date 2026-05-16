@@ -43,6 +43,11 @@ class OLT(models.Model):
     system_description = models.CharField(max_length=500, blank=True, default='')
     system_uptime = models.CharField(max_length=100, blank=True, default='')
     last_polled = models.DateTimeField(null=True, blank=True)
+    # Auto-discovered ONU profile IDs (Huawei). List of dicts like {"id": 1, "name": "default"}.
+    # Used so we don't have to guess profile IDs when registering ONUs.
+    line_profiles = models.JSONField(default=list, blank=True)
+    srv_profiles = models.JSONField(default=list, blank=True)
+    profiles_last_synced = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

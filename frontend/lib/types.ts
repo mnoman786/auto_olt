@@ -48,6 +48,11 @@ export interface OLT {
   updated_at: string;
   onu_count: number;
   registered_onu_count: number;
+  vlan_count?: number;
+  discovered_vlan_count?: number;
+  line_profiles?: { id: number; name: string }[];
+  srv_profiles?: { id: number; name: string }[];
+  profiles_last_synced?: string | null;
 }
 
 export interface WireGuardInfo {
@@ -121,12 +126,16 @@ export interface ONU {
   updated_at: string;
 }
 
+export type VLANSource = 'managed' | 'discovered';
+
 export interface VLAN {
   id: number;
   vlan_id: number;
   name: string;
   description: string;
   onu_count: number;
+  source: VLANSource;
+  last_seen_on_olt: string | null;
   pushed_to_olt: boolean;
   push_error: string;
   created_at: string;

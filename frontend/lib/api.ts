@@ -114,6 +114,13 @@ export const oltApi = {
 
   saveWgPeer: (id: number, data: { wg_client_public_key: string; wg_client_subnet: string }) =>
     apiClient.post<WireGuardInfo>(`/olts/${id}/wireguard/`, data),
+
+  syncProfiles: (id: number) =>
+    apiClient.post<{
+      success: boolean;
+      line_profiles: { id: number; name: string }[];
+      srv_profiles: { id: number; name: string }[];
+    }>(`/olts/${id}/profiles/sync/`),
 };
 
 // ONU API
@@ -157,6 +164,15 @@ export const vlanApi = {
 
   push: (oltId: number, vlanId: number) =>
     apiClient.post(`/olts/${oltId}/vlans/${vlanId}/push/`),
+
+  sync: (oltId: number) =>
+    apiClient.post<{
+      success: boolean;
+      method: 'snmp' | 'telnet';
+      discovered: number;
+      created: number;
+      updated: number;
+    }>(`/olts/${oltId}/vlans/sync/`),
 };
 
 export default apiClient;

@@ -58,8 +58,11 @@ def register_onu(request, olt_pk, pk):
     vlan_id_param = serializer.validated_data.get('vlan_id')
     description = serializer.validated_data.get('description', '')
     service_profile = serializer.validated_data.get('service_profile', '')
-    line_profile_id = serializer.validated_data.get('line_profile_id', 1)
-    srv_profile_id = serializer.validated_data.get('srv_profile_id', 1)
+
+    # Use OLT's auto-discovered profile IDs unless the caller explicitly overrides.
+    default_line, default_srv = provisioning_service.pick_default_profile_ids(olt)
+    line_profile_id = serializer.validated_data.get('line_profile_id') or default_line
+    srv_profile_id = serializer.validated_data.get('srv_profile_id') or default_srv
 
     # Resolve VLAN
     vlan_db_id = None
@@ -157,8 +160,13 @@ def bulk_register_onus(request, olt_pk):
             onu.description = description
         onu.save()
 
-        def _provision(oid=onu.id):
-            provisioning_service.provision_onu(oid, vlan_id=vlan_id_param)
+        line_pid, srv_pid = provisioning_service.pick_default_profile_ids(olt)
+
+        def _provision(oid=onu.id, lpid=line_pid, spid=srv_pid):
+            provisioning_service.provision_onu(
+                oid, vlan_id=vlan_id_param,
+                line_profile_id=lpid, srv_profile_id=spid,
+            )
 
         threading.Thread(target=_provision, daemon=True).start()
         started.append({'onu_id': onu_id, 'serial': onu.serial_number})

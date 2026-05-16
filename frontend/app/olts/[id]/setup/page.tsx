@@ -11,7 +11,7 @@ import type { OLT, SetupLog, OLTStatus, WireGuardInfo } from '@/lib/types';
 import {
   ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw,
   Server, Play, ChevronRight, Wifi, Terminal, Shield,
-  FlaskConical, ShieldCheck, Copy, Check, Pencil
+  ShieldCheck, Copy, Check, Pencil
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -221,19 +221,6 @@ export default function OLTSetupPage() {
     }
   };
 
-  const triggerSimulate = async () => {
-    try {
-      await oltApi.simulateSetup(oltId);
-      setSetupStarted(true);
-      setOltStatus('configuring');
-      setLogs([]);
-      startPolling();
-      toast.success('Simulation started!');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Failed to start simulation');
-    }
-  };
-
   const levelColor: Record<string, string> = {
     info: 'text-blue-300',
     success: 'text-green-400',
@@ -267,20 +254,30 @@ export default function OLTSetupPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-5xl mx-auto">
+      <div className="relative">
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+        />
+        <div className="relative p-6 max-w-5xl mx-auto">
+        {/* Back link */}
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to OLT
+        </Link>
+
         {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Link href="/dashboard">
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>
-              Dashboard
-            </Button>
-          </Link>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">OLT Setup Wizard</h1>
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+            <Play className="h-6 w-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Setup Wizard</p>
+            <div className="flex items-center gap-3 mt-0.5">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">{olt?.name || 'OLT Setup'}</h1>
               <OLTStatusBadge status={oltStatus} />
             </div>
-            <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+            <p className="text-gray-500 text-sm">{olt?.ip_address}</p>
           </div>
         </div>
 
@@ -462,10 +459,13 @@ export default function OLTSetupPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Steps Panel */}
           <div className="space-y-3">
-            <Card padding="md">
-              <h2 className="font-semibold text-gray-800 mb-4 text-sm uppercase tracking-wide">
-                {isVpn ? 'Step 2 — OLT Setup' : 'Setup Steps'}
-              </h2>
+            <Card padding="none" className="overflow-hidden">
+              <div className="px-5 py-3 bg-linear-to-r from-blue-50/60 to-transparent border-b border-gray-100">
+                <h2 className="font-semibold text-gray-800 text-xs uppercase tracking-wider">
+                  {isVpn ? 'Step 2 — OLT Setup' : 'Setup Steps'}
+                </h2>
+              </div>
+              <div className="p-5">
               <div className="space-y-3">
                 {SETUP_STEPS.map((step, idx) => {
                   const status = getStepStatus(step.id, logs);
@@ -514,13 +514,6 @@ export default function OLTSetupPage() {
                     >
                       Retry Setup
                     </Button>
-                    <Button
-                      variant="outline" className="w-full"
-                      icon={<FlaskConical className="h-4 w-4" />}
-                      onClick={triggerSimulate} size="sm"
-                    >
-                      Simulate Instead
-                    </Button>
                   </div>
                 ) : !setupStarted ? (
                   <div className="space-y-2">
@@ -534,13 +527,6 @@ export default function OLTSetupPage() {
                     >
                       Start Setup
                     </Button>
-                    <Button
-                      variant="outline" className="w-full"
-                      icon={<FlaskConical className="h-4 w-4" />}
-                      onClick={triggerSimulate} size="sm"
-                    >
-                      Simulate Setup
-                    </Button>
                     {!canStartSetup && (
                       <p className="text-xs text-yellow-600 text-center">
                         Configure WireGuard peer above first
@@ -553,6 +539,7 @@ export default function OLTSetupPage() {
                     Setup in progress...
                   </div>
                 )}
+              </div>
               </div>
             </Card>
 
@@ -702,18 +689,20 @@ export default function OLTSetupPage() {
             </Card>
 
             {isComplete && (
-              <div className="mt-4 grid grid-cols-4 gap-3">
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { href: `/olts/${oltId}/onus`, label: 'Manage ONUs', icon: Wifi },
-                  { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks', icon: Terminal },
-                  { href: `/olts/${oltId}/vlans`, label: 'VLANs', icon: Server },
-                  { href: `/olts/${oltId}`, label: 'OLT Details', icon: Server },
+                  { href: `/olts/${oltId}/onus`,  label: 'Manage ONUs',     icon: Wifi,     tone: 'from-blue-50 to-indigo-100 text-blue-600' },
+                  { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks', icon: Terminal, tone: 'from-purple-50 to-fuchsia-100 text-purple-600' },
+                  { href: `/olts/${oltId}/vlans`, label: 'VLANs',           icon: Server,   tone: 'from-emerald-50 to-green-100 text-emerald-600' },
+                  { href: `/olts/${oltId}`,       label: 'OLT Details',     icon: Server,   tone: 'from-amber-50 to-orange-100 text-orange-600' },
                 ].map(item => (
-                  <Link key={item.href} href={item.href}>
-                    <Card padding="sm" className="hover:bg-blue-50 hover:border-blue-200 transition-colors cursor-pointer">
+                  <Link key={item.href} href={item.href} className="group">
+                    <Card padding="sm" className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 transition-all cursor-pointer">
                       <div className="flex flex-col items-center gap-2 py-1">
-                        <item.icon className="h-5 w-5 text-blue-600" />
-                        <span className="text-xs font-medium text-gray-700 text-center">{item.label}</span>
+                        <div className={`p-2 rounded-lg bg-linear-to-br ${item.tone}`}>
+                          <item.icon className="h-5 w-5" />
+                        </div>
+                        <span className="text-xs font-medium text-gray-700 text-center group-hover:text-blue-600 transition-colors">{item.label}</span>
                       </div>
                     </Card>
                   </Link>
@@ -721,6 +710,7 @@ export default function OLTSetupPage() {
               </div>
             )}
           </div>
+        </div>
         </div>
       </div>
     </AppLayout>

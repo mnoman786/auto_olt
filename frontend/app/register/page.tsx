@@ -44,18 +44,25 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-blue-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen relative flex items-center justify-center p-4 bg-linear-to-br from-gray-950 via-gray-900 to-blue-950 overflow-hidden">
+      <div aria-hidden className="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl" />
+      <div aria-hidden className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl" />
+      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(59,130,246,0.15),transparent_60%)]" />
+
+      <div className="w-full max-w-md relative">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-500 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-linear-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-xl shadow-blue-500/30">
             <Network className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Auto OLT</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Auto OLT</h1>
           <p className="text-gray-400 text-sm mt-1">ISP Management System</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Create an account</h2>
+        <div className="bg-white/95 backdrop-blur rounded-2xl shadow-2xl ring-1 ring-white/10 p-8">
+          <div className="mb-6">
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Get started</p>
+            <h2 className="text-xl font-semibold text-gray-900 mt-1">Create your account</h2>
+          </div>
 
           {errors.general && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
@@ -113,6 +120,10 @@ export default function RegisterPage() {
             </Link>
           </p>
         </div>
+
+        <p className="text-center text-xs text-gray-500 mt-6">
+          &copy; {new Date().getFullYear()} Auto OLT &middot; Built for Pakistan local ISPs
+        </p>
       </div>
     </div>
   );

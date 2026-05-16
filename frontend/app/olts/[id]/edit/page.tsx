@@ -131,15 +131,23 @@ export default function EditOLTPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-3xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Link href={`/olts/${oltId}`}>
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>
-              Back
-            </Button>
-          </Link>
+      <div className="relative">
+        <div
+          aria-hidden
+          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+        />
+        <div className="relative p-6 max-w-3xl mx-auto">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to OLT
+        </Link>
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-amber-50 to-orange-100 flex items-center justify-center text-orange-600 shadow-sm shrink-0">
+            <Server className="h-6 w-6" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Edit OLT Device</h1>
+            <p className="text-xs font-semibold uppercase tracking-wider text-orange-600/80">Edit Device</p>
+            <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Edit OLT Device</h1>
             <p className="text-gray-500 text-sm">Update OLT credentials and connectivity settings</p>
           </div>
         </div>
@@ -267,6 +275,7 @@ export default function EditOLTPage() {
             </Button>
           </div>
         </form>
+        </div>
       </div>
     </AppLayout>
   );

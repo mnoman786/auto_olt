@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
-  LayoutDashboard, Server, Network, LogOut, User, ChevronRight, Menu, X, BookOpen
+  LayoutDashboard, Server, Network, LogOut, User, ChevronRight, Menu, X, BookOpen,
+  Bell, Search,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState } from 'react';
@@ -27,22 +28,25 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
+  const initials = (user?.username || '?').slice(0, 2).toUpperCase();
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
       <aside className={clsx(
-        'fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white flex flex-col transition-transform duration-300',
+        'fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300',
+        'bg-linear-to-b from-gray-900 via-gray-900 to-gray-950 text-white',
         'lg:translate-x-0 lg:static lg:flex',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-700">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/5">
+          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
             <Network className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white">Auto OLT</h1>
-            <p className="text-xs text-gray-400">ISP Management</p>
+            <h1 className="text-sm font-bold text-white tracking-tight">Auto OLT</h1>
+            <p className="text-[11px] text-gray-400">ISP Management</p>
           </div>
           <button
             className="ml-auto lg:hidden text-gray-400 hover:text-white"
@@ -53,7 +57,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        <nav className="flex-1 px-3 py-5 space-y-1">
+          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            Workspace
+          </p>
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -63,34 +70,34 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
                 className={clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
                   active
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/30'
+                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
                 )}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                <Icon className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
                 {item.label}
-                {active && <ChevronRight className="ml-auto h-3 w-3" />}
+                {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
               </Link>
             );
           })}
         </nav>
 
         {/* User section */}
-        <div className="px-3 py-4 border-t border-gray-700">
+        <div className="px-3 py-4 border-t border-white/5">
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
-            <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-gray-300" />
+            <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-md">
+              {initials}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user?.username}</p>
-              <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
           >
             <LogOut className="h-4 w-4" />
             Sign out
@@ -101,7 +108,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -109,7 +116,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top bar */}
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center px-4 gap-4 sticky top-0 z-30">
+        <header className="h-14 bg-white/80 backdrop-blur-md border-b border-gray-200/80 flex items-center px-4 gap-4 sticky top-0 z-30">
           <button
             className="lg:hidden text-gray-500 hover:text-gray-700"
             onClick={() => setSidebarOpen(true)}
@@ -117,9 +124,27 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
-          <span className="text-sm text-gray-500">
-            Welcome, <span className="font-medium text-gray-800">{user?.username}</span>
-          </span>
+          <button
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            aria-label="Search"
+            type="button"
+          >
+            <Search className="h-4 w-4" />
+          </button>
+          <button
+            className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors relative"
+            aria-label="Notifications"
+            type="button"
+          >
+            <Bell className="h-4 w-4" />
+            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+          </button>
+          <div className="hidden sm:flex items-center gap-2 pl-3 ml-1 border-l border-gray-200">
+            <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+              {initials}
+            </div>
+            <span className="text-sm text-gray-700 font-medium">{user?.username}</span>
+          </div>
         </header>
 
         {/* Page content */}

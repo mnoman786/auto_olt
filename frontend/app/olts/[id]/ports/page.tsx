@@ -162,17 +162,21 @@ export default function OLTPortsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link href={`/olts/${oltId}`}>
-              <Button variant="ghost" size="sm" icon={<ArrowLeft className="h-4 w-4" />}>
-                Back
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Ports & Uplinks</h1>
+      <div className="relative">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-purple-50/70 via-fuchsia-50/40 to-transparent pointer-events-none" />
+        <div className="relative p-6 max-w-6xl mx-auto">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to OLT
+        </Link>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-purple-50 to-fuchsia-100 flex items-center justify-center text-purple-600 shadow-sm shrink-0">
+              <Network className="h-6 w-6" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80">Hardware Inventory</p>
+              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Ports & Uplinks</h1>
               <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
             </div>
           </div>
@@ -224,6 +228,7 @@ export default function OLTPortsPage() {
             <PortSection title="Other Ports"        ports={otherPorts}  color="text-gray-500" />
           </div>
         )}
+        </div>
       </div>
     </AppLayout>
   );

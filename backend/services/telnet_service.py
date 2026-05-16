@@ -2,6 +2,7 @@
 Telnet Service for OLT CLI management.
 Handles automated CLI interactions via Telnet for OLT provisioning.
 """
+import re
 import socket
 import time
 import logging
@@ -428,39 +429,315 @@ def telnet_create_mgmt_user(client: TelnetClient, username: str, password: str,
     return result
 
 
+# Vendor error patterns indicating the VLAN already exists on the OLT.
+# Matched case-insensitively against command output.
+_VLAN_EXISTS_PATTERNS = (
+    'already exist',          # Huawei: "VLAN xxx already exists"
+    'already configured',     # Huawei variant
+    'vlan exists',            # ZTE variant
+    'duplicate',              # generic
+)
+
+# Strings that signal a genuine CLI failure (not a duplicate).
+_VLAN_ERROR_PATTERNS = (
+    'failure:',
+    'error:',
+    '% invalid',
+    '% incomplete',
+    '% permission',
+    'unrecognized',
+    'not allowed',
+)
+
+
+def _output_indicates_exists(output: str) -> bool:
+    low = output.lower()
+    return any(p in low for p in _VLAN_EXISTS_PATTERNS)
+
+
+def _output_indicates_error(output: str) -> bool:
+    low = output.lower()
+    return any(p in low for p in _VLAN_ERROR_PATTERNS)
+
+
 def telnet_push_vlan(client: TelnetClient, vlan_id: int, vendor: str = 'auto') -> Dict[str, Any]:
-    """Push a VLAN to the OLT via Telnet CLI. Supports Huawei and ZTE."""
+    """
+    Push a VLAN to the OLT via Telnet CLI. Supports Huawei and ZTE.
+
+    Pre-checks existence; if the VLAN is already on the OLT, returns success
+    with already_existed=True (no create attempted). Otherwise creates and
+    parses the OLT response to distinguish duplicate (treat as success) from
+    real CLI errors.
+    """
     steps = []
-    result = {'success': False, 'steps': steps}
+    result: Dict[str, Any] = {'success': False, 'steps': steps, 'already_existed': False}
 
     if vendor == 'auto':
         vendor = _detect_vendor(client)
 
     try:
+        # Enter privileged/config-adjacent context for the existence check.
+        client.send_and_read('enable', '#', '>', timeout=5)
+
+        # --- Pre-check: does the VLAN already exist? ---
         if vendor == 'zte':
-            client.send_and_read('enable', '#', timeout=5)
+            _, check_out = client.send_and_read(f'show vlan {vlan_id}', '#', timeout=5)
+        else:
+            _, check_out = client.send_and_read(f'display vlan {vlan_id}', '#', timeout=5)
+
+        check_low = check_out.lower()
+        # A "does not exist" / "invalid" response means we need to create it.
+        not_found = (
+            'does not exist' in check_low
+            or 'not exist' in check_low
+            or 'no such' in check_low
+            or '% invalid' in check_low
+            or 'unrecognized' in check_low
+        )
+        # A successful display showing the vlan id is treated as "exists".
+        # Heuristic: the output contains the vlan id and no not-found marker.
+        vlan_found = (not not_found) and (str(vlan_id) in check_out) and ('vlan' in check_low)
+
+        if vlan_found:
+            result['success'] = True
+            result['already_existed'] = True
+            steps.append({
+                'step': 'push_vlan',
+                'success': True,
+                'message': f'VLAN {vlan_id} already exists on OLT ({vendor}); skipped create',
+            })
+            return result
+
+        # --- Create the VLAN ---
+        if vendor == 'zte':
             client.send_and_read('configure terminal', '#', timeout=5)
-            client.send_and_read(f'vlan {vlan_id}', '#', timeout=5)
+            _, create_out = client.send_and_read(f'vlan {vlan_id}', '#', timeout=5)
             client.send_and_read('exit', '#', timeout=5)
             client.send_and_read('write', '#', timeout=10)
-            steps.append({'step': 'push_vlan', 'success': True,
-                          'message': f'VLAN {vlan_id} created on OLT (ZTE)'})
         else:
             # Huawei MA5600/MA5800
-            client.send_and_read('enable', '#', timeout=5)
             client.send_and_read('config', '#', timeout=5)
-            client.send_and_read(f'vlan {vlan_id} smart', '#', timeout=5)
+            _, create_out = client.send_and_read(f'vlan {vlan_id} smart', '#', timeout=5)
             client.send_and_read('quit', '#', timeout=5)
             client.send_and_read('save', '#', 'Y/N', timeout=5)
             client.send_and_read('Y', '#', timeout=10)
-            steps.append({'step': 'push_vlan', 'success': True,
-                          'message': f'VLAN {vlan_id} created on OLT (Huawei)'})
-        result['success'] = True
+
+        if _output_indicates_exists(create_out):
+            # Race / pre-check missed it — still the desired end state.
+            result['success'] = True
+            result['already_existed'] = True
+            steps.append({
+                'step': 'push_vlan',
+                'success': True,
+                'message': f'VLAN {vlan_id} already existed on OLT ({vendor}); no change',
+            })
+        elif _output_indicates_error(create_out):
+            err = create_out.strip().splitlines()[-1] if create_out.strip() else 'CLI error'
+            steps.append({'step': 'push_vlan', 'success': False, 'message': err})
+            result['error'] = err
+        else:
+            result['success'] = True
+            steps.append({
+                'step': 'push_vlan',
+                'success': True,
+                'message': f'VLAN {vlan_id} created on OLT ({vendor})',
+            })
     except Exception as e:
         steps.append({'step': 'push_vlan', 'success': False, 'message': str(e)})
         result['error'] = str(e)
 
-    result['steps'] = steps
+    return result
+
+
+def telnet_discover_vlans(client: TelnetClient, vendor: str = 'auto') -> Dict[str, Any]:
+    """
+    List all VLANs configured on the OLT via Telnet CLI.
+
+    Returns {'success': bool, 'vlans': [{vlan_id, name, description}], 'error': str|None}.
+
+    Huawei MA5600/MA5800: `display vlan all`
+    ZTE   C300/C600    : `show vlan`
+    """
+    result: Dict[str, Any] = {'success': False, 'vlans': [], 'error': None}
+
+    if vendor == 'auto':
+        vendor = _detect_vendor(client)
+
+    try:
+        client.send_and_read('enable', '#', '>', timeout=5)
+
+        if vendor == 'zte':
+            _, output = client.send_and_read('show vlan', '#', timeout=10)
+        else:
+            # Huawei prints `display vlan all` in pages; pager is auto-advanced.
+            _, output = client.send_and_read('display vlan all', '#', timeout=15)
+
+        # Parse: each line of interest starts with a digit (vlan id).
+        # Huawei format example:
+        #   VLAN ID  Type        Attribute   Description
+        #   -------  ---------  ---------- ------------------
+        #     1      smart       common     VLAN 0001
+        #   100      smart       common     Customer-Internet
+        #
+        # ZTE format example:
+        #   VLAN ID  Name             Type    Status
+        #     1      default          static  active
+        #   100      Mgmt             static  active
+        seen: Dict[int, Dict[str, Any]] = {}
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith('-') or line.startswith('='):
+                continue
+            # Skip header rows
+            low = line.lower()
+            if low.startswith('vlan id') or 'type' in low and 'attribute' in low:
+                continue
+            parts = line.split()
+            if not parts or not parts[0].isdigit():
+                continue
+            try:
+                vid = int(parts[0])
+            except ValueError:
+                continue
+            if not (1 <= vid <= 4094):
+                continue
+            # Best-effort: tail of the line is description; the second token
+            # is usually a vendor type field, so take everything after it.
+            description = ' '.join(parts[3:]) if len(parts) > 3 else ''
+            name = parts[1] if len(parts) > 1 else f'VLAN{vid}'
+            # On Huawei the "name" column is actually the type ("smart"/"common");
+            # fall back to a synthetic name in that case.
+            if vendor != 'zte' and name.lower() in ('smart', 'common', 'mux'):
+                name = description.split()[0] if description else f'VLAN{vid}'
+            seen[vid] = {'vlan_id': vid, 'name': name[:100], 'description': description[:300]}
+
+        result['success'] = True
+        result['vlans'] = sorted(seen.values(), key=lambda v: v['vlan_id'])
+    except Exception as e:
+        result['error'] = str(e)
+
+    return result
+
+
+def _parse_huawei_profiles(output: str) -> List[Dict[str, Any]]:
+    """
+    Parse Huawei `display ont-lineprofile gpon all` / `display ont-srvprofile gpon all` output.
+
+    Handles two firmware layouts:
+      (a) Tabular:
+          Profile-ID  Profile-Name
+          ----------  -----------
+              1       default
+             10       hsi-1000m
+      (b) Vertical:
+          Profile-ID : 1
+          Profile-name: default
+          ...
+          Profile-ID : 10
+          Profile-name: hsi-1000m
+    """
+    profiles: Dict[int, Dict[str, Any]] = {}
+
+    # Vertical format first — "Profile-ID : N" possibly followed by Profile-Name on next non-blank line.
+    vertical_id_re = re.compile(r'profile[-\s]*id\s*[:=]?\s*(\d+)', re.IGNORECASE)
+    vertical_name_re = re.compile(r'profile[-\s]*name\s*[:=]?\s*(\S.*)', re.IGNORECASE)
+
+    pending_id: Optional[int] = None
+    for raw in output.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        m_id = vertical_id_re.search(line)
+        if m_id and 'profile-id' in line.lower():
+            try:
+                pid = int(m_id.group(1))
+            except ValueError:
+                pending_id = None
+                continue
+            pending_id = pid
+            profiles.setdefault(pid, {'id': pid, 'name': f'profile-{pid}'})
+            continue
+        if pending_id is not None:
+            m_name = vertical_name_re.search(line)
+            if m_name:
+                profiles[pending_id]['name'] = m_name.group(1).strip()[:100]
+                pending_id = None
+                continue
+
+    # Tabular format: lines that start with a digit, second token is the name.
+    if not profiles:
+        for raw in output.splitlines():
+            line = raw.strip()
+            if not line or line.startswith('-') or line.startswith('='):
+                continue
+            low = line.lower()
+            if 'profile-id' in low or 'profile id' in low:
+                continue
+            parts = line.split()
+            if not parts or not parts[0].isdigit():
+                continue
+            try:
+                pid = int(parts[0])
+            except ValueError:
+                continue
+            if not (1 <= pid <= 65535):
+                continue
+            name = parts[1][:100] if len(parts) > 1 else f'profile-{pid}'
+            profiles[pid] = {'id': pid, 'name': name}
+
+    return sorted(profiles.values(), key=lambda p: p['id'])
+
+
+def telnet_discover_profiles(client: TelnetClient, vendor: str = 'auto') -> Dict[str, Any]:
+    """
+    Discover ONU line profiles and service profiles configured on the OLT.
+
+    Returns:
+        {
+          'success': bool,
+          'line_profiles': [{'id': int, 'name': str}, ...],
+          'srv_profiles':  [{'id': int, 'name': str}, ...],
+          'error': str|None,
+        }
+
+    Only Huawei MA5600/MA5800 is supported for now — ZTE uses a different
+    profile model (`gpon profile <name>`) and is not parsed here.
+    """
+    result: Dict[str, Any] = {
+        'success': False,
+        'line_profiles': [],
+        'srv_profiles': [],
+        'error': None,
+    }
+
+    if vendor == 'auto':
+        vendor = _detect_vendor(client)
+
+    if vendor != 'huawei':
+        result['error'] = f'Profile auto-discovery is only implemented for Huawei (detected: {vendor})'
+        return result
+
+    try:
+        client.send_and_read('enable', '#', '>', timeout=5)
+        client.send_and_read('config', '#', timeout=5)
+
+        # Line profiles
+        _, line_out = client.send_and_read('display ont-lineprofile gpon all', '#', timeout=20)
+        result['line_profiles'] = _parse_huawei_profiles(line_out)
+
+        # Service profiles
+        _, srv_out = client.send_and_read('display ont-srvprofile gpon all', '#', timeout=20)
+        result['srv_profiles'] = _parse_huawei_profiles(srv_out)
+
+        # Return to top
+        client.send_and_read('quit', '#', '>', timeout=5)
+
+        result['success'] = bool(result['line_profiles'] or result['srv_profiles'])
+        if not result['success']:
+            result['error'] = 'No ONU profiles found on the OLT — they may need to be created first'
+    except Exception as e:
+        result['error'] = str(e)
+
     return result
 
 
