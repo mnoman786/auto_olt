@@ -31,7 +31,11 @@ class OLTListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         olt = serializer.save(user=self.request.user)
-        provisioning_service.start_olt_setup_async(olt.id)
+        # Only auto-start setup if the OLT is reachable right now.
+        # VPN OLTs require the customer's WireGuard peer to be configured first
+        # (the Setup page will prompt for it and then start setup manually).
+        if olt.connection_type == 'direct' or olt.wg_client_public_key:
+            provisioning_service.start_olt_setup_async(olt.id)
         return olt
 
     def create(self, request, *args, **kwargs):
@@ -90,6 +94,11 @@ def trigger_setup(request, pk):
     olt = get_object_or_404(OLT, pk=pk, user=request.user)
     if olt.status == 'configuring':
         return Response({'detail': 'Setup already in progress.'}, status=400)
+    if olt.connection_type == 'vpn' and not olt.wg_client_public_key:
+        return Response(
+            {'detail': 'Configure the WireGuard peer before starting setup.'},
+            status=400,
+        )
     provisioning_service.start_olt_setup_async(olt.id)
     return Response({'detail': 'Setup started.', 'olt_id': olt.id})
 
