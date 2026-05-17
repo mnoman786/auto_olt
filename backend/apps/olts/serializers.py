@@ -48,7 +48,6 @@ class OLTSerializer(serializers.ModelSerializer):
                             'line_profiles', 'srv_profiles', 'profiles_last_synced')
         extra_kwargs = {
             'snmp_write_community': {'required': False, 'allow_blank': True},
-            'olt_admin_password': {'write_only': True},
         }
 
     def get_onu_count(self, obj):
