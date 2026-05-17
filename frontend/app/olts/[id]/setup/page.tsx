@@ -21,7 +21,7 @@ const SETUP_STEPS = [
   { id: 'telnet_connect', label: 'Telnet Login', icon: Terminal },
   { id: 'create_user', label: 'Create Mgmt User', icon: Server },
   { id: 'configure_snmp', label: 'Configure SNMP', icon: Shield },
-  { id: 'snmp_check', label: 'SNMP Connectivity', icon: Shield },
+  { id: 'snmp_check', label: 'SNMP Read Access', icon: Shield },
   { id: 'snmp_write', label: 'SNMP Write Access', icon: Shield },
   { id: 'sys_info', label: 'System Information', icon: Server },
   { id: 'setup_complete', label: 'Setup Complete', icon: CheckCircle2 },
