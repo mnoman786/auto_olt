@@ -105,6 +105,55 @@ def trigger_setup(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def test_connection(request):
+    """
+    Pre-flight Telnet credential check before adding/saving an OLT.
+    Attempts a single Telnet login with the provided credentials, then
+    disconnects. Does NOT persist anything to the DB.
+
+    Body: { ip_address, telnet_port?, olt_admin_username, olt_admin_password }
+    """
+    from services import telnet_service
+    from django.conf import settings
+
+    host = (request.data.get('ip_address') or '').strip()
+    port = int(request.data.get('telnet_port') or 23)
+    username = (request.data.get('olt_admin_username') or '').strip()
+    password = request.data.get('olt_admin_password') or ''
+
+    if not host:
+        return Response({'success': False, 'message': 'IP address is required.'}, status=400)
+    if not username:
+        return Response({'success': False, 'message': 'Username is required.'}, status=400)
+    if not password:
+        return Response({'success': False, 'message': 'Password is required.'}, status=400)
+
+    success, message, client = telnet_service.telnet_login(
+        host=host,
+        username=username,
+        password=password,
+        port=port,
+        timeout=getattr(settings, 'TELNET_TEST_TIMEOUT', 10),
+    )
+    banner = ''
+    if client is not None:
+        try:
+            banner = (client._buffer.decode('utf-8', errors='replace')
+                      if getattr(client, '_buffer', None) else '')
+        except Exception:
+            banner = ''
+        finally:
+            client.disconnect()
+
+    return Response({
+        'success': bool(success),
+        'message': message or ('Connected.' if success else 'Connection failed.'),
+        'banner': banner[-300:].strip() if banner else '',
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def reset_status(request, pk):
     """
     Recover an OLT that's stuck in 'configuring' (e.g. after a server

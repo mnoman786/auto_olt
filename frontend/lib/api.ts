@@ -86,6 +86,17 @@ export const oltApi = {
 
   create: (data: OLTCreatePayload) => apiClient.post<OLT>('/olts/', data),
 
+  testConnection: (data: {
+    ip_address: string;
+    telnet_port?: number;
+    olt_admin_username: string;
+    olt_admin_password: string;
+  }) =>
+    apiClient.post<{ success: boolean; message: string; banner: string }>(
+      '/olts/test-connection/',
+      data,
+    ),
+
   get: (id: number) => apiClient.get<OLT>(`/olts/${id}/`),
 
   update: (id: number, data: Partial<OLTCreatePayload>) =>

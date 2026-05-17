@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Form';
 import { oltApi } from '@/lib/api';
 import type { OLTCreatePayload } from '@/lib/types';
-import { ArrowLeft, Server, Shield, Terminal, Eye, EyeOff, Wifi, Info } from 'lucide-react';
+import { ArrowLeft, Server, Shield, Terminal, Eye, EyeOff, Wifi, Info, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -40,6 +40,8 @@ export default function EditOLTPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [assignedVirtualIp, setAssignedVirtualIp] = useState<string | null>(null);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [form, setForm] = useState<OLTCreatePayload>({
     name: '',
     ip_address: '',
@@ -114,6 +116,35 @@ export default function EditOLTPage() {
     }
   };
 
+  const handleTestConnection = async () => {
+    if (!form.ip_address || !form.olt_admin_username || !form.olt_admin_password) {
+      toast.error('IP, username and password are required to test');
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await oltApi.testConnection({
+        ip_address: form.ip_address,
+        telnet_port: form.telnet_port,
+        olt_admin_username: form.olt_admin_username,
+        olt_admin_password: form.olt_admin_password,
+      });
+      setTestResult({ success: res.data.success, message: res.data.message });
+      if (res.data.success) {
+        toast.success('Telnet login successful');
+      } else {
+        toast.error(res.data.message || 'Connection failed');
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.response?.data?.detail || 'Connection test failed';
+      setTestResult({ success: false, message: msg });
+      toast.error(msg);
+    } finally {
+      setTesting(false);
+    }
+  };
+
   if (isLoading || fetching) {
     return (
       <AppLayout>
@@ -176,6 +207,40 @@ export default function EditOLTPage() {
                 }
               />
             </div>
+
+            {form.connection_type === 'direct' && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="text-xs text-gray-500">
+                    Test the new credentials before saving.
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    loading={testing}
+                    onClick={handleTestConnection}
+                    icon={testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Terminal className="h-4 w-4" />}
+                  >
+                    {testing ? 'Testing…' : 'Test Connection'}
+                  </Button>
+                </div>
+                {testResult && (
+                  <div
+                    className={`mt-3 flex items-start gap-2 p-3 rounded-lg border text-sm ${
+                      testResult.success
+                        ? 'bg-green-50 border-green-100 text-green-700'
+                        : 'bg-red-50 border-red-100 text-red-700'
+                    }`}
+                  >
+                    {testResult.success
+                      ? <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                      : <XCircle className="h-4 w-4 shrink-0 mt-0.5" />}
+                    <span className="wrap-break-word">{testResult.message}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
 
           <Card>

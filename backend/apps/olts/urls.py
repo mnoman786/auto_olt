@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('olts/', views.OLTListCreateView.as_view(), name='olt-list-create'),
+    path('olts/test-connection/', views.test_connection, name='olt-test-connection'),
     path('olts/<int:pk>/', views.OLTDetailView.as_view(), name='olt-detail'),
     path('olts/<int:pk>/setup/', views.trigger_setup, name='olt-setup'),
     path('olts/<int:pk>/reset-status/', views.reset_status, name='olt-reset-status'),
