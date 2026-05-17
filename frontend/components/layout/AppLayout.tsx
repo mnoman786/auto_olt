@@ -31,12 +31,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const initials = (user?.username || '?').slice(0, 2).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* Sidebar */}
       <aside className={clsx(
         'fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300',
         'bg-linear-to-b from-gray-900 via-gray-900 to-gray-950 text-white',
-        'lg:translate-x-0 lg:static lg:flex',
+        'lg:translate-x-0 lg:static lg:flex lg:h-screen',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       )}>
         {/* Logo */}
@@ -57,7 +57,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-5 space-y-1">
+        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-1">
           <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
             Workspace
           </p>
@@ -114,9 +114,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Top bar */}
-        <header className="h-14 bg-white/80 backdrop-blur-md border-b border-gray-200/80 flex items-center px-4 gap-4 sticky top-0 z-30">
+        <header className="shrink-0 h-14 bg-white/80 backdrop-blur-md border-b border-gray-200/80 flex items-center px-4 gap-4 z-30">
           <button
             className="lg:hidden text-gray-500 hover:text-gray-700"
             onClick={() => setSidebarOpen(true)}
