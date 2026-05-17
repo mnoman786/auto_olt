@@ -1,4 +1,4 @@
-'use client';
+  'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -168,34 +168,59 @@ export default function AddOLTPage() {
               <Wifi className="h-5 w-5 text-indigo-600" />
               <h2 className="font-semibold text-gray-900">Connection Type</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="How does this OLT connect?"
-                options={CONNECTION_TYPES}
-                value={form.connection_type}
-                onChange={e => set('connection_type', e.target.value as any)}
-                required
-              />
-              {form.connection_type === 'direct' ? (
-                <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100 text-sm text-blue-700">
-                  <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>App connects directly to the public IP address above.</span>
-                </div>
-              ) : (
-                <div className="flex items-start gap-2 p-3 bg-indigo-50 rounded-lg border border-indigo-100 text-sm text-indigo-700">
-                  <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>
-                    A unique virtual IP from <strong>10.100.0.0/16</strong> will be
-                    auto-assigned by the system. Set <strong>IP Address</strong> to the
-                    OLT&apos;s real LAN IP (e.g. 192.168.1.1).
-                  </span>
-                </div>
-              )}
+
+            {/* Selector pills */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {CONNECTION_TYPES.map(opt => {
+                const active = form.connection_type === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => set('connection_type', opt.value as any)}
+                    className={`text-left p-3 rounded-lg border-2 transition-all ${
+                      active
+                        ? 'border-indigo-500 bg-indigo-50/60 ring-2 ring-indigo-100'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        active ? 'border-indigo-500' : 'border-gray-300'
+                      }`}>
+                        {active && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
+                      </div>
+                      <span className={`text-sm font-medium ${active ? 'text-indigo-700' : 'text-gray-700'}`}>
+                        {opt.label}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-            {form.connection_type === 'vpn' && (
-              <div className="flex items-start gap-2 mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100 text-sm text-yellow-800">
-                <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>After adding, the Setup Wizard will ask for the customer&apos;s WireGuard public key before proceeding.</span>
+
+            {/* Contextual info panel */}
+            {form.connection_type === 'direct' ? (
+              <div className="flex items-start gap-2.5 p-3.5 bg-blue-50/60 rounded-lg border border-blue-100 text-sm text-blue-800">
+                <Info className="h-4 w-4 shrink-0 mt-0.5 text-blue-500" />
+                <p className="leading-relaxed">
+                  App will connect directly to the IP address above. Best when the OLT has a public IP or is on the same network as this server.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 divide-y divide-indigo-100/70">
+                <div className="flex items-start gap-2.5 p-3.5 text-sm text-indigo-800">
+                  <Info className="h-4 w-4 shrink-0 mt-0.5 text-indigo-500" />
+                  <p className="leading-relaxed">
+                    A unique virtual IP from <strong className="font-semibold">10.100.0.0/16</strong> will be auto-assigned. Set the <strong className="font-semibold">IP Address</strong> field above to the OLT&apos;s real LAN IP (e.g. <code className="font-mono text-xs bg-white/60 px-1 py-0.5 rounded">192.168.1.1</code>).
+                  </p>
+                </div>
+                <div className="flex items-start gap-2.5 p-3.5 text-sm text-amber-800 bg-amber-50/50">
+                  <Info className="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                  <p className="leading-relaxed">
+                    After saving, the Setup Wizard will ask for the customer&apos;s WireGuard public key before continuing.
+                  </p>
+                </div>
               </div>
             )}
           </Card>
