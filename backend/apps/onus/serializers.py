@@ -18,12 +18,12 @@ class ONUSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'serial_number', 'mac_address', 'pon_port', 'onu_index', 'onu_id',
             'status', 'signal_strength', 'service_profile', 'description',
-            'vlan', 'vlan_name', 'vlan_id_num', 'provision_method',
+            'vlan', 'vlan_name', 'vlan_id_num',
             'last_seen', 'registered_at', 'created_at', 'updated_at',
         )
         read_only_fields = (
             'id', 'serial_number', 'pon_port', 'onu_index', 'status',
-            'signal_strength', 'provision_method', 'last_seen', 'registered_at',
+            'signal_strength', 'last_seen', 'registered_at',
             'created_at', 'updated_at',
         )
 

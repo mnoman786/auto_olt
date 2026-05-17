@@ -413,8 +413,6 @@ export default function OLTDetailPage() {
                   ['SNMP Read Community', olt.snmp_read_community],
                   ['SNMP Write Community', olt.snmp_write_community || 'Not set'],
                   ['Telnet', olt.telnet_enabled ? `Enabled (port ${olt.telnet_port})` : 'Disabled'],
-                  ['Telnet Username', olt.telnet_username || 'Not set'],
-                  ['Telnet Password', '********'],
                   ['OLT Admin Username', olt.olt_admin_username || 'Not set'],
                   ['OLT Admin Password', '********'],
                 ].map(([k, v]) => (

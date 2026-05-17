@@ -249,10 +249,8 @@ export default function ONUDetailPage() {
             icon={<Tag className="h-5 w-5 text-purple-500" />}
           />
           <StatCard
-            label="Provision Method"
-            value={onu?.provision_method
-              ? onu.provision_method.charAt(0).toUpperCase() + onu.provision_method.slice(1)
-              : 'None'}
+            label="Service Profile"
+            value={onu?.service_profile || 'Default'}
             icon={<Server className="h-5 w-5 text-gray-500" />}
           />
         </div>

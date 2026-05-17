@@ -132,8 +132,7 @@ WG_INTERFACE = config('WG_INTERFACE', default='wg0')
 WG_ENDPOINT = config('WG_ENDPOINT', default='')
 WG_SERVER_PUBLIC_KEY = config('WG_SERVER_PUBLIC_KEY', default='')
 
-# ONU provisioning
-ONU_REGISTER_METHOD = config('ONU_REGISTER_METHOD', default='hybrid')
+# ONU provisioning (Telnet-only — SNMP/hybrid path was removed)
 DEFAULT_TELNET_USERNAME = config('DEFAULT_TELNET_USERNAME', default='admin')
 DEFAULT_TELNET_PASSWORD = config('DEFAULT_TELNET_PASSWORD', default='admin')
 DEFAULT_TELNET_PORT = config('DEFAULT_TELNET_PORT', default=23, cast=int)

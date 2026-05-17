@@ -9,12 +9,6 @@ class ONU(models.Model):
         ('offline', 'Offline'),
         ('provisioning', 'Provisioning'),
     ]
-    PROVISION_METHOD_CHOICES = [
-        ('snmp', 'SNMP'),
-        ('telnet', 'Telnet'),
-        ('hybrid', 'Hybrid'),
-        ('none', 'None'),
-    ]
 
     olt = models.ForeignKey('olts.OLT', on_delete=models.CASCADE, related_name='onus')
     serial_number = models.CharField(max_length=100)
@@ -27,9 +21,6 @@ class ONU(models.Model):
     service_profile = models.CharField(max_length=100, blank=True, default='')
     vlan = models.ForeignKey(
         'vlans.VLAN', null=True, blank=True, on_delete=models.SET_NULL, related_name='onus'
-    )
-    provision_method = models.CharField(
-        max_length=10, choices=PROVISION_METHOD_CHOICES, default='none'
     )
     description = models.CharField(max_length=200, blank=True, default='')
     last_seen = models.DateTimeField(null=True, blank=True)

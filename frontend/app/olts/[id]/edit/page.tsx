@@ -40,7 +40,6 @@ export default function EditOLTPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [assignedVirtualIp, setAssignedVirtualIp] = useState<string | null>(null);
   const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [showTelnetPassword, setShowTelnetPassword] = useState(false);
   const [form, setForm] = useState<OLTCreatePayload>({
     name: '',
     ip_address: '',
@@ -50,8 +49,6 @@ export default function EditOLTPage() {
     snmp_write_community: randomCommunity('wr'),
     telnet_enabled: true,
     telnet_port: 23,
-    telnet_username: 'admin',
-    telnet_password: '',
     olt_admin_username: 'admin',
     olt_admin_password: '',
   });
@@ -74,8 +71,6 @@ export default function EditOLTPage() {
         snmp_write_community: d.snmp_write_community || randomCommunity('wr'),
         telnet_enabled: true,
         telnet_port: d.telnet_port || 23,
-        telnet_username: d.telnet_username || 'admin',
-        telnet_password: d.telnet_password || '',
         olt_admin_username: d.olt_admin_username || 'admin',
         olt_admin_password: d.olt_admin_password || '',
       });
@@ -247,22 +242,11 @@ export default function EditOLTPage() {
               <Terminal className="h-5 w-5 text-purple-600" />
               <h2 className="font-semibold text-gray-900">Telnet / CLI Access</h2>
             </div>
+            <p className="text-xs text-gray-500 mb-4">
+              Uses OLT admin credentials from Basic Information above.
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="Telnet Port" type="number" value={form.telnet_port} onChange={e => set('telnet_port', parseInt(e.target.value) || 23)} min={1} max={65535} />
-              <Input label="Telnet Username" value={form.telnet_username || ''} onChange={e => set('telnet_username', e.target.value)} error={errors.telnet_username} required />
-              <Input
-                label="Telnet Password"
-                type={showTelnetPassword ? 'text' : 'password'}
-                value={form.telnet_password || ''}
-                onChange={e => set('telnet_password', e.target.value)}
-                error={errors.telnet_password}
-                hint="Leave empty to keep existing password"
-                rightAdornment={
-                  <button type="button" onClick={() => setShowTelnetPassword(v => !v)} className="text-gray-400 hover:text-gray-600">
-                    {showTelnetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                }
-              />
             </div>
           </Card>
 

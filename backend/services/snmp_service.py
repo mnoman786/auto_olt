@@ -311,36 +311,6 @@ def get_onu_admin_state(host: str, community: str, onu_index: int,
     return False
 
 
-def snmp_provision_onu(host: str, write_community: str, onu_index: int,
-                        vlan_id: int = 100, version: str = 'v2c', port: int = 161) -> Dict[str, Any]:
-    """
-    Provision/authorize an ONU via SNMP SET operations.
-    Returns dict with keys: success, error, steps
-    """
-    steps = []
-    result = {'success': False, 'error': None, 'steps': steps}
-
-    # Step 1: Set ONU admin state to enabled (1) via hwGponDeviceOntTable column 15
-    # hwGponDeviceOntAdminState — Huawei MA5600/MA5800 VRP MIB
-    oid_onu_enable = f'1.3.6.1.4.1.2011.6.128.1.1.2.43.1.15.{onu_index}'
-    success = snmp_set(host, write_community, oid_onu_enable, 1, 'Integer32', port=port, version=version)
-    steps.append({'step': 'enable_onu', 'success': success,
-                  'message': 'ONU admin state set to enabled via SNMP' if success else 'Failed to set ONU admin state (check Huawei MIB version)'})
-
-    # Step 2: Bind service VLAN via hwGponDeviceOntEthPortTable column 6
-    if vlan_id > 0:
-        oid_vlan = f'1.3.6.1.4.1.2011.6.128.1.1.2.46.1.6.{onu_index}'
-        vlan_success = snmp_set(host, write_community, oid_vlan, vlan_id, 'Integer32',
-                                port=port, version=version)
-        steps.append({'step': 'bind_vlan', 'success': vlan_success,
-                      'message': f'VLAN {vlan_id} bound via SNMP' if vlan_success else f'Failed to bind VLAN {vlan_id} via SNMP'})
-
-    result['success'] = success
-    if not success:
-        result['error'] = 'SNMP ONU provisioning failed — check write community and that Huawei GPON MIB is supported'
-    return result
-
-
 def discover_ports_snmp(host: str, community: str, version: str = 'v2c') -> List[Dict[str, Any]]:
     """
     Discover OLT ports via SNMP ifTable.

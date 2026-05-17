@@ -110,17 +110,6 @@ def setup_logs(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def simulate_setup(request, pk):
-    """Trigger a simulated OLT setup (no real device needed)."""
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
-    if olt.status == 'configuring':
-        return Response({'detail': 'Setup already in progress.'}, status=400)
-    provisioning_service.start_simulate_setup_async(olt.id)
-    return Response({'detail': 'Simulation started.', 'olt_id': olt.id})
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
 def poll_olt(request, pk):
     """Trigger SNMP poll for ONU discovery."""
     olt = get_object_or_404(OLT, pk=pk, user=request.user)

@@ -94,9 +94,6 @@ DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1,*
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 
-# ONU provisioning method: snmp | telnet | hybrid
-ONU_REGISTER_METHOD=hybrid
-
 # Default Telnet credentials for initial OLT setup
 DEFAULT_TELNET_USERNAME=admin
 DEFAULT_TELNET_PASSWORD=admin
@@ -149,18 +146,6 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api
 |--------|----------|-------------|
 | GET/POST | `/api/olts/{id}/vlans/` | List / Create VLANs |
 | GET/PUT/DELETE | `/api/olts/{id}/vlans/{id}/` | VLAN detail |
-
----
-
-## ONU Provisioning Methods
-
-Configure `ONU_REGISTER_METHOD` in `.env`:
-
-| Method | Behavior |
-|--------|---------|
-| `snmp` | Uses SNMP SET operations exclusively |
-| `telnet` | Uses CLI commands via Telnet |
-| `hybrid` | Tries SNMP first, falls back to Telnet if SNMP fails |
 
 ---
 

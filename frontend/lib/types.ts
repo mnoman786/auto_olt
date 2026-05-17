@@ -35,8 +35,6 @@ export interface OLT {
   snmp_write_community: string;
   telnet_enabled: boolean;
   telnet_port: number;
-  telnet_username: string;
-  telnet_password: string;
   olt_admin_username: string;
   olt_admin_password: string;
   status: OLTStatus;
@@ -77,8 +75,6 @@ export interface OLTCreatePayload {
   snmp_write_community?: string;
   telnet_enabled: boolean;
   telnet_port?: number;
-  telnet_username?: string;
-  telnet_password?: string;
   olt_admin_username?: string;
   olt_admin_password?: string;
 }
@@ -119,7 +115,6 @@ export interface ONU {
   vlan: number | null;
   vlan_name: string | null;
   vlan_id_num: number | null;
-  provision_method: string;
   last_seen: string | null;
   registered_at: string | null;
   created_at: string;

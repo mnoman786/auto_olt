@@ -33,7 +33,7 @@ class OLTSerializer(serializers.ModelSerializer):
             'id', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
             'wg_client_public_key', 'wg_client_subnet',
             'snmp_version', 'snmp_read_community', 'snmp_write_community',
-            'telnet_enabled', 'telnet_port', 'telnet_username', 'telnet_password',
+            'telnet_enabled', 'telnet_port',
             'olt_admin_username', 'olt_admin_password',
             'status', 'system_name', 'system_description', 'system_uptime',
             'last_polled', 'created_at', 'updated_at',
@@ -47,7 +47,6 @@ class OLTSerializer(serializers.ModelSerializer):
                             'line_profiles', 'srv_profiles', 'profiles_last_synced')
         extra_kwargs = {
             'snmp_write_community': {'required': False, 'allow_blank': True},
-            'telnet_password': {'write_only': True},
             'olt_admin_password': {'write_only': True},
         }
 
@@ -74,7 +73,7 @@ class OLTCreateSerializer(serializers.ModelSerializer):
             'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
             'wg_client_public_key', 'wg_client_subnet',
             'snmp_version', 'snmp_read_community', 'snmp_write_community',
-            'telnet_enabled', 'telnet_port', 'telnet_username', 'telnet_password',
+            'telnet_enabled', 'telnet_port',
             'olt_admin_username', 'olt_admin_password',
         )
         extra_kwargs = {
@@ -83,8 +82,6 @@ class OLTCreateSerializer(serializers.ModelSerializer):
             'wg_client_public_key': {'required': False, 'allow_blank': True},
             'wg_client_subnet': {'required': False, 'allow_blank': True},
             'snmp_write_community': {'required': False, 'allow_blank': True},
-            'telnet_username': {'required': False, 'allow_blank': True},
-            'telnet_password': {'required': False, 'allow_blank': True},
             'olt_admin_username': {'required': False, 'allow_blank': True},
             'olt_admin_password': {'required': False, 'allow_blank': True},
             'telnet_port': {'required': False},
@@ -113,14 +110,14 @@ class OLTCreateSerializer(serializers.ModelSerializer):
             # else keep existing assigned IP on update
 
         telnet_enabled = attrs.get('telnet_enabled', getattr(self.instance, 'telnet_enabled', False))
-        telnet_username = attrs.get('telnet_username', getattr(self.instance, 'telnet_username', ''))
-        telnet_password = attrs.get('telnet_password', getattr(self.instance, 'telnet_password', ''))
+        admin_username = attrs.get('olt_admin_username', getattr(self.instance, 'olt_admin_username', ''))
+        admin_password = attrs.get('olt_admin_password', getattr(self.instance, 'olt_admin_password', ''))
 
         if telnet_enabled:
-            if not telnet_username:
-                errors['telnet_username'] = 'Telnet username is required when Telnet is enabled.'
-            if not telnet_password and not (self.instance and getattr(self.instance, 'telnet_password', '')):
-                errors['telnet_password'] = 'Telnet password is required when Telnet is enabled.'
+            if not admin_username:
+                errors['olt_admin_username'] = 'OLT admin username is required when Telnet is enabled.'
+            if not admin_password and not (self.instance and getattr(self.instance, 'olt_admin_password', '')):
+                errors['olt_admin_password'] = 'OLT admin password is required when Telnet is enabled.'
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -128,9 +125,8 @@ class OLTCreateSerializer(serializers.ModelSerializer):
         return attrs
 
     def update(self, instance, validated_data):
-        for password_field in ('telnet_password', 'olt_admin_password'):
-            if validated_data.get(password_field, None) == '':
-                validated_data.pop(password_field, None)
+        if validated_data.get('olt_admin_password', None) == '':
+            validated_data.pop('olt_admin_password', None)
         return super().update(instance, validated_data)
 
 

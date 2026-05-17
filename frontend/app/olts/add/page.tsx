@@ -35,7 +35,6 @@ export default function AddOLTPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAdminPassword, setShowAdminPassword] = useState(false);
-  const [showTelnetPassword, setShowTelnetPassword] = useState(false);
   const [form, setForm] = useState<OLTCreatePayload>({
     name: '',
     ip_address: '',
@@ -45,8 +44,6 @@ export default function AddOLTPage() {
     snmp_write_community: randomCommunity('wr'),
     telnet_enabled: true,
     telnet_port: 23,
-    telnet_username: 'admin',
-    telnet_password: 'admin',
     olt_admin_username: 'admin',
     olt_admin_password: 'admin',
   });
@@ -239,7 +236,7 @@ export default function AddOLTPage() {
               <h2 className="font-semibold text-gray-900">Telnet / CLI Access</h2>
             </div>
             <p className="text-xs text-gray-500 mb-4">
-              Telnet is required and always enabled. Uses OLT admin credentials from Basic Information.
+              Telnet is required and always enabled. Uses the OLT admin credentials from Basic Information above.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
@@ -250,31 +247,6 @@ export default function AddOLTPage() {
                 min={1}
                 max={65535}
                 required
-              />
-              <Input
-                label="Telnet Username"
-                value={form.telnet_username || ''}
-                onChange={e => set('telnet_username', e.target.value)}
-                error={errors.telnet_username}
-                required
-              />
-              <Input
-                label="Telnet Password"
-                type={showTelnetPassword ? 'text' : 'password'}
-                value={form.telnet_password || ''}
-                onChange={e => set('telnet_password', e.target.value)}
-                error={errors.telnet_password}
-                required
-                rightAdornment={
-                  <button
-                    type="button"
-                    onClick={() => setShowTelnetPassword(v => !v)}
-                    className="text-gray-400 hover:text-gray-600"
-                    aria-label={showTelnetPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showTelnetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                }
               />
             </div>
           </Card>
