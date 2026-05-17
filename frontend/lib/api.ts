@@ -95,6 +95,8 @@ export const oltApi = {
 
   triggerSetup: (id: number) => apiClient.post(`/olts/${id}/setup/`),
 
+  resetStatus: (id: number) =>
+    apiClient.post<{ detail: string; status: string }>(`/olts/${id}/reset-status/`),
 
   getSetupLogs: (id: number) =>
     apiClient.get<SetupLogsResponse>(`/olts/${id}/setup/logs/`),

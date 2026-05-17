@@ -103,6 +103,26 @@ def trigger_setup(request, pk):
     return Response({'detail': 'Setup started.', 'olt_id': olt.id})
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reset_status(request, pk):
+    """
+    Recover an OLT that's stuck in 'configuring' (e.g. after a server
+    restart killed the background setup thread). Resets status to
+    'pending' so the user can click Retry Setup. Only allowed when the
+    OLT is currently in 'configuring'.
+    """
+    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    if olt.status != 'configuring':
+        return Response(
+            {'detail': f'OLT is not stuck (current status: {olt.status}).'},
+            status=400,
+        )
+    olt.status = 'pending'
+    olt.save(update_fields=['status'])
+    return Response({'detail': 'OLT status reset.', 'olt_id': olt.id, 'status': olt.status})
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def setup_logs(request, pk):

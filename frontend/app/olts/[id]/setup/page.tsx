@@ -208,6 +208,21 @@ export default function OLTSetupPage() {
     }
   };
 
+  const handleResetStatus = async () => {
+    if (!confirm('Reset this OLT\'s status from "configuring" back to "pending"? Use this only when a previous setup got stuck (e.g. after a server restart).')) {
+      return;
+    }
+    try {
+      const res = await oltApi.resetStatus(oltId);
+      setOltStatus(res.data.status as OLTStatus);
+      setSetupStarted(false);
+      stopPolling();
+      toast.success('OLT status reset — you can start setup again');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Reset failed');
+    }
+  };
+
   const triggerSetup = async () => {
     try {
       await oltApi.triggerSetup(oltId);
@@ -273,9 +288,20 @@ export default function OLTSetupPage() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Setup Wizard</p>
-            <div className="flex items-center gap-3 mt-0.5">
+            <div className="flex items-center gap-3 mt-0.5 flex-wrap">
               <h1 className="text-2xl font-bold text-gray-900 truncate">{olt?.name || 'OLT Setup'}</h1>
               <OLTStatusBadge status={oltStatus} />
+              {oltStatus === 'configuring' && (
+                <button
+                  type="button"
+                  onClick={handleResetStatus}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full px-2.5 py-1 transition-colors"
+                  title="Use if setup is stuck (e.g. server was restarted mid-setup)"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Reset Status
+                </button>
+              )}
             </div>
             <p className="text-gray-500 text-sm">{olt?.ip_address}</p>
           </div>

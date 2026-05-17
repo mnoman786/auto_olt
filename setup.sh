@@ -78,11 +78,10 @@ else
   warn ".env already exists — skipping (edit manually if needed)"
 fi
 
-# ── Django migrations + seed ──────────────────────────────────────────────────
-section "5 — Django migrate & seed"
+# ── Django migrations ─────────────────────────────────────────────────────────
+section "5 — Django migrate"
 cd "$BACKEND_DIR"
 "$VENV_DIR/bin/python" manage.py migrate --run-syncdb
-"$VENV_DIR/bin/python" manage.py seed_data
 info "Database ready"
 
 # ── Frontend .env ─────────────────────────────────────────────────────────────
