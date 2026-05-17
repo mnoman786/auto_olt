@@ -30,7 +30,8 @@ function randomCommunity(prefix: string): string {
 }
 
 export default function EditOLTPage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const isStaff = user?.is_staff || user?.is_superuser;
   const params = useParams();
   const router = useRouter();
   const oltId = parseInt(params.id as string);
@@ -39,7 +40,7 @@ export default function EditOLTPage() {
   const [fetching, setFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [assignedVirtualIp, setAssignedVirtualIp] = useState<string | null>(null);
-  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(!!isStaff);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [form, setForm] = useState<OLTCreatePayload>({
@@ -199,7 +200,7 @@ export default function EditOLTPage() {
                 value={form.olt_admin_password || ''}
                 onChange={e => set('olt_admin_password', e.target.value)}
                 error={errors.olt_admin_password}
-                hint="Leave empty to keep existing password"
+                hint="Clear and retype to change the password"
                 rightAdornment={
                   <button type="button" onClick={() => setShowAdminPassword(v => !v)} className="text-gray-400 hover:text-gray-600">
                     {showAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

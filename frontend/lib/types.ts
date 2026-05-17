@@ -4,6 +4,8 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  is_staff: boolean;
+  is_superuser: boolean;
   created_at: string;
 }
 
@@ -24,6 +26,7 @@ export type ConnectionType = 'direct' | 'vpn';
 
 export interface OLT {
   id: number;
+  username: string;
   name: string;
   ip_address: string;
   connection_type: ConnectionType;
@@ -177,4 +180,40 @@ export interface PaginatedResponse<T> {
   next: string | null;
   previous: string | null;
   results: T[];
+}
+
+export type TicketStatus = 'open' | 'answered' | 'closed';
+
+export interface TicketReply {
+  id: number;
+  author_username: string;
+  is_staff: boolean;
+  message: string;
+  created_at: string;
+}
+
+export interface Ticket {
+  id: number;
+  username: string;
+  olt: number | null;
+  olt_name: string | null;
+  subject: string;
+  message: string;
+  status: TicketStatus;
+  reply_count: number;
+  replies: TicketReply[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TicketListItem {
+  id: number;
+  username: string;
+  olt: number | null;
+  olt_name: string | null;
+  subject: string;
+  status: TicketStatus;
+  reply_count: number;
+  created_at: string;
+  updated_at: string;
 }

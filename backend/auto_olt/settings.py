@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'apps.olts',
     'apps.onus',
     'apps.vlans',
+    'apps.tickets',
 ]
 
 MIDDLEWARE = [

@@ -7,4 +7,5 @@ urlpatterns = [
     path('api/', include('apps.olts.urls')),
     path('api/', include('apps.onus.urls')),
     path('api/', include('apps.vlans.urls')),
+    path('api/', include('apps.tickets.urls')),
 ]

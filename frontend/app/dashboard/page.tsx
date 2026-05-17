@@ -9,8 +9,8 @@ import { OLTStatusBadge } from '@/components/ui/Badge';
 import { oltApi } from '@/lib/api';
 import { OLT } from '@/lib/types';
 import {
-  Server, Wifi, AlertCircle, CheckCircle, Plus, RefreshCw,
-  ChevronRight, Activity, Network, Cpu,
+  Server, Wifi, AlertCircle, Plus, RefreshCw,
+  ChevronRight, Activity, Network, Cpu, User,
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -46,6 +46,7 @@ function OltRowSkeleton() {
 
 export default function DashboardPage() {
   const { isAuthenticated, isLoading, user } = useAuth();
+  const isStaff = user?.is_staff || user?.is_superuser;
   const router = useRouter();
   const [olts, setOlts] = useState<OLT[]>([]);
   const [fetching, setFetching] = useState(true);
@@ -158,7 +159,7 @@ export default function DashboardPage() {
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-linear-to-r from-gray-50/60 to-transparent">
               <div className="flex items-center gap-2">
                 <Network className="h-4 w-4 text-gray-400" />
-                <h2 className="font-semibold text-gray-900">Your OLT Devices</h2>
+                <h2 className="font-semibold text-gray-900">{isStaff ? 'All OLT Devices' : 'Your OLT Devices'}</h2>
               </div>
               <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
                 {olts.length} device{olts.length !== 1 ? 's' : ''}
@@ -217,6 +218,12 @@ export default function DashboardPage() {
 
                         <div className="flex items-center gap-4 shrink-0">
                           <div className="hidden lg:flex items-center gap-4 text-xs text-gray-500">
+                            {isStaff && (
+                              <span className="inline-flex items-center gap-1 text-gray-400">
+                                <User className="h-3 w-3" />
+                                <span className="font-medium text-gray-600">{olt.username}</span>
+                              </span>
+                            )}
                             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-100 font-medium">
                               {olt.snmp_version.toUpperCase()}
                             </span>

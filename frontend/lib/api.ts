@@ -1,7 +1,8 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
-  SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo
+  SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
+  Ticket, TicketListItem, TicketReply,
 } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
@@ -185,6 +186,22 @@ export const vlanApi = {
       created: number;
       updated: number;
     }>(`/olts/${oltId}/vlans/sync/`),
+};
+
+// Ticket API
+export const ticketApi = {
+  list: () => apiClient.get<PaginatedResponse<TicketListItem>>('/tickets/'),
+
+  create: (data: { subject: string; message: string; olt?: number | null }) =>
+    apiClient.post<Ticket>('/tickets/', data),
+
+  get: (id: number) => apiClient.get<Ticket>(`/tickets/${id}/`),
+
+  updateStatus: (id: number, status: string) =>
+    apiClient.patch<Ticket>(`/tickets/${id}/`, { status }),
+
+  reply: (id: number, message: string) =>
+    apiClient.post<TicketReply>(`/tickets/${id}/reply/`, { message }),
 };
 
 export default apiClient;

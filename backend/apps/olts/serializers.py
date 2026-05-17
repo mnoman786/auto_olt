@@ -26,11 +26,12 @@ class OLTSerializer(serializers.ModelSerializer):
     registered_onu_count = serializers.SerializerMethodField()
     vlan_count = serializers.SerializerMethodField()
     discovered_vlan_count = serializers.SerializerMethodField()
+    username = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = OLT
         fields = (
-            'id', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
+            'id', 'username', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
             'wg_client_public_key', 'wg_client_subnet',
             'snmp_version', 'snmp_read_community', 'snmp_write_community',
             'telnet_enabled', 'telnet_port',

@@ -11,6 +11,12 @@ from .serializers import OLTSerializer, OLTCreateSerializer, SetupLogSerializer,
 from services import provisioning_service
 
 
+def get_olt_for_user(pk, user):
+    if user.is_staff or user.is_superuser:
+        return get_object_or_404(OLT, pk=pk)
+    return get_object_or_404(OLT, pk=pk, user=user)
+
+
 class OLTListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -20,7 +26,9 @@ class OLTListCreateView(generics.ListCreateAPIView):
         return OLTSerializer
 
     def get_queryset(self):
-        return OLT.objects.filter(user=self.request.user).annotate(
+        user = self.request.user
+        qs = OLT.objects.all() if (user.is_staff or user.is_superuser) else OLT.objects.filter(user=user)
+        return qs.annotate(
             _onu_count=Count('onus', distinct=True),
             _registered_onu_count=Count(
                 'onus',
@@ -59,7 +67,10 @@ class OLTDetailView(generics.RetrieveUpdateDestroyAPIView):
         return OLTSerializer
 
     def get_queryset(self):
-        return OLT.objects.filter(user=self.request.user)
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            return OLT.objects.all()
+        return OLT.objects.filter(user=user)
 
     def perform_destroy(self, instance):
         if instance.connection_type == 'vpn' and instance.wg_client_public_key:
@@ -91,7 +102,7 @@ class OLTDetailView(generics.RetrieveUpdateDestroyAPIView):
 @permission_classes([IsAuthenticated])
 def trigger_setup(request, pk):
     """Trigger OLT setup workflow (async)."""
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
     if olt.status == 'configuring':
         return Response({'detail': 'Setup already in progress.'}, status=400)
     if olt.connection_type == 'vpn' and not olt.wg_client_public_key:
@@ -161,7 +172,7 @@ def reset_status(request, pk):
     'pending' so the user can click Retry Setup. Only allowed when the
     OLT is currently in 'configuring'.
     """
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
     if olt.status != 'configuring':
         return Response(
             {'detail': f'OLT is not stuck (current status: {olt.status}).'},
@@ -176,7 +187,7 @@ def reset_status(request, pk):
 @permission_classes([IsAuthenticated])
 def setup_logs(request, pk):
     """Get setup logs for an OLT."""
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
     logs = olt.setup_logs.all().order_by('created_at')
     serializer = SetupLogSerializer(logs, many=True)
     return Response({
@@ -190,7 +201,7 @@ def setup_logs(request, pk):
 @permission_classes([IsAuthenticated])
 def poll_olt(request, pk):
     """Trigger SNMP poll for ONU discovery."""
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
 
     def _poll():
         provisioning_service.poll_olt_onus(olt.id)
@@ -204,7 +215,7 @@ def poll_olt(request, pk):
 @permission_classes([IsAuthenticated])
 def olt_stats(request, pk):
     """Get OLT statistics."""
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
     onus = olt.onus.all()
     return Response({
         'olt_id': olt.id,
@@ -222,7 +233,7 @@ def olt_stats(request, pk):
 @permission_classes([IsAuthenticated])
 def olt_ports(request, pk):
     """GET: list saved ports. POST: re-discover ports via SNMP and save."""
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
 
     if request.method == 'POST':
         from services import snmp_service
@@ -258,7 +269,7 @@ def test_snmp(request, pk):
     from services import snmp_service
 
     from services.provisioning_service import _connect_ip
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
     connect_ip = _connect_ip(olt)
     checks = []
 
@@ -350,7 +361,7 @@ def wg_info(request, pk):
     POST: Update client public key + subnet, then sync WireGuard peer.
     """
     from services import wireguard_service
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
 
     if olt.connection_type != 'vpn':
         return Response({'detail': 'This OLT is not configured for VPN (WireGuard).'}, status=400)
@@ -384,7 +395,7 @@ def sync_profiles(request, pk):
     Used so ONU registration can auto-pick a valid profile ID without
     the user having to know what IDs exist on the device.
     """
-    olt = get_object_or_404(OLT, pk=pk, user=request.user)
+    olt = get_olt_for_user(pk, request.user)
     result = provisioning_service.sync_profiles_from_olt(olt.id)
     if not result.get('success'):
         return Response(

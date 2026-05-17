@@ -10,6 +10,8 @@ from .serializers import VLANSerializer
 
 
 def get_olt_for_user(pk, user):
+    if user.is_staff or user.is_superuser:
+        return get_object_or_404(OLT, pk=pk)
     return get_object_or_404(OLT, pk=pk, user=user)
 
 

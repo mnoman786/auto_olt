@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
-  LayoutDashboard, Server, Network, LogOut, User, ChevronRight, Menu, X, BookOpen,
-  Bell, Search,
+  LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
+  Bell, Search, LifeBuoy,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState } from 'react';
@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/olts', label: 'OLT Devices', icon: Server },
+  { href: '/tickets', label: 'Support', icon: LifeBuoy },
   { href: '/docs', label: 'Documentation', icon: BookOpen },
 ];
 
