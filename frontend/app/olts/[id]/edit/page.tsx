@@ -206,6 +206,15 @@ export default function EditOLTPage() {
                   </button>
                 }
               />
+              <Input
+                label="Telnet Port"
+                type="number"
+                value={form.telnet_port}
+                onChange={e => set('telnet_port', parseInt(e.target.value) || 23)}
+                min={1}
+                max={65535}
+                hint="Default 23 — only change if your OLT uses a non-standard telnet port"
+              />
             </div>
 
             {form.connection_type === 'direct' && (
@@ -299,19 +308,6 @@ export default function EditOLTPage() {
                 disabled
                 hint="Fixed system value — cannot be changed"
               />
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center gap-2 mb-4">
-              <Terminal className="h-5 w-5 text-purple-600" />
-              <h2 className="font-semibold text-gray-900">Telnet / CLI Access</h2>
-            </div>
-            <p className="text-xs text-gray-500 mb-4">
-              Uses OLT admin credentials from Basic Information above.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Telnet Port" type="number" value={form.telnet_port} onChange={e => set('telnet_port', parseInt(e.target.value) || 23)} min={1} max={65535} />
             </div>
           </Card>
 

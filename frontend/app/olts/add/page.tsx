@@ -194,6 +194,16 @@ export default function AddOLTPage() {
                   </button>
                 }
               />
+              <Input
+                label="Telnet Port"
+                type="number"
+                placeholder="23"
+                value={form.telnet_port}
+                onChange={e => set('telnet_port', parseInt(e.target.value) || 23)}
+                min={1}
+                max={65535}
+                hint="Default 23 — only change if your OLT uses a non-standard telnet port"
+              />
             </div>
 
             {/* Test Connection — only meaningful for direct OLTs */}
@@ -320,28 +330,6 @@ export default function AddOLTPage() {
                 value={form.snmp_write_community}
                 disabled
                 hint="Fixed system value — cannot be changed"
-              />
-            </div>
-          </Card>
-
-          {/* Telnet Config */}
-          <Card>
-            <div className="flex items-center gap-2 mb-4">
-              <Terminal className="h-5 w-5 text-purple-600" />
-              <h2 className="font-semibold text-gray-900">Telnet / CLI Access</h2>
-            </div>
-            <p className="text-xs text-gray-500 mb-4">
-              Telnet is required and always enabled. Uses the OLT admin credentials from Basic Information above.
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Telnet Port"
-                type="number"
-                value={form.telnet_port}
-                onChange={e => set('telnet_port', parseInt(e.target.value) || 23)}
-                min={1}
-                max={65535}
-                required
               />
             </div>
           </Card>
