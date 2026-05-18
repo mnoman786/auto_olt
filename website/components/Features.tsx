@@ -63,7 +63,7 @@ const features = [
     icon: Users,
     color: 'violet',
     title: 'Multi-User Management',
-    desc: 'Full role-based access. Superusers see all OLTs across all accounts, manage users, and view credentials. Regular users manage their own devices.',
+    desc: 'Full role-based access control. Each user manages their own OLT devices independently with secure, isolated account access.',
   },
   {
     icon: LifeBuoy,
