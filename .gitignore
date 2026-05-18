@@ -35,6 +35,14 @@ frontend/coverage/
 frontend/*.tsbuildinfo
 frontend/next-env.d.ts
 
+website/node_modules/
+website/.next/
+website/out/
+website/.turbo/
+website/coverage/
+website/*.tsbuildinfo
+website/next-env.d.ts
+
 # ── Environment / Secrets ────────────────────────────────────────
 .env
 .env.*
