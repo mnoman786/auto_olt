@@ -2,7 +2,7 @@ import { CheckCircle, Zap, Heart } from 'lucide-react';
 
 const features = [
   'Unlimited OLT devices',
-  'Unlimited ONU registrations',
+  'Unlimited ONU management',
   'Unlimited VLAN management',
   'SNMP v1/v2c/v3 support',
   'WireGuard VPN integration',
@@ -16,7 +16,7 @@ const features = [
   'VLAN sync from OLT',
   'Telnet connection testing',
   'Error recovery tools',
-  'Self-hosted — your data',
+  'Your data, your server',
 ];
 
 export default function Pricing() {
@@ -35,14 +35,12 @@ export default function Pricing() {
             <span className="gradient-text">Free forever.</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-xl mx-auto">
-            No trial. No freemium. No enterprise upsell. Auto OLT is 100% free and open — every feature included for everyone.
+            No trial. No freemium. No enterprise upsell. Auto OLT is 100% free — every feature included for everyone.
           </p>
         </div>
 
         <div className="max-w-2xl mx-auto">
-          {/* Pricing card */}
           <div className="relative">
-            {/* Glow border */}
             <div className="absolute -inset-px rounded-3xl bg-gradient-to-r from-blue-500/50 via-indigo-500/50 to-violet-500/50 blur-sm" />
             <div className="relative rounded-3xl bg-[#0d1117] border border-white/10 overflow-hidden">
               {/* Top banner */}
@@ -66,12 +64,12 @@ export default function Pricing() {
                   </div>
                 </div>
                 <p className="text-gray-500 text-sm mb-8">
-                  Self-host Auto OLT on your own server. All features unlocked from day one.
+                  All features unlocked from day one. No hidden costs, no upgrade prompts.
                 </p>
 
                 {/* CTA */}
                 <a
-                  href="#"
+                  href="#contact"
                   className="block w-full text-center py-4 px-8 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-xl shadow-blue-700/30 hover:shadow-blue-700/50 hover:-translate-y-0.5 mb-8"
                 >
                   Get Started Free →
@@ -87,7 +85,6 @@ export default function Pricing() {
                   ))}
                 </div>
 
-                {/* Bottom note */}
                 <div className="mt-8 pt-6 border-t border-white/5 flex items-center gap-2 text-sm text-gray-500">
                   <Heart className="h-4 w-4 text-rose-400 shrink-0" />
                   <span>Built with love for the ISP community. Your data stays on your server — always.</span>
