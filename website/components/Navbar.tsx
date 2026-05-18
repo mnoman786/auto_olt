@@ -6,7 +6,7 @@ const links = [
   { label: 'Features', href: '#features' },
   { label: 'How it Works', href: '#how-it-works' },
   { label: 'Hardware', href: '#hardware' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Contact', href: '#contact' },
 ];
 
 export default function Navbar() {
@@ -46,8 +46,8 @@ export default function Navbar() {
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2">
-            Free Forever
+          <a href="#contact" className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2">
+            Get Access
           </a>
           <a
             href="#"

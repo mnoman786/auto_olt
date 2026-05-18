@@ -18,7 +18,7 @@ export default function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 text-blue-300 text-sm font-medium mb-8 badge-shine">
           <Zap className="h-3.5 w-3.5" />
-          100% Free — No credit card. No limits. Forever.
+          Smart ISP Management — Built for GPON Networks
         </div>
 
         {/* Headline */}
@@ -54,7 +54,7 @@ export default function Hero() {
         <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500">
           {[
             { icon: Shield, text: 'Secure & Self-hosted' },
-            { icon: Zap, text: 'Auto ONU Registration' },
+            { icon: Zap, text: 'SNMP Auto-Discovery' },
             { icon: Wifi, text: 'Multi-OLT Support' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-1.5">

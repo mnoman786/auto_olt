@@ -1,5 +1,5 @@
 const stats = [
-  { value: '100%', label: 'Free Forever', desc: 'No hidden costs, no subscriptions, no limits' },
+  { value: '100%', label: 'Automated', desc: 'Zero manual CLI sessions — full automation from day one' },
   { value: '∞', label: 'OLTs Supported', desc: 'Add as many OLT devices as your network needs' },
   { value: '0', label: 'CLI Commands', desc: 'Full automation — no manual telnet sessions' },
   { value: '4+', label: 'Vendor Support', desc: 'Huawei, ZTE, C-Data, V-SOL and more' },

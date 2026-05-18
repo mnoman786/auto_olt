@@ -14,14 +14,14 @@ const features = [
   {
     icon: Wifi,
     color: 'indigo',
-    title: 'ONU Auto-Discovery',
+    title: 'ONU Discovery',
     desc: 'Automatically discovers all unregistered ONUs via SNMP polling. Instantly shows serial numbers, MAC addresses, and PON port assignments.',
   },
   {
     icon: Layers,
     color: 'violet',
-    title: 'ONU Auto-Registration',
-    desc: 'Register individual or bulk ONUs with a single click. Auto OLT pushes the correct Telnet commands with line/service profiles automatically.',
+    title: 'ONU Registration',
+    desc: 'Register individual or bulk ONUs from the dashboard. Auto OLT pushes the correct Telnet commands with line/service profiles — no CLI needed.',
   },
   {
     icon: Network,
