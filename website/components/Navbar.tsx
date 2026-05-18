@@ -4,6 +4,7 @@ import { Network, Menu, X } from 'lucide-react';
 
 const links = [
   { label: 'Features', href: '#features' },
+  { label: 'Preview', href: '#preview' },
   { label: 'How it Works', href: '#how-it-works' },
   { label: 'Hardware', href: '#hardware' },
   { label: 'Pricing', href: '#pricing' },
