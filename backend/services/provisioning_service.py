@@ -251,12 +251,19 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
     """
     Poll OLT via SNMP to discover and update ONUs.
     Returns summary of discovered/updated ONUs.
+
+    Optimisations applied:
+    - snmp_bulk_walk (GETBULK) fetches ONU table in far fewer PDU round trips
+    - All existing ONUs loaded in one DB query, split into create/update batches
+    - Django cache used to skip DB writes when ONU state has not changed
+    - bulk_create / bulk_update replace per-row get_or_create / save calls
     """
     from apps.olts.models import OLT
     from apps.onus.models import ONU
     from services import snmp_service
+    from django.core.cache import cache
 
-    result = {'discovered': 0, 'new': 0, 'updated': 0, 'error': None}
+    result = {'discovered': 0, 'new': 0, 'updated': 0, 'skipped': 0, 'error': None}
 
     try:
         olt = OLT.objects.get(id=olt_id)
@@ -270,7 +277,6 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
 
     connect_ip = _connect_ip(olt)
 
-    # Verify OLT is reachable via SNMP before attempting discovery
     snmp_check = snmp_service.validate_snmp_connectivity(
         host=connect_ip,
         community=olt.snmp_read_community,
@@ -290,23 +296,36 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
     )
 
     result['discovered'] = len(discovered_onus)
+    if not discovered_onus:
+        olt.last_polled = timezone.now()
+        olt.status = 'active'
+        olt.save(update_fields=['last_polled', 'status'])
+        return result
+
+    # Load all existing ONUs for this OLT in a single query
+    existing_map = {
+        onu.serial_number: onu
+        for onu in ONU.objects.filter(olt=olt)
+    }
+
+    now = timezone.now()
+    to_create: List[ONU] = []
+    to_update: List[ONU] = []
 
     for onu_data in discovered_onus:
         serial = onu_data.get('serial_number', '').strip()
         if not serial:
             continue
 
+        onu_index = onu_data.get('onu_index', 0)
+
         signal = snmp_service.get_onu_signal_strength(
             host=connect_ip,
             community=olt.snmp_read_community,
-            onu_index=onu_data.get('onu_index', 0),
+            onu_index=onu_index,
             version=olt.snmp_version,
         )
-        onu_data['signal_strength'] = signal
 
-        onu_index = onu_data.get('onu_index', 0)
-
-        # Check if ONU is already enabled on the OLT (pre-existing registration)
         already_registered = snmp_service.get_onu_admin_state(
             host=connect_ip,
             community=olt.snmp_read_community,
@@ -315,43 +334,68 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
         )
         initial_status = 'registered' if already_registered else 'unregistered'
 
-        onu, created = ONU.objects.get_or_create(
-            olt=olt,
-            serial_number=serial,
-            defaults={
-                'pon_port': onu_data.get('pon_port', ''),
-                'onu_index': onu_index,
-                # onu_id = CLI ont-id on the PON port (last segment of SNMP OID index)
-                'onu_id': onu_index,
-                'status': initial_status,
-                'signal_strength': signal,
-                'last_seen': timezone.now(),
-            }
-        )
+        # Snapshot used to detect changes between polls
+        cache_key = f'onu_state:{olt_id}:{serial}'
+        current_state = {
+            'signal': round(signal, 2) if signal is not None else None,
+            'status': initial_status,
+            'pon_port': onu_data.get('pon_port', ''),
+        }
 
-        if created:
-            result['new'] += 1
-        else:
-            # Update existing ONU
-            update_fields = ['last_seen', 'signal_strength', 'updated_at']
-            onu.last_seen = timezone.now()
-            if signal is not None:
-                onu.signal_strength = signal
-            if not onu.pon_port and onu_data.get('pon_port'):
-                onu.pon_port = onu_data['pon_port']
-                update_fields.append('pon_port')
-            # Sync status with OLT admin state
-            if onu.status == 'unregistered' and already_registered:
-                onu.status = 'registered'
-                update_fields.append('status')
-            elif onu.status == 'offline' and onu.registered_at and signal is not None:
-                onu.status = 'active'
-                update_fields.append('status')
-            onu.save(update_fields=update_fields)
-            result['updated'] += 1
+        if serial not in existing_map:
+            to_create.append(ONU(
+                olt=olt,
+                serial_number=serial,
+                pon_port=onu_data.get('pon_port', ''),
+                onu_index=onu_index,
+                onu_id=onu_index,
+                status=initial_status,
+                signal_strength=signal,
+                last_seen=now,
+            ))
+            cache.set(cache_key, current_state, timeout=600)
+            continue
 
-    # Update OLT last_polled
-    olt.last_polled = timezone.now()
+        # Skip DB write if nothing changed since last poll
+        if cache.get(cache_key) == current_state:
+            result['skipped'] += 1
+            continue
+
+        onu = existing_map[serial]
+        onu.last_seen = now
+        onu.updated_at = now
+        onu.signal_strength = signal
+        fields = ['last_seen', 'signal_strength', 'updated_at']
+
+        if not onu.pon_port and onu_data.get('pon_port'):
+            onu.pon_port = onu_data['pon_port']
+            fields.append('pon_port')
+
+        if onu.status == 'unregistered' and already_registered:
+            onu.status = 'registered'
+            fields.append('status')
+        elif onu.status == 'offline' and onu.registered_at and signal is not None:
+            onu.status = 'active'
+            fields.append('status')
+
+        # Store which fields need updating so bulk_update covers them all
+        onu._poll_update_fields = fields
+        to_update.append(onu)
+        cache.set(cache_key, current_state, timeout=600)
+
+    if to_create:
+        ONU.objects.bulk_create(to_create, ignore_conflicts=True)
+        result['new'] = len(to_create)
+
+    if to_update:
+        # Union of all changed field sets so every field that any object touched is covered
+        all_fields = set()
+        for onu in to_update:
+            all_fields.update(getattr(onu, '_poll_update_fields', []))
+        ONU.objects.bulk_update(to_update, list(all_fields))
+        result['updated'] = len(to_update)
+
+    olt.last_polled = now
     olt.status = 'active'
     olt.save(update_fields=['last_polled', 'status'])
 

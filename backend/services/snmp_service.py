@@ -147,6 +147,43 @@ def snmp_walk(host: str, community: str, oid: str, port: int = 161,
     return results
 
 
+def snmp_bulk_walk(host: str, community: str, oid: str, port: int = 161,
+                   version: str = 'v2c', timeout: int = 10, max_rows: int = 1000,
+                   max_repetitions: int = 25) -> List[Tuple[str, str]]:
+    """SNMP GETBULK walk — fetches max_repetitions rows per PDU instead of one.
+    Falls back to snmp_walk for v1 (GETBULK is v2c+ only).
+    """
+    if version == 'v1':
+        return snmp_walk(host, community, oid, port=port, version=version,
+                         timeout=timeout, max_rows=max_rows)
+    results = []
+    try:
+        from pysnmp.hlapi import (
+            bulkCmd, SnmpEngine, CommunityData, UdpTransportTarget,
+            ContextData, ObjectType, ObjectIdentity
+        )
+        for error_indication, error_status, error_index, var_binds in bulkCmd(
+            SnmpEngine(),
+            CommunityData(community, mpModel=1),
+            UdpTransportTarget((host, port), timeout=timeout, retries=1),
+            ContextData(),
+            0,                 # nonRepeaters
+            max_repetitions,   # rows per PDU response
+            ObjectType(ObjectIdentity(oid)),
+            lexicographicMode=False,
+            maxRows=max_rows
+        ):
+            if error_indication:
+                break
+            if error_status:
+                break
+            for var_bind in var_binds:
+                results.append((str(var_bind[0]), str(var_bind[1])))
+    except Exception as e:
+        logger.debug(f"SNMP BULK WALK exception for {host}: {e}")
+    return results
+
+
 def validate_snmp_connectivity(host: str, community: str, version: str = 'v2c',
                                 port: int = 161) -> Dict[str, Any]:
     """
@@ -217,7 +254,7 @@ def discover_onus_snmp(host: str, community: str, version: str = 'v2c',
 
     # Try Huawei ONU serial table
     huawei_serial_oid = '1.3.6.1.4.1.2011.6.128.1.1.2.43.1.3'
-    huawei_results = snmp_walk(host, community, huawei_serial_oid, port=port, version=version)
+    huawei_results = snmp_bulk_walk(host, community, huawei_serial_oid, port=port, version=version)
     if huawei_results:
         for oid_str, value in huawei_results:
             if value and value not in ('No Such Object', 'No Such Instance', ''):
@@ -238,7 +275,7 @@ def discover_onus_snmp(host: str, community: str, version: str = 'v2c',
 
     # Try ZTE-style ONU discovery if no Huawei results
     if not onus:
-        zte_results = snmp_walk(host, community, OID_ZTE_ONU_SERIAL, port=port, version=version)
+        zte_results = snmp_bulk_walk(host, community, OID_ZTE_ONU_SERIAL, port=port, version=version)
         for oid_str, value in zte_results:
             if value and value not in ('No Such Object', 'No Such Instance', ''):
                 parts = oid_str.split('.')
