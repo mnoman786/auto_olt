@@ -99,7 +99,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* User section */}
         <div className="px-3 py-4 border-t border-white/5">
-          <div className="flex items-center gap-3 px-3 py-2 mb-2">
+          <div className="flex items-center gap-3 px-3 py-2">
             <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-md">
               {initials}
             </div>
@@ -108,21 +108,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>
-          <Link
-            href="/profile"
-            onClick={() => setSidebarOpen(false)}
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-          >
-            <UserCircle className="h-4 w-4" />
-            Profile
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Sign out
-          </button>
         </div>
       </aside>
 
