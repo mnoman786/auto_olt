@@ -2,9 +2,9 @@
 # =============================================================================
 #  Auto OLT — Full Project Setup Script
 #  Run once on a fresh server:  sudo bash setup.sh
-#  Server IP : 198.105.112.56
-#  Backend   : http://198.105.112.56:9005
-#  Frontend  : http://198.105.112.56:3001
+#  Server IP : 162.217.248.75
+#  Backend   : http://162.217.248.75:9005
+#  Frontend  : http://162.217.248.75:3001
 # =============================================================================
 set -e
 
@@ -15,7 +15,7 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 section() { echo -e "\n${GREEN}══════════════════════════════════════════${NC}"; echo -e "${GREEN} $*${NC}"; echo -e "${GREEN}══════════════════════════════════════════${NC}"; }
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SERVER_IP="198.105.112.56"
+SERVER_IP="162.217.248.75"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
@@ -65,13 +65,73 @@ info "Python deps installed"
 section "4 — Backend .env"
 ENV_FILE="$BACKEND_DIR/.env"
 if [[ ! -f "$ENV_FILE" ]]; then
-  SECRET=$(python3 -c "import secrets; print(secrets.token_urlsafe(50))")
+  SECRET=$(python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" 2>/dev/null \
+           || python3 -c "import secrets,base64; print(base64.urlsafe_b64encode(secrets.token_bytes(50)).decode())")
   cat > "$ENV_FILE" <<EOF
+# ── Django Core ──────────────────────────────────────────────
 SECRET_KEY=$SECRET
 DEBUG=False
 ALLOWED_HOSTS=localhost,127.0.0.1,$SERVER_IP
+
+# ── Database ─────────────────────────────────────────────────
+DATABASE_URL=sqlite:///db.sqlite3
+
+# ── CORS ─────────────────────────────────────────────────────
 CORS_ALLOW_ALL_ORIGINS=False
 CORS_ALLOWED_ORIGINS=http://$SERVER_IP:$FE_PORT,http://localhost:$FE_PORT
+
+# ── JWT ──────────────────────────────────────────────────────
+JWT_ACCESS_TOKEN_LIFETIME_MINUTES=60
+JWT_REFRESH_TOKEN_LIFETIME_DAYS=7
+
+# ── Encryption (OLT passwords at rest) ───────────────────────
+# WARNING: Never change this after data is written.
+FIELD_ENCRYPTION_KEY=jLA2s6sE6cOz6U2AI9yB3kUiJCtts2WZL0pl-0YcOMc=
+
+# ── HMAC Response Signing ────────────────────────────────────
+HMAC_SECRET=105eff89fe94e55e87aee967eb9b9339ff7a3061afc279dab3e4ae3e87199f1c
+
+# ── Admin ────────────────────────────────────────────────────
+ADMIN_URL=olt-control-9f3a/
+
+# ── Registration ─────────────────────────────────────────────
+REGISTRATION_OPEN=True
+
+# ── OTP ──────────────────────────────────────────────────────
+OTP_EXPIRY_MINUTES=10
+
+# ── Site URL ─────────────────────────────────────────────────
+SITE_URL=http://$SERVER_IP:$FE_PORT
+
+# ── HTTPS Security ───────────────────────────────────────────
+SECURE_SSL_REDIRECT=False
+SESSION_COOKIE_SECURE=False
+CSRF_COOKIE_SECURE=False
+
+# ── Logging ──────────────────────────────────────────────────
+LOG_LEVEL=WARNING
+
+# ── Email / SMTP ─────────────────────────────────────────────
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=mnomanch786@gmail.com
+EMAIL_HOST_PASSWORD=jpsk pypc ixul ashp
+DEFAULT_FROM_EMAIL=Auto OLT <mnomanch786@gmail.com>
+
+# ── ONU Provisioning ─────────────────────────────────────────
+ONU_REGISTER_METHOD=hybrid
+DEFAULT_TELNET_USERNAME=admin
+DEFAULT_TELNET_PASSWORD=admin
+DEFAULT_TELNET_PORT=23
+OLT_MGMT_USER=autoolt
+OLT_MGMT_PASSWORD=autoolt123
+OLT_MGMT_PRIVILEGE=15
+
+# ── WireGuard ────────────────────────────────────────────────
+WG_INTERFACE=wg0
+WG_ENDPOINT=$SERVER_IP:51820
+WG_SERVER_PUBLIC_KEY=egHNg6PWBMadeIIgiaLpCHV9q6pzMUJBV0/1ouwNdCI=
 EOF
   info ".env created at $ENV_FILE"
 else
@@ -90,6 +150,7 @@ FE_ENV="$FRONTEND_DIR/.env.local"
 if [[ ! -f "$FE_ENV" ]]; then
   cat > "$FE_ENV" <<EOF
 NEXT_PUBLIC_API_URL=http://$SERVER_IP:$BE_PORT/api
+NEXT_PUBLIC_HMAC_SECRET=105eff89fe94e55e87aee967eb9b9339ff7a3061afc279dab3e4ae3e87199f1c
 EOF
   info ".env.local created at $FE_ENV"
 else
