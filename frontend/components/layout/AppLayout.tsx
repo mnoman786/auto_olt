@@ -7,7 +7,7 @@ import {
   Bell, Search, LifeBuoy, UserCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 const navItems = [
@@ -22,6 +22,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -148,12 +160,53 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
           </button>
-          <Link href="/profile" className="hidden sm:flex items-center gap-2 pl-3 ml-1 border-l border-gray-200 hover:opacity-80 transition-opacity">
-            <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
-              {initials}
-            </div>
-            <span className="text-sm text-gray-700 font-medium">{user?.username}</span>
-          </Link>
+          {/* Profile dropdown */}
+          <div ref={profileRef} className="relative hidden sm:block pl-3 ml-1 border-l border-gray-200">
+            <button
+              onClick={() => setProfileOpen(v => !v)}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            >
+              <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+                {initials}
+              </div>
+              <span className="text-sm text-gray-700 font-medium">{user?.username}</span>
+            </button>
+
+            {profileOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg shadow-gray-200/80 border border-gray-100 z-50 overflow-hidden">
+                {/* User info header */}
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                      {initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{user?.username}</p>
+                      <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Actions */}
+                <div className="py-1">
+                  <Link
+                    href="/profile"
+                    onClick={() => setProfileOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <UserCircle className="h-4 w-4 text-gray-400" />
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => { setProfileOpen(false); handleLogout(); }}
+                    className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Page content */}
