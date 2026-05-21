@@ -2,9 +2,9 @@
 # =============================================================================
 #  Auto OLT — Full Project Setup Script
 #  Run once on a fresh server:  sudo bash setup.sh
-#  Server IP : 162.217.248.75
-#  Backend   : http://162.217.248.75:9005
-#  Frontend  : http://162.217.248.75:3001
+#  Server IP : 5.154.181.180
+#  Backend   : http://5.154.181.180:9005
+#  Frontend  : http://5.154.181.180:3001
 # =============================================================================
 set -e
 
@@ -15,7 +15,7 @@ warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 section() { echo -e "\n${GREEN}══════════════════════════════════════════${NC}"; echo -e "${GREEN} $*${NC}"; echo -e "${GREEN}══════════════════════════════════════════${NC}"; }
 
 # ── Config ────────────────────────────────────────────────────────────────────
-SERVER_IP="162.217.248.75"
+SERVER_IP="5.154.181.180"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
