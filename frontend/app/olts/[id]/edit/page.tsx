@@ -5,29 +5,14 @@ import { useAuth } from '@/lib/auth';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input, Select } from '@/components/ui/Form';
+import { Input } from '@/components/ui/Form';
 import { oltApi } from '@/lib/api';
 import type { OLTCreatePayload } from '@/lib/types';
-import { ArrowLeft, Server, Shield, Terminal, Eye, EyeOff, Wifi, Info, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Server, Terminal, Eye, EyeOff, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
-const SNMP_VERSIONS = [
-  { value: 'v2c', label: 'SNMPv2c (recommended)' },
-  { value: 'v1', label: 'SNMPv1' },
-  { value: 'v3', label: 'SNMPv3' },
-];
 
-const CONNECTION_TYPES = [
-  { value: 'direct', label: 'Direct (Public IP)' },
-  { value: 'vpn', label: 'VPN (WireGuard)' },
-];
-
-function randomCommunity(prefix: string): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  const rand = Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-  return `${prefix}_${rand}`;
-}
 
 export default function EditOLTPage() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -39,7 +24,6 @@ export default function EditOLTPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [assignedVirtualIp, setAssignedVirtualIp] = useState<string | null>(null);
   const [showAdminPassword, setShowAdminPassword] = useState(!!isStaff);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -48,8 +32,8 @@ export default function EditOLTPage() {
     ip_address: '',
     connection_type: 'direct',
     snmp_version: 'v2c',
-    snmp_read_community: randomCommunity('rd'),
-    snmp_write_community: randomCommunity('wr'),
+    snmp_read_community: '',
+    snmp_write_community: '',
     telnet_enabled: true,
     telnet_port: 23,
     olt_admin_username: 'admin',
@@ -64,8 +48,7 @@ export default function EditOLTPage() {
     try {
       const res = await oltApi.get(oltId);
       const d = res.data;
-      setAssignedVirtualIp(d.vpn_virtual_ip || null);
-      setForm({
+setForm({
         name: d.name,
         ip_address: d.ip_address,
         connection_type: d.connection_type || 'direct',
@@ -251,65 +234,6 @@ export default function EditOLTPage() {
                 )}
               </div>
             )}
-          </Card>
-
-          <Card>
-            <div className="flex items-center gap-2 mb-4">
-              <Wifi className="h-5 w-5 text-indigo-600" />
-              <h2 className="font-semibold text-gray-900">Connection Type</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="How does this OLT connect?"
-                options={CONNECTION_TYPES}
-                value={form.connection_type}
-                onChange={e => set('connection_type', e.target.value as any)}
-                required
-              />
-              {form.connection_type === 'direct' ? (
-                <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100 text-sm text-blue-700">
-                  <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                  <span>App connects directly to the public IP address above.</span>
-                </div>
-              ) : (
-                <Input
-                  label="Virtual IP (auto-assigned, read-only)"
-                  value={assignedVirtualIp || 'Will be assigned on save'}
-                  disabled
-                  hint="Assigned by system from 10.100.0.0/16 — globally unique"
-                />
-              )}
-            </div>
-            {form.connection_type === 'vpn' && (
-              <div className="flex items-start gap-2 mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-100 text-sm text-indigo-700">
-                <Info className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>
-                  <strong>IP Address</strong> = OLT&apos;s real LAN IP. App connects via the auto-assigned Virtual IP through WireGuard.
-                </span>
-              </div>
-            )}
-          </Card>
-
-          <Card>
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-5 w-5 text-green-600" />
-              <h2 className="font-semibold text-gray-900">SNMP Configuration</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select label="SNMP Version" options={SNMP_VERSIONS} value={form.snmp_version} onChange={e => set('snmp_version', e.target.value as any)} required />
-              <Input
-                label="SNMP Read Community"
-                value={form.snmp_read_community}
-                disabled
-                hint="Fixed system value — cannot be changed"
-              />
-              <Input
-                label="SNMP Write Community"
-                value={form.snmp_write_community || ''}
-                disabled
-                hint="Fixed system value — cannot be changed"
-              />
-            </div>
           </Card>
 
           <div className="flex gap-3">

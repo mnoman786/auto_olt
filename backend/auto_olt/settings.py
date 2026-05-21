@@ -149,8 +149,11 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Auto OLT <noreply@autoolt.com>')
 
-# Password reset OTP expiry in minutes
-OTP_EXPIRY_MINUTES = 10
+# OTP
+OTP_EXPIRY_MINUTES = config('OTP_EXPIRY_MINUTES', default=10, cast=int)
+
+# Site URL for email links
+SITE_URL = config('SITE_URL', default='http://localhost:3000')
 
 # WireGuard
 WG_INTERFACE = config('WG_INTERFACE', default='wg0')
@@ -171,6 +174,14 @@ OLT_MGMT_PRIVILEGE = config('OLT_MGMT_PRIVILEGE', default=15, cast=int)
 REGISTRATION_OPEN = config('REGISTRATION_OPEN', default=False, cast=bool)
 HMAC_SECRET = config('HMAC_SECRET', default='')
 ADMIN_URL = config('ADMIN_URL', default='admin/')
+
+# HTTPS security — set all to True in production behind SSL
+SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
+SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
+CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+
+# Logging level
+LOG_LEVEL = config('LOG_LEVEL', default='INFO')
 
 # Encryption key for sensitive DB fields (OLT credentials).
 # Must be a 32-byte url-safe base64 string (generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
