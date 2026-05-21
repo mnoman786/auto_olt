@@ -58,7 +58,7 @@ setForm({
         telnet_enabled: true,
         telnet_port: d.telnet_port || 23,
         olt_admin_username: d.olt_admin_username || 'admin',
-        olt_admin_password: d.olt_admin_password || '',
+        olt_admin_password: '',
       });
     } catch {
       toast.error('Failed to load OLT');
