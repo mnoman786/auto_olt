@@ -106,15 +106,22 @@ export default function LoginPage() {
               autoFocus
               disabled={throttledFor > 0}
             />
-            <Input
-              label="Password"
-              type="password"
-              placeholder="Enter password"
-              value={form.password}
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-              required
-              disabled={throttledFor > 0}
-            />
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm font-medium text-gray-700">Password</span>
+                <Link href="/forgot-password" className="text-xs text-blue-600 hover:underline font-medium">
+                  Forgot password?
+                </Link>
+              </div>
+              <Input
+                type="password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                required
+                disabled={throttledFor > 0}
+              />
+            </div>
             <Button type="submit" loading={loading} disabled={throttledFor > 0} className="w-full" size="lg">
               {throttledFor > 0 ? `Try again in ${throttledFor}s` : 'Sign In'}
             </Button>

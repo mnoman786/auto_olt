@@ -1,10 +1,16 @@
+import random
+import string
 from django.conf import settings
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
+from .models import PasswordResetOTP
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 
 
@@ -111,3 +117,107 @@ def change_password_view(request):
     user.set_password(new_pw)
     user.save(update_fields=['password'])
     return Response({'detail': 'Password changed successfully.'})
+
+
+class ForgotPasswordThrottle(AnonRateThrottle):
+    scope = 'forgot_password'
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@throttle_classes([ForgotPasswordThrottle])
+def forgot_password_view(request):
+    """Generate a 6-digit OTP and send it to the user's email."""
+    from .models import User as UserModel
+    email = request.data.get('email', '').strip().lower()
+    if not email:
+        return Response({'email': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Always return 200 so we don't leak which emails are registered
+    try:
+        user = UserModel.objects.get(email__iexact=email)
+    except UserModel.DoesNotExist:
+        return Response({'detail': 'If that email is registered, an OTP has been sent.'})
+
+    # Invalidate any existing unused OTPs for this user
+    PasswordResetOTP.objects.filter(user=user, is_used=False).update(is_used=True)
+
+    # Generate 6-digit numeric OTP
+    otp = ''.join(random.choices(string.digits, k=6))
+    PasswordResetOTP.objects.create(user=user, otp=otp)
+
+    expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
+    html_body = render_to_string('accounts/reset_otp_email.html', {
+        'username': user.username,
+        'email': user.email,
+        'otp': otp,
+        'expiry_minutes': expiry,
+    })
+
+    try:
+        send_mail(
+            subject='Your Auto OLT Password Reset Code',
+            message=f'Your OTP is: {otp}. It expires in {expiry} minutes.',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_body,
+            fail_silently=False,
+        )
+    except Exception as exc:
+        return Response(
+            {'detail': 'Failed to send email. Please try again later.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    return Response({'detail': 'If that email is registered, an OTP has been sent.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password_view(request):
+    """Verify OTP and set new password."""
+    from .models import User as UserModel
+    email = request.data.get('email', '').strip().lower()
+    otp = request.data.get('otp', '').strip()
+    new_pw = request.data.get('new_password', '')
+    confirm = request.data.get('confirm_password', '')
+
+    errors = {}
+    if not email:
+        errors['email'] = 'Email is required.'
+    if not otp:
+        errors['otp'] = 'OTP is required.'
+    if not new_pw:
+        errors['new_password'] = 'New password is required.'
+    if errors:
+        return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if len(new_pw) < 6:
+        return Response({'new_password': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+    if new_pw != confirm:
+        return Response({'confirm_password': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = UserModel.objects.get(email__iexact=email)
+    except UserModel.DoesNotExist:
+        return Response({'otp': 'Invalid or expired code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    record = (
+        PasswordResetOTP.objects
+        .filter(user=user, otp=otp, is_used=False)
+        .order_by('-created_at')
+        .first()
+    )
+    if not record:
+        return Response({'otp': 'Invalid or expired code.'}, status=status.HTTP_400_BAD_REQUEST)
+    if record.is_expired():
+        record.is_used = True
+        record.save(update_fields=['is_used'])
+        return Response({'otp': 'This code has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    record.is_used = True
+    record.save(update_fields=['is_used'])
+
+    user.set_password(new_pw)
+    user.save(update_fields=['password'])
+    return Response({'detail': 'Password reset successfully. You can now log in.'})

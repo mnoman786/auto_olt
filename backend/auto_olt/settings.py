@@ -103,8 +103,9 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '30/minute',
         'user': '300/minute',
-        'auth_login': '5/minute',      # applied explicitly on login view
-        'auth_register': '3/minute',   # applied explicitly on register view
+        'auth_login': '5/minute',
+        'auth_register': '3/minute',
+        'forgot_password': '3/minute',
     },
 }
 
@@ -135,6 +136,18 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
+
+# Email / SMTP
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Auto OLT <noreply@autoolt.com>')
+
+# Password reset OTP expiry in minutes
+OTP_EXPIRY_MINUTES = 10
 
 # WireGuard
 WG_INTERFACE = config('WG_INTERFACE', default='wg0')

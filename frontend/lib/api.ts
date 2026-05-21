@@ -99,6 +99,12 @@ export const auth = {
 
   changePassword: (data: { current_password: string; new_password: string; confirm_password: string }) =>
     apiClient.post('/auth/me/change-password/', data),
+
+  forgotPassword: (email: string) =>
+    apiClient.post('/auth/forgot-password/', { email }),
+
+  resetPassword: (data: { email: string; otp: string; new_password: string; confirm_password: string }) =>
+    apiClient.post('/auth/reset-password/', data),
 };
 
 // OLT API
