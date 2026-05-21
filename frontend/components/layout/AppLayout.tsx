@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy,
+  Bell, Search, LifeBuoy, UserCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState } from 'react';
@@ -96,6 +96,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>
+          <Link
+            href="/profile"
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+          >
+            <UserCircle className="h-4 w-4" />
+            Profile
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
@@ -140,12 +148,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
           </button>
-          <div className="hidden sm:flex items-center gap-2 pl-3 ml-1 border-l border-gray-200">
+          <Link href="/profile" className="hidden sm:flex items-center gap-2 pl-3 ml-1 border-l border-gray-200 hover:opacity-80 transition-opacity">
             <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
               {initials}
             </div>
             <span className="text-sm text-gray-700 font-medium">{user?.username}</span>
-          </div>
+          </Link>
         </header>
 
         {/* Page content */}

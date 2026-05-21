@@ -68,3 +68,46 @@ def logout_view(request):
 @permission_classes([IsAuthenticated])
 def me_view(request):
     return Response(UserSerializer(request.user).data)
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_profile_view(request):
+    user = request.user
+    allowed = {k: v for k, v in request.data.items() if k in ('first_name', 'last_name', 'email')}
+    if not allowed:
+        return Response({'detail': 'No updatable fields provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    if 'email' in allowed:
+        email = allowed['email'].strip()
+        if not email:
+            return Response({'email': 'Email cannot be blank.'}, status=status.HTTP_400_BAD_REQUEST)
+        from .models import User as UserModel
+        if UserModel.objects.filter(email=email).exclude(pk=user.pk).exists():
+            return Response({'email': 'This email is already in use.'}, status=status.HTTP_400_BAD_REQUEST)
+        user.email = email
+    if 'first_name' in allowed:
+        user.first_name = allowed['first_name']
+    if 'last_name' in allowed:
+        user.last_name = allowed['last_name']
+    user.save(update_fields=[f for f in ('email', 'first_name', 'last_name') if f in allowed])
+    return Response(UserSerializer(user).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password_view(request):
+    user = request.user
+    current = request.data.get('current_password', '')
+    new_pw = request.data.get('new_password', '')
+    confirm = request.data.get('confirm_password', '')
+
+    if not user.check_password(current):
+        return Response({'current_password': 'Incorrect current password.'}, status=status.HTTP_400_BAD_REQUEST)
+    if len(new_pw) < 6:
+        return Response({'new_password': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+    if new_pw != confirm:
+        return Response({'confirm_password': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(new_pw)
+    user.save(update_fields=['password'])
+    return Response({'detail': 'Password changed successfully.'})

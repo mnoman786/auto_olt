@@ -93,6 +93,12 @@ export const auth = {
     apiClient.post('/auth/logout/', { refresh }),
 
   me: () => apiClient.get('/auth/me/'),
+
+  updateProfile: (data: { first_name?: string; last_name?: string; email?: string }) =>
+    apiClient.patch('/auth/me/update/', data),
+
+  changePassword: (data: { current_password: string; new_password: string; confirm_password: string }) =>
+    apiClient.post('/auth/me/change-password/', data),
 };
 
 // OLT API
