@@ -59,6 +59,20 @@ def register_view(request):
             status=status.HTTP_403_FORBIDDEN,
         )
     from .models import User as UserModel
+
+    # Remove any unverified accounts with the same username or email so the
+    # user can retry registration without hitting duplicate-key errors.
+    incoming_username = request.data.get('username', '').strip()
+    incoming_email = request.data.get('email', '').strip()
+    UserModel.objects.filter(
+        is_active=False,
+        username=incoming_username,
+    ).delete()
+    UserModel.objects.filter(
+        is_active=False,
+        email=incoming_email,
+    ).delete()
+
     is_first_user = not UserModel.objects.exists()
 
     serializer = RegisterSerializer(data=request.data)
