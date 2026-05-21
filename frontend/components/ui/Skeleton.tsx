@@ -1,8 +1,9 @@
 'use client';
+import React from 'react';
 
 /** Single shimmer block — base primitive used by all skeletons. */
-export function Sk({ className = '' }: { className?: string }) {
-  return <div className={`bg-gray-100 animate-pulse rounded ${className}`} />;
+export function Sk({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
+  return <div className={`bg-gray-100 animate-pulse rounded ${className}`} style={style} />;
 }
 
 // ─────────────────────────────────────────────
