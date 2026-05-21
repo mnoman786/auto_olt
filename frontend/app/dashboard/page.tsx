@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import AppLayout from '@/components/layout/AppLayout';
@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/Button';
 import { OLTStatusBadge } from '@/components/ui/Badge';
 import { oltApi } from '@/lib/api';
 import { OLT } from '@/lib/types';
+import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import {
   Server, Wifi, AlertCircle, Plus, RefreshCw,
   ChevronRight, Activity, Network, Cpu, User,
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { Pagination } from '@/components/ui/Pagination';
 
 const statusDot = {
   active: 'bg-green-500 shadow-[0_0_0_3px_rgba(34,197,94,0.18)]',
@@ -49,27 +51,30 @@ export default function DashboardPage() {
   const isStaff = user?.is_staff || user?.is_superuser;
   const router = useRouter();
   const [olts, setOlts] = useState<OLT[]>([]);
+  const [oltCount, setOltCount] = useState(0);
+  const [page, setPage] = useState(1);
   const [fetching, setFetching] = useState(true);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
   }, [isAuthenticated, isLoading, router]);
 
-  const fetchOlts = async () => {
+  const fetchOlts = useCallback(async () => {
     setFetching(true);
     try {
-      const res = await oltApi.list();
-      setOlts(res.data.results || (res.data as any));
+      const res = await oltApi.list(page);
+      setOlts(res.data.results ?? (res.data as any));
+      setOltCount(res.data.count ?? 0);
     } catch (e) {
       toast.error('Failed to load OLTs');
     } finally {
       setFetching(false);
     }
-  };
+  }, [page]);
 
-  useEffect(() => { if (isAuthenticated) fetchOlts(); }, [isAuthenticated]);
+  useEffect(() => { if (isAuthenticated) fetchOlts(); }, [isAuthenticated, fetchOlts]);
 
-  if (isLoading) return null;
+  if (isLoading) return <AppLayout><DashboardSkeleton /></AppLayout>;
 
   const activeOlts = olts.filter(o => o.status === 'active').length;
   const errorOlts = olts.filter(o => o.status === 'error').length;
@@ -247,6 +252,12 @@ export default function DashboardPage() {
                 })}
               </div>
             )}
+            <Pagination
+              count={oltCount}
+              pageSize={20}
+              page={page}
+              onPageChange={setPage}
+            />
           </Card>
         </div>
       </div>

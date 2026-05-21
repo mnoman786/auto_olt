@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
@@ -39,11 +39,25 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor for token refresh
+// Response interceptor for token refresh and global error handling
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // 429 Too Many Requests — parse retry seconds and attach to error for UI use
+    if (error.response?.status === 429) {
+      const retryAfterHeader = error.response.headers?.['retry-after'];
+      const detail: string = error.response.data?.detail || '';
+      const match = detail.match(/(\d+)\s+second/);
+      error.retryAfter = match
+        ? parseInt(match[1], 10)
+        : retryAfterHeader
+          ? parseInt(retryAfterHeader, 10)
+          : 60;
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       const refresh = getRefreshToken();
@@ -83,7 +97,7 @@ export const auth = {
 
 // OLT API
 export const oltApi = {
-  list: () => apiClient.get<PaginatedResponse<OLT>>('/olts/'),
+  list: (page?: number) => apiClient.get<PaginatedResponse<OLT>>('/olts/', { params: page && page > 1 ? { page } : undefined }),
 
   create: (data: OLTCreatePayload) => apiClient.post<OLT>('/olts/', data),
 
@@ -93,7 +107,7 @@ export const oltApi = {
     olt_admin_username: string;
     olt_admin_password: string;
   }) =>
-    apiClient.post<{ success: boolean; message: string; banner: string }>(
+    apiClient.post<{ success: boolean; message: string }>(
       '/olts/test-connection/',
       data,
     ),
@@ -138,10 +152,8 @@ export const oltApi = {
 
 // ONU API
 export const onuApi = {
-  list: (oltId: number, status?: string) =>
-    apiClient.get<PaginatedResponse<ONU>>(
-      `/olts/${oltId}/onus/` + (status ? `?status=${status}` : '')
-    ),
+  list: (oltId: number, params?: { status?: string; search?: string; page?: number }) =>
+    apiClient.get<PaginatedResponse<ONU>>(`/olts/${oltId}/onus/`, { params }),
 
   get: (oltId: number, onuId: number) =>
     apiClient.get<ONU>(`/olts/${oltId}/onus/${onuId}/`),
@@ -190,7 +202,8 @@ export const vlanApi = {
 
 // Ticket API
 export const ticketApi = {
-  list: () => apiClient.get<PaginatedResponse<TicketListItem>>('/tickets/'),
+  list: (params?: { status?: string; page?: number }) =>
+    apiClient.get<PaginatedResponse<TicketListItem>>('/tickets/', { params }),
 
   create: (data: { subject: string; message: string; olt?: number | null }) =>
     apiClient.post<Ticket>('/tickets/', data),

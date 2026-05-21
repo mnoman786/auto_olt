@@ -1,3 +1,4 @@
+from django.db.models import Count
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -17,10 +18,13 @@ class TicketListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Ticket.objects.select_related('user', 'olt').prefetch_related('replies')
-        if user.is_staff or user.is_superuser:
-            return qs
-        return qs.filter(user=user)
+        qs = Ticket.objects.select_related('user', 'olt').annotate(_reply_count=Count('replies'))
+        if not (user.is_staff or user.is_superuser):
+            qs = qs.filter(user=user)
+        status_filter = self.request.query_params.get('status', '').strip()
+        if status_filter and status_filter != 'all':
+            qs = qs.filter(status=status_filter)
+        return qs.order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

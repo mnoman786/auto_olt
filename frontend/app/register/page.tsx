@@ -28,15 +28,22 @@ export default function RegisterPage() {
       toast.success('Account created!');
       router.push('/dashboard');
     } catch (err: any) {
-      const data = err?.response?.data;
-      if (data) {
-        const errs: Record<string, string> = {};
-        Object.keys(data).forEach(k => {
-          errs[k] = Array.isArray(data[k]) ? data[k][0] : data[k];
-        });
-        setErrors(errs);
+      if (err?.response?.status === 429) {
+        const seconds = err.retryAfter ?? 60;
+        setErrors({ general: `Too many attempts. Please wait ${seconds} seconds before trying again.` });
+      } else if (err?.response?.status === 403) {
+        setErrors({ general: err.response.data?.detail || 'Registration is currently closed.' });
       } else {
-        setErrors({ general: 'Registration failed.' });
+        const data = err?.response?.data;
+        if (data) {
+          const errs: Record<string, string> = {};
+          Object.keys(data).forEach(k => {
+            errs[k] = Array.isArray(data[k]) ? data[k][0] : data[k];
+          });
+          setErrors(errs);
+        } else {
+          setErrors({ general: 'Registration failed.' });
+        }
       }
     } finally {
       setLoading(false);

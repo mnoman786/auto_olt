@@ -1,3 +1,4 @@
+import ipaddress
 import socket
 import threading
 from django.db.models import Count, Q
@@ -27,12 +28,20 @@ class OLTListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        qs = OLT.objects.all() if (user.is_staff or user.is_superuser) else OLT.objects.filter(user=user)
+        qs = OLT.objects.select_related('user')
+        if not (user.is_staff or user.is_superuser):
+            qs = qs.filter(user=user)
         return qs.annotate(
             _onu_count=Count('onus', distinct=True),
             _registered_onu_count=Count(
                 'onus',
                 filter=Q(onus__status__in=('registered', 'active')),
+                distinct=True,
+            ),
+            _vlan_count=Count('vlans', distinct=True),
+            _discovered_vlan_count=Count(
+                'vlans',
+                filter=Q(vlans__source='discovered'),
                 distinct=True,
             ),
         )
@@ -68,9 +77,23 @@ class OLTDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_staff or user.is_superuser:
-            return OLT.objects.all()
-        return OLT.objects.filter(user=user)
+        qs = OLT.objects.select_related('user').annotate(
+            _onu_count=Count('onus', distinct=True),
+            _registered_onu_count=Count(
+                'onus',
+                filter=Q(onus__status__in=('registered', 'active')),
+                distinct=True,
+            ),
+            _vlan_count=Count('vlans', distinct=True),
+            _discovered_vlan_count=Count(
+                'vlans',
+                filter=Q(vlans__source='discovered'),
+                distinct=True,
+            ),
+        )
+        if not (user.is_staff or user.is_superuser):
+            qs = qs.filter(user=user)
+        return qs
 
     def perform_destroy(self, instance):
         if instance.connection_type == 'vpn' and instance.wg_client_public_key:
@@ -114,6 +137,40 @@ def trigger_setup(request, pk):
     return Response({'detail': 'Setup started.', 'olt_id': olt.id})
 
 
+def _validate_olt_target(host: str, port: int):
+    """
+    SSRF guard: reject IPs/ports that have no business being an OLT target.
+    Returns an error string if the target is disallowed, else None.
+    """
+    # Port must be in a sane range for Telnet (not scanning arbitrary services)
+    if not (1 <= port <= 65535):
+        return 'Port must be between 1 and 65535.'
+    # Reject non-standard ports that are never used for OLT Telnet
+    # (allow 23 and high-port alternatives like 2323, 23000-range)
+    ALLOWED_PORTS = {23, 2323, 23231}
+    if port not in ALLOWED_PORTS and not (1024 <= port <= 65535):
+        return f'Port {port} is not a recognised Telnet port for OLT devices.'
+
+    try:
+        addr = ipaddress.ip_address(host)
+    except ValueError:
+        return 'Invalid IP address format.'
+
+    # Block address categories that are never valid OLT destinations
+    blocked = [
+        (addr.is_loopback,      'Loopback addresses are not allowed.'),
+        (addr.is_link_local,    'Link-local addresses are not allowed (includes cloud metadata 169.254.x.x).'),
+        (addr.is_multicast,     'Multicast addresses are not allowed.'),
+        (addr.is_unspecified,   'Unspecified address (0.0.0.0) is not allowed.'),
+        (addr.is_reserved,      'Reserved addresses are not allowed.'),
+    ]
+    for condition, msg in blocked:
+        if condition:
+            return msg
+
+    return None
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def test_connection(request):
@@ -128,7 +185,7 @@ def test_connection(request):
     from django.conf import settings
 
     host = (request.data.get('ip_address') or '').strip()
-    port = int(request.data.get('telnet_port') or 23)
+    port_raw = request.data.get('telnet_port') or 23
     username = (request.data.get('olt_admin_username') or '').strip()
     password = request.data.get('olt_admin_password') or ''
 
@@ -139,6 +196,15 @@ def test_connection(request):
     if not password:
         return Response({'success': False, 'message': 'Password is required.'}, status=400)
 
+    try:
+        port = int(port_raw)
+    except (TypeError, ValueError):
+        return Response({'success': False, 'message': 'Invalid port number.'}, status=400)
+
+    ssrf_error = _validate_olt_target(host, port)
+    if ssrf_error:
+        return Response({'success': False, 'message': ssrf_error}, status=400)
+
     success, message, client = telnet_service.telnet_login(
         host=host,
         username=username,
@@ -146,20 +212,12 @@ def test_connection(request):
         port=port,
         timeout=getattr(settings, 'TELNET_TEST_TIMEOUT', 10),
     )
-    banner = ''
     if client is not None:
-        try:
-            banner = (client._buffer.decode('utf-8', errors='replace')
-                      if getattr(client, '_buffer', None) else '')
-        except Exception:
-            banner = ''
-        finally:
-            client.disconnect()
+        client.disconnect()
 
     return Response({
         'success': bool(success),
         'message': message or ('Connected.' if success else 'Connection failed.'),
-        'banner': banner[-300:].strip() if banner else '',
     })
 
 
@@ -216,15 +274,17 @@ def poll_olt(request, pk):
 def olt_stats(request, pk):
     """Get OLT statistics."""
     olt = get_olt_for_user(pk, request.user)
-    onus = olt.onus.all()
+    agg = olt.onus.aggregate(
+        total_onus=Count('id'),
+        active_onus=Count('id', filter=Q(status='active')),
+        offline_onus=Count('id', filter=Q(status='offline')),
+        unregistered_onus=Count('id', filter=Q(status='unregistered')),
+        registered_onus=Count('id', filter=Q(status__in=('registered', 'active'))),
+    )
     return Response({
         'olt_id': olt.id,
         'status': olt.status,
-        'total_onus': onus.count(),
-        'active_onus': onus.filter(status='active').count(),
-        'offline_onus': onus.filter(status='offline').count(),
-        'unregistered_onus': onus.filter(status='unregistered').count(),
-        'registered_onus': onus.filter(status__in=('registered', 'active')).count(),
+        **agg,
         'last_polled': olt.last_polled,
     })
 
@@ -243,11 +303,13 @@ def olt_ports(request, pk):
             community=olt.snmp_read_community,
             version=olt.snmp_version,
         )
+        # Batch-load all ONU pon_port values once instead of querying per port
+        onu_ports = list(olt.onus.values_list('pon_port', flat=True))
         for p in discovered:
-            # Count ONUs on this PON port
             onu_count = 0
             if p['port_type'] == 'pon':
-                onu_count = olt.onus.filter(pon_port__icontains=p['name']).count()
+                name_lower = p['name'].lower()
+                onu_count = sum(1 for pp in onu_ports if name_lower in pp.lower())
             OLTPort.objects.update_or_create(
                 olt=olt, if_index=p['if_index'],
                 defaults={**p, 'onu_count': onu_count},
@@ -367,9 +429,16 @@ def wg_info(request, pk):
         return Response({'detail': 'This OLT is not configured for VPN (WireGuard).'}, status=400)
 
     if request.method == 'POST':
+        import re
         old_pubkey = olt.wg_client_public_key
         new_pubkey = request.data.get('wg_client_public_key', '').strip()
         new_subnet = request.data.get('wg_client_subnet', '').strip()
+
+        if new_pubkey and not re.fullmatch(r'[A-Za-z0-9+/]{43}=', new_pubkey):
+            return Response(
+                {'error': 'Invalid WireGuard public key format. Must be 44-character base64.'},
+                status=400,
+            )
 
         if old_pubkey and old_pubkey != new_pubkey:
             wireguard_service.remove_peer(old_pubkey)

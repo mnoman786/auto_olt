@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from utils.fields import EncryptedCharField
 
 
 class OLT(models.Model):
@@ -34,8 +35,8 @@ class OLT(models.Model):
     telnet_port = models.PositiveIntegerField(default=23)
     # Credentials used to log in to the OLT for setup, polling, and provisioning.
     olt_admin_username = models.CharField(max_length=50, blank=True, default='admin')
-    olt_admin_password = models.CharField(max_length=100, blank=True, default='admin')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    olt_admin_password = EncryptedCharField(max_length=500, blank=True, default='admin')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
     system_name = models.CharField(max_length=200, blank=True, default='')
     system_description = models.CharField(max_length=500, blank=True, default='')
     system_uptime = models.CharField(max_length=100, blank=True, default='')

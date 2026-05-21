@@ -14,7 +14,7 @@ class VLANSerializer(serializers.ModelSerializer):
                             'pushed_to_olt', 'push_error', 'created_at', 'updated_at')
 
     def get_onu_count(self, obj):
-        return obj.onus.count()
+        return getattr(obj, '_onu_count', obj.onus.count())
 
     def validate_vlan_id(self, value):
         if not 1 <= value <= 4094:

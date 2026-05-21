@@ -11,7 +11,7 @@ class VLAN(models.Model):
     vlan_id = models.PositiveIntegerField()
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, default='')
-    source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default='managed')
+    source = models.CharField(max_length=16, choices=SOURCE_CHOICES, default='managed', db_index=True)
     last_seen_on_olt = models.DateTimeField(null=True, blank=True)
     pushed_to_olt = models.BooleanField(default=False)
     push_error = models.CharField(max_length=300, blank=True, default='')

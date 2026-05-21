@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from apps.olts.models import OLT
 from apps.vlans.models import VLAN
 from .models import ONU, ProvisioningLog
@@ -24,6 +25,7 @@ class ONUListView(generics.ListAPIView):
     def get_queryset(self):
         olt = get_olt_for_user(self.kwargs['olt_pk'], self.request.user)
         status_filter = self.request.query_params.get('status')
+        search = self.request.query_params.get('search', '').strip()
         qs = olt.onus.select_related('vlan').all()
         if status_filter:
             if status_filter == 'registered':
@@ -32,6 +34,12 @@ class ONUListView(generics.ListAPIView):
                 qs = qs.filter(status='unregistered')
             else:
                 qs = qs.filter(status=status_filter)
+        if search:
+            qs = qs.filter(
+                Q(serial_number__icontains=search) |
+                Q(description__icontains=search) |
+                Q(pon_port__icontains=search)
+            )
         return qs
 
 

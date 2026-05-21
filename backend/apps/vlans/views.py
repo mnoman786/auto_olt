@@ -1,4 +1,5 @@
 import threading
+from django.db.models import Count
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -21,7 +22,7 @@ class VLANListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         olt = get_olt_for_user(self.kwargs['olt_pk'], self.request.user)
-        return VLAN.objects.filter(olt=olt).prefetch_related('onus')
+        return VLAN.objects.filter(olt=olt).annotate(_onu_count=Count('onus'))
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()

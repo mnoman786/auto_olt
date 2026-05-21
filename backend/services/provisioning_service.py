@@ -44,19 +44,37 @@ def _trim_terminal_logs(olt) -> None:
         ).delete()
 
 
+def _redact_credentials(text: str, olt) -> str:
+    """Replace OLT credentials with *** in terminal log text."""
+    secrets = [
+        olt.olt_admin_password,
+        olt.snmp_read_community,
+        olt.snmp_write_community,
+    ]
+    from django.conf import settings
+    secrets += [
+        getattr(settings, 'OLT_MGMT_PASSWORD', ''),
+        getattr(settings, 'DEFAULT_TELNET_PASSWORD', ''),
+    ]
+    for secret in secrets:
+        if secret and len(secret) > 2:
+            text = text.replace(secret, '***')
+    return text
+
+
 def _make_terminal_logger(olt):
     """Return a callback that saves raw telnet I/O as terminal logs (capped)."""
     write_count = {'n': 0}
 
     def on_io(direction: str, text: str):
-        clean = text.strip()
+        clean = _redact_credentials(text.strip(), olt)
         if not clean:
             return
         if direction == 'send':
             _create_log(olt, 'telnet_terminal', f'> {clean}', 'info')
         elif direction == 'auto':
-            # Auto-credential response — shown as a warning so UI can highlight it
-            _create_log(olt, 'telnet_terminal', clean, 'warning')
+            # Auto-credential response — always shown as a masked placeholder
+            _create_log(olt, 'telnet_terminal', '[auto-credential sent]', 'warning')
         else:
             _create_log(olt, 'telnet_terminal', clean, 'success')
         # Trim periodically rather than on every write to avoid DB churn

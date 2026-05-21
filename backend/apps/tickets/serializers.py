@@ -31,7 +31,10 @@ class TicketListSerializer(serializers.ModelSerializer):
     """Lightweight serializer for list view — no replies body."""
     username = serializers.CharField(source='user.username', read_only=True)
     olt_name = serializers.CharField(source='olt.name', read_only=True, allow_null=True)
-    reply_count = serializers.IntegerField(source='replies.count', read_only=True)
+    reply_count = serializers.SerializerMethodField()
+
+    def get_reply_count(self, obj):
+        return getattr(obj, '_reply_count', obj.replies.count())
 
     class Meta:
         model = Ticket

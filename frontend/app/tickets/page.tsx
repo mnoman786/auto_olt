@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Pagination } from '@/components/ui/Pagination';
 import { ticketApi } from '@/lib/api';
 import type { TicketListItem, TicketStatus } from '@/lib/types';
 import { LifeBuoy, Plus, MessageSquare, Clock, ChevronRight } from 'lucide-react';
@@ -37,8 +38,10 @@ export default function TicketsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [tickets, setTickets] = useState<TicketListItem[]>([]);
+  const [ticketCount, setTicketCount] = useState(0);
   const [fetching, setFetching] = useState(true);
   const [filter, setFilter] = useState<TicketStatus | 'all'>('all');
+  const [page, setPage] = useState(1);
 
   const isStaff = user?.is_staff || user?.is_superuser;
 
@@ -46,12 +49,24 @@ export default function TicketsPage() {
     if (!isLoading && !isAuthenticated) router.replace('/login');
   }, [isAuthenticated, isLoading, router]);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    ticketApi.list().then(res => setTickets(res.data.results ?? [])).finally(() => setFetching(false));
-  }, [isAuthenticated]);
+  // Reset page when filter changes
+  useEffect(() => { setPage(1); }, [filter]);
 
-  const filtered = filter === 'all' ? tickets : tickets.filter(t => t.status === filter);
+  const fetchTickets = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setFetching(true);
+    try {
+      const params: Record<string, any> = { page };
+      if (filter !== 'all') params.status = filter;
+      const res = await ticketApi.list(params);
+      setTickets(res.data.results ?? []);
+      setTicketCount(res.data.count ?? 0);
+    } finally {
+      setFetching(false);
+    }
+  }, [isAuthenticated, filter, page]);
+
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
   return (
     <AppLayout>
@@ -96,9 +111,9 @@ export default function TicketsPage() {
                 )}
               >
                 {s === 'all' ? 'All' : STATUS_LABELS[s]}
-                <span className="ml-1.5 text-xs text-gray-400">
-                  {s === 'all' ? tickets.length : tickets.filter(t => t.status === s).length}
-                </span>
+                {filter === s && (
+                  <span className="ml-1.5 text-xs text-gray-400">{ticketCount}</span>
+                )}
               </button>
             ))}
           </div>
@@ -110,7 +125,7 @@ export default function TicketsPage() {
                 <div key={i} className="h-20 bg-white rounded-xl border border-gray-200 animate-pulse" />
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : tickets.length === 0 ? (
             <Card>
               <div className="py-12 flex flex-col items-center gap-3 text-center">
                 <LifeBuoy className="h-10 w-10 text-gray-300" />
@@ -126,46 +141,54 @@ export default function TicketsPage() {
               </div>
             </Card>
           ) : (
-            <div className="space-y-2">
-              {filtered.map(ticket => (
-                <Link key={ticket.id} href={`/tickets/${ticket.id}`}>
-                  <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-4 hover:border-blue-200 hover:shadow-sm transition-all group">
-                    <div className="shrink-0">
-                      <span className={clsx(
-                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border',
-                        STATUS_STYLES[ticket.status]
-                      )}>
-                        {STATUS_LABELS[ticket.status]}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors">
-                        #{ticket.id} — {ticket.subject}
-                      </p>
-                      <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
-                        {isStaff && (
-                          <span className="font-medium text-gray-500">{ticket.username}</span>
-                        )}
-                        {ticket.olt_name && (
-                          <span>OLT: {ticket.olt_name}</span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {timeAgo(ticket.created_at)}
+            <>
+              <div className="space-y-2">
+                {tickets.map(ticket => (
+                  <Link key={ticket.id} href={`/tickets/${ticket.id}`}>
+                    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-4 hover:border-blue-200 hover:shadow-sm transition-all group">
+                      <div className="shrink-0">
+                        <span className={clsx(
+                          'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border',
+                          STATUS_STYLES[ticket.status]
+                        )}>
+                          {STATUS_LABELS[ticket.status]}
                         </span>
-                        {ticket.reply_count > 0 && (
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="h-3 w-3" />
-                            {ticket.reply_count} {ticket.reply_count === 1 ? 'reply' : 'replies'}
-                          </span>
-                        )}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                          #{ticket.id} — {ticket.subject}
+                        </p>
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                          {isStaff && (
+                            <span className="font-medium text-gray-500">{ticket.username}</span>
+                          )}
+                          {ticket.olt_name && (
+                            <span>OLT: {ticket.olt_name}</span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {timeAgo(ticket.created_at)}
+                          </span>
+                          {ticket.reply_count > 0 && (
+                            <span className="flex items-center gap-1">
+                              <MessageSquare className="h-3 w-3" />
+                              {ticket.reply_count} {ticket.reply_count === 1 ? 'reply' : 'replies'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-400 transition-colors shrink-0" />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-400 transition-colors shrink-0" />
-                  </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+              <Pagination
+                count={ticketCount}
+                pageSize={20}
+                page={page}
+                onPageChange={setPage}
+              />
+            </>
           )}
         </div>
       </div>

@@ -7,8 +7,8 @@ from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-fallback-key')
-DEBUG = config('DEBUG', default=True, cast=bool)
+SECRET_KEY = config('SECRET_KEY')  # No fallback — app will not start without this set in .env
+DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,198.105.112.56').split(',')
 
 INSTALLED_APPS = [
@@ -95,7 +95,17 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 50,
+    'PAGE_SIZE': 20,
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '30/minute',
+        'user': '300/minute',
+        'auth_login': '5/minute',      # applied explicitly on login view
+        'auth_register': '3/minute',   # applied explicitly on register view
+    },
 }
 
 # JWT
@@ -106,8 +116,8 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
 }
 
-# CORS — allow all origins in development; restrict via env in production
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=DEBUG, cast=bool)
+# CORS — never open by default; set CORS_ALLOW_ALL_ORIGINS=True only in local dev via .env
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:3000,http://localhost:6000,http://127.0.0.1:3000,http://198.105.112.56:6000'
@@ -140,3 +150,11 @@ DEFAULT_TELNET_PORT = config('DEFAULT_TELNET_PORT', default=23, cast=int)
 OLT_MGMT_USER = config('OLT_MGMT_USER', default='autoolt')
 OLT_MGMT_PASSWORD = config('OLT_MGMT_PASSWORD', default='autoolt123')
 OLT_MGMT_PRIVILEGE = config('OLT_MGMT_PRIVILEGE', default=15, cast=int)
+
+# Registration — set to True in .env only when you want to allow new sign-ups
+REGISTRATION_OPEN = config('REGISTRATION_OPEN', default=False, cast=bool)
+
+# Encryption key for sensitive DB fields (OLT credentials).
+# Must be a 32-byte url-safe base64 string (generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+# Falls back to a SHA-256 digest of SECRET_KEY if not set.
+FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY', default='')

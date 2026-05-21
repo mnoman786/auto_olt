@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { OLTStatusBadge } from '@/components/ui/Badge';
 import { oltApi, vlanApi } from '@/lib/api';
 import type { OLT, OLTStats, VLAN } from '@/lib/types';
+import { OLTDetailSkeleton } from '@/components/ui/Skeleton';
 import {
   ArrowLeft, Server, Wifi, Network, Settings,
   RefreshCw, Play, Pencil, Trash2, CheckCircle, AlertCircle,
@@ -24,23 +25,6 @@ const statusDot = {
   offline: 'bg-gray-400',
 } as const;
 
-function DetailSkeleton() {
-  return (
-    <div className="p-6 max-w-5xl mx-auto animate-pulse">
-      <div className="h-8 w-48 bg-gray-100 rounded mb-6" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {[0, 1, 2, 3].map(i => <div key={i} className="h-24 bg-gray-100 rounded-xl" />)}
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        {[0, 1, 2, 3].map(i => <div key={i} className="h-20 bg-gray-100 rounded-xl" />)}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="h-72 bg-gray-100 rounded-xl" />
-        <div className="h-72 bg-gray-100 rounded-xl" />
-      </div>
-    </div>
-  );
-}
 
 export default function OLTDetailPage() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -136,7 +120,7 @@ export default function OLTDetailPage() {
   if (isLoading || fetching) {
     return (
       <AppLayout>
-        <DetailSkeleton />
+        <OLTDetailSkeleton />
       </AppLayout>
     );
   }

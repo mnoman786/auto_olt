@@ -1,4 +1,6 @@
+import base64
 import ipaddress
+import re
 from rest_framework import serializers
 from .models import OLT, SetupLog, OLTPort
 
@@ -27,15 +29,22 @@ class OLTSerializer(serializers.ModelSerializer):
     vlan_count = serializers.SerializerMethodField()
     discovered_vlan_count = serializers.SerializerMethodField()
     username = serializers.CharField(source='user.username', read_only=True)
+    # Indicate whether credentials are set without exposing their values
+    has_admin_password = serializers.SerializerMethodField()
+    has_snmp_write_community = serializers.SerializerMethodField()
 
     class Meta:
         model = OLT
         fields = (
             'id', 'username', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
             'wg_client_public_key', 'wg_client_subnet',
-            'snmp_version', 'snmp_read_community', 'snmp_write_community',
+            'snmp_version', 'snmp_read_community',
             'telnet_enabled', 'telnet_port',
-            'olt_admin_username', 'olt_admin_password',
+            'olt_admin_username',
+            # Sensitive fields are excluded from read responses:
+            # olt_admin_password and snmp_write_community are never returned.
+            # Use has_admin_password / has_snmp_write_community to show set/unset state.
+            'has_admin_password', 'has_snmp_write_community',
             'status', 'system_name', 'system_description', 'system_uptime',
             'last_polled', 'created_at', 'updated_at',
             'onu_count', 'registered_onu_count',
@@ -46,9 +55,6 @@ class OLTSerializer(serializers.ModelSerializer):
                             'system_uptime', 'last_polled', 'created_at', 'updated_at',
                             'vpn_virtual_ip',
                             'line_profiles', 'srv_profiles', 'profiles_last_synced')
-        extra_kwargs = {
-            'snmp_write_community': {'required': False, 'allow_blank': True},
-        }
 
     def get_onu_count(self, obj):
         # Use annotation from queryset to avoid N+1; fall back for single-object retrieval
@@ -64,6 +70,12 @@ class OLTSerializer(serializers.ModelSerializer):
     def get_discovered_vlan_count(self, obj):
         return getattr(obj, '_discovered_vlan_count',
                        obj.vlans.filter(source='discovered').count())
+
+    def get_has_admin_password(self, obj):
+        return bool(obj.olt_admin_password)
+
+    def get_has_snmp_write_community(self, obj):
+        return bool(obj.snmp_write_community)
 
 
 class OLTCreateSerializer(serializers.ModelSerializer):
@@ -81,11 +93,27 @@ class OLTCreateSerializer(serializers.ModelSerializer):
             'vpn_virtual_ip': {'required': False, 'allow_null': True, 'read_only': False},
             'wg_client_public_key': {'required': False, 'allow_blank': True},
             'wg_client_subnet': {'required': False, 'allow_blank': True},
-            'snmp_write_community': {'required': False, 'allow_blank': True},
+            'snmp_write_community': {'required': False, 'allow_blank': True, 'write_only': True},
             'olt_admin_username': {'required': False, 'allow_blank': True},
-            'olt_admin_password': {'required': False, 'allow_blank': True},
+            'olt_admin_password': {'required': False, 'allow_blank': True, 'write_only': True},
             'telnet_port': {'required': False},
         }
+
+    def validate_wg_client_public_key(self, value):
+        if not value:
+            return value
+        # WireGuard public keys are 32 bytes encoded as 44-character base64 (with trailing '=')
+        if not re.fullmatch(r'[A-Za-z0-9+/]{43}=', value):
+            raise serializers.ValidationError(
+                'Invalid WireGuard public key. Must be a 44-character base64 string ending in "=".'
+            )
+        try:
+            decoded = base64.b64decode(value)
+            if len(decoded) != 32:
+                raise serializers.ValidationError('WireGuard public key must decode to exactly 32 bytes.')
+        except Exception:
+            raise serializers.ValidationError('WireGuard public key is not valid base64.')
+        return value
 
     def validate(self, attrs):
         user = self.context['request'].user

@@ -1,11 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { Input } from '@/components/ui/Form';
 import { Button } from '@/components/ui/Button';
-import { Network } from 'lucide-react';
+import { Network, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -14,9 +14,23 @@ export default function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [throttledFor, setThrottledFor] = useState(0); // seconds remaining
+
+  // Countdown timer when throttled
+  useEffect(() => {
+    if (throttledFor <= 0) return;
+    const timer = setInterval(() => {
+      setThrottledFor(s => {
+        if (s <= 1) { clearInterval(timer); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [throttledFor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (throttledFor > 0) return;
     setErrors({});
     setLoading(true);
     try {
@@ -24,13 +38,17 @@ export default function LoginPage() {
       toast.success('Welcome back!');
       router.push('/dashboard');
     } catch (err: any) {
-      const data = err?.response?.data;
-      if (data?.non_field_errors) {
-        setErrors({ general: data.non_field_errors[0] });
-      } else if (data?.detail) {
-        setErrors({ general: data.detail });
+      if (err?.response?.status === 429) {
+        setThrottledFor(err.retryAfter ?? 60);
       } else {
-        setErrors({ general: 'Login failed. Check your credentials.' });
+        const data = err?.response?.data;
+        if (data?.non_field_errors) {
+          setErrors({ general: data.non_field_errors[0] });
+        } else if (data?.detail) {
+          setErrors({ general: data.detail });
+        } else {
+          setErrors({ general: 'Login failed. Check your credentials.' });
+        }
       }
     } finally {
       setLoading(false);
@@ -61,7 +79,17 @@ export default function LoginPage() {
             <h2 className="text-xl font-semibold text-gray-900 mt-1">Sign in to your account</h2>
           </div>
 
-          {errors.general && (
+          {throttledFor > 0 && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg flex items-start gap-2 text-sm text-amber-800">
+              <Clock className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>
+                Too many login attempts. Please wait{' '}
+                <span className="font-bold">{throttledFor}s</span> before trying again.
+              </span>
+            </div>
+          )}
+
+          {errors.general && !throttledFor && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
               {errors.general}
             </div>
@@ -76,6 +104,7 @@ export default function LoginPage() {
               onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
               required
               autoFocus
+              disabled={throttledFor > 0}
             />
             <Input
               label="Password"
@@ -84,9 +113,10 @@ export default function LoginPage() {
               value={form.password}
               onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               required
+              disabled={throttledFor > 0}
             />
-            <Button type="submit" loading={loading} className="w-full" size="lg">
-              Sign In
+            <Button type="submit" loading={loading} disabled={throttledFor > 0} className="w-full" size="lg">
+              {throttledFor > 0 ? `Try again in ${throttledFor}s` : 'Sign In'}
             </Button>
           </form>
 

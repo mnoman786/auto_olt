@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, memo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import AppLayout from '@/components/layout/AppLayout';
@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { ONUStatusBadge } from '@/components/ui/Badge';
 import { oltApi, onuApi, vlanApi } from '@/lib/api';
 import type { OLT, ONU, VLAN } from '@/lib/types';
+import { ONUPageSkeleton, ONUTableSkeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
 import {
   ArrowLeft, RefreshCw, Wifi, Signal, Clock, Play,
   CheckCircle, XCircle, AlertCircle, Loader2, Search,
@@ -27,7 +29,7 @@ interface RegisterModalProps {
   onSuccess: () => void;
 }
 
-function RegisterModal({ onu, oltId, vlans, onClose, onSuccess }: RegisterModalProps) {
+const RegisterModal = memo(function RegisterModal({ onu, oltId, vlans, onClose, onSuccess }: RegisterModalProps) {
   const [vlanId, setVlanId] = useState<string>('');
   const [description, setDescription] = useState(onu.description || '');
   const [loading, setLoading] = useState(false);
@@ -94,7 +96,7 @@ function RegisterModal({ onu, oltId, vlans, onClose, onSuccess }: RegisterModalP
       </div>
     </div>
   );
-}
+});
 
 interface BulkRegisterModalProps {
   selectedOnus: ONU[];
@@ -104,7 +106,7 @@ interface BulkRegisterModalProps {
   onSuccess: () => void;
 }
 
-function BulkRegisterModal({ selectedOnus, oltId, vlans, onClose, onSuccess }: BulkRegisterModalProps) {
+const BulkRegisterModal = memo(function BulkRegisterModal({ selectedOnus, oltId, vlans, onClose, onSuccess }: BulkRegisterModalProps) {
   const [vlanId, setVlanId] = useState<string>('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
@@ -180,14 +182,14 @@ function BulkRegisterModal({ selectedOnus, oltId, vlans, onClose, onSuccess }: B
       </div>
     </div>
   );
-}
+});
 
-function SignalBar({ strength }: { strength: number | null }) {
+const SignalBar = memo(function SignalBar({ strength }: { strength: number | null }) {
   if (strength === null) return <span className="text-gray-400 text-xs">N/A</span>;
   const dBm = strength;
   const color = dBm >= -20 ? 'text-green-500' : dBm >= -27 ? 'text-yellow-500' : 'text-red-500';
   return <span className={clsx('text-xs font-mono font-medium', color)}>{dBm.toFixed(1)} dBm</span>;
-}
+});
 
 export default function ONUManagementPage() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -197,11 +199,14 @@ export default function ONUManagementPage() {
 
   const [olt, setOlt] = useState<OLT | null>(null);
   const [onus, setOnus] = useState<ONU[]>([]);
+  const [onuCount, setOnuCount] = useState(0);
   const [vlans, setVlans] = useState<VLAN[]>([]);
   const [activeTab, setActiveTab] = useState<TabType>('unregistered');
   const [fetching, setFetching] = useState(true);
   const [polling, setPolling] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [registerTarget, setRegisterTarget] = useState<ONU | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -210,36 +215,58 @@ export default function ONUManagementPage() {
     if (!isLoading && !isAuthenticated) router.replace('/login');
   }, [isAuthenticated, isLoading, router]);
 
+  // Debounce search input 400ms
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Reset to page 1 when tab or search changes
+  useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [activeTab, debouncedSearch]);
+
+  const fetchOnus = useCallback(async () => {
+    setFetching(true);
+    try {
+      const params: Record<string, any> = { page };
+      if (activeTab !== 'all') params.status = activeTab;
+      if (debouncedSearch) params.search = debouncedSearch;
+      const onuRes = await onuApi.list(oltId, params);
+      setOnus(onuRes.data.results ?? []);
+      setOnuCount(onuRes.data.count ?? 0);
+    } catch {
+      toast.error('Failed to load ONUs');
+    } finally {
+      setFetching(false);
+    }
+  }, [oltId, activeTab, debouncedSearch, page]);
+
   const fetchData = useCallback(async () => {
     try {
-      const [oltRes, onuRes, vlanRes] = await Promise.all([
+      const [oltRes, vlanRes] = await Promise.all([
         oltApi.get(oltId),
-        onuApi.list(oltId),
         vlanApi.list(oltId),
       ]);
       setOlt(oltRes.data);
-      setOnus(onuRes.data.results || (onuRes.data as any));
-      setVlans(vlanRes.data.results || (vlanRes.data as any));
+      setVlans(vlanRes.data.results ?? (vlanRes.data as any));
     } catch {
-      toast.error('Failed to load ONU data');
-    } finally {
-      setFetching(false);
+      toast.error('Failed to load OLT data');
     }
   }, [oltId]);
 
   useEffect(() => {
-    if (isAuthenticated) fetchData();
+    if (isAuthenticated) { fetchData(); }
   }, [isAuthenticated, fetchData]);
 
-  // Clear selection when tab changes
-  useEffect(() => { setSelectedIds(new Set()); }, [activeTab]);
+  useEffect(() => {
+    if (isAuthenticated) fetchOnus();
+  }, [isAuthenticated, fetchOnus]);
 
   const handlePoll = async () => {
     setPolling(true);
     try {
       await oltApi.poll(oltId);
       toast.success('SNMP poll started...');
-      setTimeout(fetchData, 5000);
+      setTimeout(() => { fetchData(); fetchOnus(); }, 5000);
     } catch {
       toast.error('Poll failed');
     } finally {
@@ -247,18 +274,7 @@ export default function ONUManagementPage() {
     }
   };
 
-  const filteredOnus = onus.filter(onu => {
-    const matchSearch = !search ||
-      onu.serial_number.toLowerCase().includes(search.toLowerCase()) ||
-      onu.description.toLowerCase().includes(search.toLowerCase()) ||
-      onu.pon_port.toLowerCase().includes(search.toLowerCase());
-
-    if (activeTab === 'registered') return matchSearch && ['registered', 'active'].includes(onu.status);
-    if (activeTab === 'unregistered') return matchSearch && onu.status === 'unregistered';
-    return matchSearch;
-  });
-
-  const unregisteredInView = filteredOnus.filter(o => o.status === 'unregistered');
+  const unregisteredInView = onus.filter(o => o.status === 'unregistered');
   const allUnregSelected = unregisteredInView.length > 0 &&
     unregisteredInView.every(o => selectedIds.has(o.id));
 
@@ -280,13 +296,14 @@ export default function ONUManagementPage() {
 
   const selectedOnus = onus.filter(o => selectedIds.has(o.id));
 
+  // Use OLT fields for stable tab counts (not affected by current filter/search)
   const counts = {
-    all: onus.length,
-    registered: onus.filter(o => ['registered', 'active'].includes(o.status)).length,
-    unregistered: onus.filter(o => o.status === 'unregistered').length,
+    all: olt?.onu_count ?? 0,
+    registered: olt?.registered_onu_count ?? 0,
+    unregistered: (olt?.onu_count ?? 0) - (olt?.registered_onu_count ?? 0),
   };
 
-  if (isLoading) return null;
+  if (isLoading) return <AppLayout><ONUPageSkeleton /></AppLayout>;
 
   return (
     <AppLayout>
@@ -329,7 +346,7 @@ export default function ONUManagementPage() {
             >
               Poll ONUs
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchData}>
+            <Button variant="outline" size="sm" onClick={fetchOnus}>
               Refresh
             </Button>
           </div>
@@ -412,18 +429,18 @@ export default function ONUManagementPage() {
         {/* Table */}
         <Card padding="none" className="overflow-hidden">
           {fetching ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            </div>
-          ) : filteredOnus.length === 0 ? (
+            <ONUTableSkeleton />
+          ) : onus.length === 0 ? (
             <div className="text-center py-16">
               <Wifi className="h-10 w-10 text-gray-300 mx-auto mb-3" />
               <p className="text-gray-500 font-medium">
-                {activeTab === 'unregistered' ? 'No unregistered ONUs' :
+                {debouncedSearch ? 'No ONUs match your search' :
+                 activeTab === 'unregistered' ? 'No unregistered ONUs' :
                  activeTab === 'registered' ? 'No registered ONUs' : 'No ONUs found'}
               </p>
               <p className="text-gray-400 text-sm mt-1">
-                {activeTab === 'unregistered'
+                {debouncedSearch ? 'Try a different serial number, description, or port' :
+                 activeTab === 'unregistered'
                   ? 'All ONUs are registered, or click "Poll ONUs" to discover new ones'
                   : 'Click "Poll ONUs" to discover ONUs via SNMP'}
               </p>
@@ -453,7 +470,7 @@ export default function ONUManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filteredOnus.map(onu => (
+                  {onus.map(onu => (
                     <tr
                       key={onu.id}
                       className={clsx(
@@ -526,7 +543,7 @@ export default function ONUManagementPage() {
                               onClick={async () => {
                                 await onuApi.deregister(oltId, onu.id);
                                 toast.success('ONU deregistered');
-                                fetchData();
+                                fetchOnus();
                               }}
                             >
                               Deregister
@@ -540,6 +557,12 @@ export default function ONUManagementPage() {
               </table>
             </div>
           )}
+          <Pagination
+            count={onuCount}
+            pageSize={20}
+            page={page}
+            onPageChange={p => { setPage(p); setSelectedIds(new Set()); }}
+          />
         </Card>
         </div>
       </div>
@@ -553,7 +576,7 @@ export default function ONUManagementPage() {
           onClose={() => setRegisterTarget(null)}
           onSuccess={() => {
             setRegisterTarget(null);
-            setTimeout(fetchData, 3000);
+            setTimeout(() => { fetchData(); fetchOnus(); }, 3000);
           }}
         />
       )}
@@ -568,7 +591,7 @@ export default function ONUManagementPage() {
           onSuccess={() => {
             setShowBulkModal(false);
             setSelectedIds(new Set());
-            setTimeout(fetchData, 3000);
+            setTimeout(() => { fetchData(); fetchOnus(); }, 3000);
           }}
         />
       )}

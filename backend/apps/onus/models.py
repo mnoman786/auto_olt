@@ -11,12 +11,12 @@ class ONU(models.Model):
     ]
 
     olt = models.ForeignKey('olts.OLT', on_delete=models.CASCADE, related_name='onus')
-    serial_number = models.CharField(max_length=100)
+    serial_number = models.CharField(max_length=100, db_index=True)
     mac_address = models.CharField(max_length=17, blank=True, default='')
-    pon_port = models.CharField(max_length=50, blank=True, default='')
+    pon_port = models.CharField(max_length=50, blank=True, default='', db_index=True)
     onu_index = models.IntegerField(default=0)
     onu_id = models.IntegerField(default=0)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unregistered')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unregistered', db_index=True)
     signal_strength = models.FloatField(null=True, blank=True)
     service_profile = models.CharField(max_length=100, blank=True, default='')
     vlan = models.ForeignKey(
