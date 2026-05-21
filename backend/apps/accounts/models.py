@@ -31,3 +31,19 @@ class PasswordResetOTP(models.Model):
         from django.conf import settings
         expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
         return timezone.now() > self.created_at + timezone.timedelta(minutes=expiry)
+
+
+class EmailVerificationOTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verification_otps')
+    otp = models.CharField(max_length=6, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'email_verification_otps'
+        ordering = ['-created_at']
+
+    def is_expired(self):
+        from django.conf import settings
+        expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
+        return timezone.now() > self.created_at + timezone.timedelta(minutes=expiry)

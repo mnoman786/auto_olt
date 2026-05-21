@@ -100,6 +100,12 @@ export const auth = {
   changePassword: (data: { current_password: string; new_password: string; confirm_password: string }) =>
     apiClient.post('/auth/me/change-password/', data),
 
+  verifyEmail: (data: { email: string; otp: string }) =>
+    apiClient.post<AuthResponse>('/auth/verify-email/', data),
+
+  resendVerification: (email: string) =>
+    apiClient.post('/auth/resend-verification/', { email }),
+
   forgotPassword: (email: string) =>
     apiClient.post('/auth/forgot-password/', { email }),
 

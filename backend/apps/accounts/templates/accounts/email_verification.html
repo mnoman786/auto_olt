@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify your Auto OLT account</title>
+</head>
+<body style="margin:0;padding:0;background-color:#0f172a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f172a;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+          <!-- Header / Logo -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:16px;padding:12px 24px;">
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding-right:10px;">
+                          <div style="width:32px;height:32px;background:rgba(255,255,255,0.2);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;">
+                            <span style="color:#ffffff;font-size:18px;font-weight:900;">&#9874;</span>
+                          </div>
+                        </td>
+                        <td>
+                          <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.5px;">Auto OLT</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.4);">
+
+              <!-- Top accent bar -->
+              <div style="height:4px;background:linear-gradient(90deg,#3b82f6,#6366f1,#a855f7);"></div>
+
+              <div style="padding:40px 40px 32px;">
+
+                <!-- Icon -->
+                <div style="width:64px;height:64px;background:#eff6ff;border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;">
+                  <span style="font-size:32px;">&#9993;</span>
+                </div>
+
+                <!-- Title -->
+                <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#0f172a;letter-spacing:-0.5px;">
+                  Verify your email
+                </h1>
+                <p style="margin:0 0 28px;font-size:15px;color:#64748b;line-height:1.6;">
+                  Hi <strong style="color:#334155;">{{ username }}</strong>, welcome to Auto OLT!<br>
+                  Use the code below to verify your email address and activate your account.
+                </p>
+
+                <!-- OTP box -->
+                <div style="background:linear-gradient(135deg,#eff6ff,#eef2ff);border:2px dashed #6366f1;border-radius:16px;padding:28px 24px;text-align:center;margin-bottom:28px;">
+                  <p style="margin:0 0 8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#6366f1;">
+                    Verification Code
+                  </p>
+                  <p style="margin:0;font-family:'Courier New',Courier,monospace;font-size:48px;font-weight:700;letter-spacing:14px;color:#1e1b4b;line-height:1;">
+                    {{ otp }}
+                  </p>
+                  <p style="margin:12px 0 0;font-size:12px;color:#94a3b8;">
+                    Expires in <strong>{{ expiry_minutes }} minutes</strong>
+                  </p>
+                </div>
+
+                <!-- Steps -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                  <tr>
+                    <td style="padding-bottom:12px;">
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="width:28px;height:28px;background:#eff6ff;border-radius:8px;text-align:center;vertical-align:middle;font-size:13px;font-weight:700;color:#3b82f6;padding:0 8px;">1</td>
+                          <td style="padding-left:12px;font-size:14px;color:#475569;">Go to the verification page</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding-bottom:12px;">
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="width:28px;height:28px;background:#eff6ff;border-radius:8px;text-align:center;vertical-align:middle;font-size:13px;font-weight:700;color:#3b82f6;padding:0 8px;">2</td>
+                          <td style="padding-left:12px;font-size:14px;color:#475569;">Enter the 6-digit code above</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="width:28px;height:28px;background:#eff6ff;border-radius:8px;text-align:center;vertical-align:middle;font-size:13px;font-weight:700;color:#3b82f6;padding:0 8px;">3</td>
+                          <td style="padding-left:12px;font-size:14px;color:#475569;">Your account will be activated instantly</td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Security notice -->
+                <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:16px;">
+                  <p style="margin:0;font-size:13px;color:#9a3412;line-height:1.5;">
+                    <strong>&#9888; Security notice:</strong> If you didn't create an account with Auto OLT, please ignore this email. The code will expire automatically.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;text-align:center;">
+                <p style="margin:0 0 4px;font-size:13px;color:#94a3b8;">
+                  This email was sent to <strong style="color:#64748b;">{{ email }}</strong>
+                </p>
+                <p style="margin:0;font-size:12px;color:#cbd5e1;">
+                  &copy; 2025 Auto OLT &middot; Built for Pakistan local ISPs
+                </p>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

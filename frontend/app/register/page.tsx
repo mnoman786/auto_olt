@@ -24,9 +24,14 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register(form.username, form.email, form.password, form.password2);
-      toast.success('Account created!');
-      router.push('/dashboard');
+      const { email, activated } = await register(form.username, form.email, form.password, form.password2);
+      if (activated) {
+        toast.success('Account created! Welcome to Auto OLT.');
+        router.push('/dashboard');
+      } else {
+        toast.success('Account created! Check your email for the verification code.');
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+      }
     } catch (err: any) {
       if (err?.response?.status === 429) {
         const seconds = err.retryAfter ?? 60;

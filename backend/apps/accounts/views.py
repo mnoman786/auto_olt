@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import PasswordResetOTP
+from .models import PasswordResetOTP, EmailVerificationOTP
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
 
 
@@ -22,6 +22,25 @@ class RegisterRateThrottle(AnonRateThrottle):
     scope = 'auth_register'
 
 
+def _send_verification_email(user, otp):
+    """Send 6-digit email verification OTP."""
+    expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
+    html_body = render_to_string('accounts/email_verification.html', {
+        'username': user.username,
+        'email': user.email,
+        'otp': otp,
+        'expiry_minutes': expiry,
+    })
+    send_mail(
+        subject='Verify your Auto OLT account',
+        message=f'Your verification code is: {otp}. It expires in {expiry} minutes.',
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=html_body,
+        fail_silently=False,
+    )
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @throttle_classes([RegisterRateThrottle])
@@ -31,15 +50,111 @@ def register_view(request):
             {'detail': 'Registration is currently closed. Contact an administrator.'},
             status=status.HTTP_403_FORBIDDEN,
         )
+    from .models import User as UserModel
+    is_first_user = not UserModel.objects.exists()
+
     serializer = RegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    user = serializer.save()
+    user = serializer.save()  # is_active=False set in serializer
+
+    if is_first_user:
+        # No users existed — activate immediately, no OTP needed
+        user.is_active = True
+        user.save(update_fields=['is_active'])
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'user': UserSerializer(user).data,
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_201_CREATED)
+
+    otp = ''.join(random.choices(string.digits, k=6))
+    EmailVerificationOTP.objects.create(user=user, otp=otp)
+
+    try:
+        _send_verification_email(user, otp)
+    except Exception:
+        user.delete()
+        return Response(
+            {'detail': 'Failed to send verification email. Please try again.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    return Response({'email': user.email}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_email_view(request):
+    """Verify OTP and activate account, returning JWT tokens."""
+    from .models import User as UserModel
+    email = request.data.get('email', '').strip().lower()
+    otp = request.data.get('otp', '').strip()
+
+    if not email or not otp:
+        return Response({'detail': 'Email and OTP are required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = UserModel.objects.get(email__iexact=email)
+    except UserModel.DoesNotExist:
+        return Response({'otp': 'Invalid or expired code.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    record = (
+        EmailVerificationOTP.objects
+        .filter(user=user, otp=otp, is_used=False)
+        .order_by('-created_at')
+        .first()
+    )
+    if not record:
+        return Response({'otp': 'Invalid or expired code.'}, status=status.HTTP_400_BAD_REQUEST)
+    if record.is_expired():
+        record.is_used = True
+        record.save(update_fields=['is_used'])
+        return Response({'otp': 'This code has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    record.is_used = True
+    record.save(update_fields=['is_used'])
+
+    user.is_active = True
+    user.save(update_fields=['is_active'])
+
     refresh = RefreshToken.for_user(user)
     return Response({
         'user': UserSerializer(user).data,
         'access': str(refresh.access_token),
         'refresh': str(refresh),
-    }, status=status.HTTP_201_CREATED)
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def resend_verification_view(request):
+    """Resend email verification OTP."""
+    from .models import User as UserModel
+    email = request.data.get('email', '').strip().lower()
+    if not email:
+        return Response({'detail': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = UserModel.objects.get(email__iexact=email, is_active=False)
+    except UserModel.DoesNotExist:
+        return Response({'detail': 'If that email is pending verification, a new code has been sent.'})
+
+    # Invalidate old unused OTPs
+    EmailVerificationOTP.objects.filter(user=user, is_used=False).update(is_used=True)
+
+    otp = ''.join(random.choices(string.digits, k=6))
+    EmailVerificationOTP.objects.create(user=user, otp=otp)
+
+    try:
+        _send_verification_email(user, otp)
+    except Exception:
+        return Response(
+            {'detail': 'Failed to send email. Please try again later.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    return Response({'detail': 'If that email is pending verification, a new code has been sent.'})
 
 
 @api_view(['POST'])
@@ -133,11 +248,10 @@ def forgot_password_view(request):
     if not email:
         return Response({'email': 'Email is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Always return 200 so we don't leak which emails are registered
     try:
         user = UserModel.objects.get(email__iexact=email)
     except UserModel.DoesNotExist:
-        return Response({'detail': 'If that email is registered, an OTP has been sent.'})
+        return Response({'email': 'No account found with this email address.'}, status=status.HTTP_404_NOT_FOUND)
 
     # Invalidate any existing unused OTPs for this user
     PasswordResetOTP.objects.filter(user=user, is_used=False).update(is_used=True)
@@ -169,7 +283,7 @@ def forgot_password_view(request):
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
-    return Response({'detail': 'If that email is registered, an OTP has been sent.'})
+    return Response({'detail': 'OTP sent successfully.'})
 
 
 @api_view(['POST'])

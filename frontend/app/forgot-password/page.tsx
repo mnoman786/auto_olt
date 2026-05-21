@@ -23,6 +23,8 @@ export default function ForgotPasswordPage() {
     } catch (err: any) {
       if (err?.response?.status === 429) {
         setError('Too many attempts. Please wait a minute and try again.');
+      } else if (err?.response?.status === 404) {
+        setError(err?.response?.data?.email || 'No account found with this email address.');
       } else {
         setError(err?.response?.data?.email || err?.response?.data?.detail || 'Something went wrong.');
       }
