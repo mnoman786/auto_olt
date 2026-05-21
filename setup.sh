@@ -64,12 +64,17 @@ info "Python deps installed"
 # ── Backend .env ──────────────────────────────────────────────────────────────
 section "4 — Backend .env"
 ENV_FILE="$BACKEND_DIR/.env"
-if [[ ! -f "$ENV_FILE" ]]; then
-  SECRET=$(python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" 2>/dev/null \
-           || python3 -c "import secrets,base64; print(base64.urlsafe_b64encode(secrets.token_bytes(50)).decode())")
-  cat > "$ENV_FILE" <<EOF
+# Preserve SECRET_KEY if one already exists (changing it invalidates all JWT tokens)
+if [[ -f "$ENV_FILE" ]]; then
+  EXISTING_SECRET=$(grep -E '^SECRET_KEY=' "$ENV_FILE" | cut -d= -f2- | tr -d '[:space:]')
+fi
+if [[ -z "$EXISTING_SECRET" ]]; then
+  EXISTING_SECRET=$(python3 -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())" 2>/dev/null \
+                    || python3 -c "import secrets,base64; print(base64.urlsafe_b64encode(secrets.token_bytes(50)).decode())")
+fi
+cat > "$ENV_FILE" <<EOF
 # ── Django Core ──────────────────────────────────────────────
-SECRET_KEY=$SECRET
+SECRET_KEY=$EXISTING_SECRET
 DEBUG=False
 ALLOWED_HOSTS=localhost,127.0.0.1,$SERVER_IP
 
@@ -133,10 +138,7 @@ WG_INTERFACE=wg0
 WG_ENDPOINT=$SERVER_IP:51820
 WG_SERVER_PUBLIC_KEY=egHNg6PWBMadeIIgiaLpCHV9q6pzMUJBV0/1ouwNdCI=
 EOF
-  info ".env created at $ENV_FILE"
-else
-  warn ".env already exists — skipping (edit manually if needed)"
-fi
+info ".env written at $ENV_FILE"
 
 # ── Django migrations ─────────────────────────────────────────────────────────
 section "5 — Django migrate"
@@ -147,15 +149,11 @@ info "Database ready"
 # ── Frontend .env ─────────────────────────────────────────────────────────────
 section "6 — Frontend .env"
 FE_ENV="$FRONTEND_DIR/.env.local"
-if [[ ! -f "$FE_ENV" ]]; then
-  cat > "$FE_ENV" <<EOF
+cat > "$FE_ENV" <<EOF
 NEXT_PUBLIC_API_URL=http://$SERVER_IP:$BE_PORT/api
 NEXT_PUBLIC_HMAC_SECRET=105eff89fe94e55e87aee967eb9b9339ff7a3061afc279dab3e4ae3e87199f1c
 EOF
-  info ".env.local created at $FE_ENV"
-else
-  warn ".env.local already exists — skipping"
-fi
+info ".env.local written at $FE_ENV"
 
 # ── Frontend build ────────────────────────────────────────────────────────────
 section "7 — Frontend npm install & build"
