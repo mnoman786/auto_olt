@@ -91,13 +91,13 @@ JWT_REFRESH_TOKEN_LIFETIME_DAYS=7
 
 # ── Encryption (OLT passwords at rest) ───────────────────────
 # WARNING: Never change this after data is written.
-FIELD_ENCRYPTION_KEY=jLA2s6sE6cOz6U2AI9yB3kUiJCtts2WZL0pl-0YcOMc=
+FIELD_ENCRYPTION_KEY=REPLACE_WITH_FERNET_KEY
 
 # ── HMAC Response Signing ────────────────────────────────────
-HMAC_SECRET=105eff89fe94e55e87aee967eb9b9339ff7a3061afc279dab3e4ae3e87199f1c
+HMAC_SECRET=REPLACE_WITH_HMAC_SECRET
 
 # ── Admin ────────────────────────────────────────────────────
-ADMIN_URL=olt-control-9f3a/
+ADMIN_URL=REPLACE_WITH_SECRET_ADMIN_PATH/
 
 # ── Registration ─────────────────────────────────────────────
 REGISTRATION_OPEN=True
@@ -120,9 +120,9 @@ LOG_LEVEL=WARNING
 EMAIL_HOST=smtp.gmail.com
 EMAIL_PORT=587
 EMAIL_USE_TLS=True
-EMAIL_HOST_USER=mnomanch786@gmail.com
-EMAIL_HOST_PASSWORD=jpsk pypc ixul ashp
-DEFAULT_FROM_EMAIL=Auto OLT <mnomanch786@gmail.com>
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-gmail-app-password
+DEFAULT_FROM_EMAIL=Auto OLT <your-email@gmail.com>
 
 # ── ONU Provisioning ─────────────────────────────────────────
 ONU_REGISTER_METHOD=hybrid
@@ -130,13 +130,13 @@ DEFAULT_TELNET_USERNAME=admin
 DEFAULT_TELNET_PASSWORD=admin
 DEFAULT_TELNET_PORT=23
 OLT_MGMT_USER=autoolt
-OLT_MGMT_PASSWORD=autoolt123
+OLT_MGMT_PASSWORD=REPLACE_WITH_MGMT_PASSWORD
 OLT_MGMT_PRIVILEGE=15
 
 # ── WireGuard ────────────────────────────────────────────────
 WG_INTERFACE=wg0
 WG_ENDPOINT=$SERVER_IP:51820
-WG_SERVER_PUBLIC_KEY=egHNg6PWBMadeIIgiaLpCHV9q6pzMUJBV0/1ouwNdCI=
+WG_SERVER_PUBLIC_KEY=REPLACE_WITH_WG_SERVER_PUBLIC_KEY
 EOF
 info ".env written at $ENV_FILE"
 
@@ -151,7 +151,7 @@ section "6 — Frontend .env"
 FE_ENV="$FRONTEND_DIR/.env.local"
 cat > "$FE_ENV" <<EOF
 NEXT_PUBLIC_API_URL=http://$SERVER_IP:$BE_PORT/api
-NEXT_PUBLIC_HMAC_SECRET=105eff89fe94e55e87aee967eb9b9339ff7a3061afc279dab3e4ae3e87199f1c
+NEXT_PUBLIC_HMAC_SECRET=REPLACE_WITH_HMAC_SECRET
 EOF
 info ".env.local written at $FE_ENV"
 
