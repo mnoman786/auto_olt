@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import PasswordResetOTP, EmailVerificationOTP
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, validate_password_strength
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -20,6 +20,14 @@ class LoginRateThrottle(AnonRateThrottle):
 
 class RegisterRateThrottle(AnonRateThrottle):
     scope = 'auth_register'
+
+
+class ForgotPasswordThrottle(AnonRateThrottle):
+    scope = 'forgot_password'
+
+
+class OTPVerifyThrottle(AnonRateThrottle):
+    scope = 'otp_verify'
 
 
 def _send_verification_email(user, otp):
@@ -85,6 +93,7 @@ def register_view(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([OTPVerifyThrottle])
 def verify_email_view(request):
     """Verify OTP and activate account, returning JWT tokens."""
     from .models import User as UserModel
@@ -101,16 +110,26 @@ def verify_email_view(request):
 
     record = (
         EmailVerificationOTP.objects
-        .filter(user=user, otp=otp, is_used=False)
+        .filter(user=user, is_used=False)
         .order_by('-created_at')
         .first()
     )
     if not record:
         return Response({'otp': 'Invalid or expired code.'}, status=status.HTTP_400_BAD_REQUEST)
+    if record.is_locked():
+        return Response({'otp': 'Too many incorrect attempts. Please request a new code.'}, status=status.HTTP_400_BAD_REQUEST)
     if record.is_expired():
         record.is_used = True
         record.save(update_fields=['is_used'])
         return Response({'otp': 'This code has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+    if record.otp != otp:
+        record.attempts += 1
+        record.save(update_fields=['attempts'])
+        remaining = EmailVerificationOTP.MAX_ATTEMPTS - record.attempts
+        return Response(
+            {'otp': f'Invalid code. {remaining} attempt(s) remaining.' if remaining > 0 else 'Too many incorrect attempts. Please request a new code.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     record.is_used = True
     record.save(update_fields=['is_used'])
@@ -224,18 +243,15 @@ def change_password_view(request):
 
     if not user.check_password(current):
         return Response({'current_password': 'Incorrect current password.'}, status=status.HTTP_400_BAD_REQUEST)
-    if len(new_pw) < 6:
-        return Response({'new_password': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+    strength_errors = validate_password_strength(new_pw)
+    if strength_errors:
+        return Response({'new_password': strength_errors[0]}, status=status.HTTP_400_BAD_REQUEST)
     if new_pw != confirm:
         return Response({'confirm_password': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
 
     user.set_password(new_pw)
     user.save(update_fields=['password'])
     return Response({'detail': 'Password changed successfully.'})
-
-
-class ForgotPasswordThrottle(AnonRateThrottle):
-    scope = 'forgot_password'
 
 
 @api_view(['POST'])
@@ -288,6 +304,7 @@ def forgot_password_view(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([OTPVerifyThrottle])
 def reset_password_view(request):
     """Verify OTP and set new password."""
     from .models import User as UserModel
@@ -306,8 +323,9 @@ def reset_password_view(request):
     if errors:
         return Response(errors, status=status.HTTP_400_BAD_REQUEST)
 
-    if len(new_pw) < 6:
-        return Response({'new_password': 'Password must be at least 6 characters.'}, status=status.HTTP_400_BAD_REQUEST)
+    strength_errors = validate_password_strength(new_pw)
+    if strength_errors:
+        return Response({'new_password': strength_errors[0]}, status=status.HTTP_400_BAD_REQUEST)
     if new_pw != confirm:
         return Response({'confirm_password': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -318,16 +336,26 @@ def reset_password_view(request):
 
     record = (
         PasswordResetOTP.objects
-        .filter(user=user, otp=otp, is_used=False)
+        .filter(user=user, is_used=False)
         .order_by('-created_at')
         .first()
     )
     if not record:
         return Response({'otp': 'Invalid or expired code.'}, status=status.HTTP_400_BAD_REQUEST)
+    if record.is_locked():
+        return Response({'otp': 'Too many incorrect attempts. Please request a new code.'}, status=status.HTTP_400_BAD_REQUEST)
     if record.is_expired():
         record.is_used = True
         record.save(update_fields=['is_used'])
         return Response({'otp': 'This code has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
+    if record.otp != otp:
+        record.attempts += 1
+        record.save(update_fields=['attempts'])
+        remaining = PasswordResetOTP.MAX_ATTEMPTS - record.attempts
+        return Response(
+            {'otp': f'Invalid code. {remaining} attempt(s) remaining.' if remaining > 0 else 'Too many incorrect attempts. Please request a new code.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     record.is_used = True
     record.save(update_fields=['is_used'])

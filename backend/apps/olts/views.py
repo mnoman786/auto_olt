@@ -344,9 +344,9 @@ def test_snmp(request, pk):
             s.close()
             checks.append({'check': 'network_reach', 'ok': True,
                             'detail': f'TCP {connect_ip}:{olt.telnet_port} is reachable'})
-        except Exception as e:
+        except Exception:
             checks.append({'check': 'network_reach', 'ok': False,
-                            'detail': f'TCP {connect_ip}:{olt.telnet_port} unreachable — {e}'})
+                            'detail': f'TCP port {olt.telnet_port} is unreachable'})
 
     # 2. SNMP GET sysDescr with read community
     snmp_result = snmp_service.validate_snmp_connectivity(
@@ -359,10 +359,9 @@ def test_snmp(request, pk):
         'ok': snmp_result['connected'],
         'detail': (
             f'sysDescr = {snmp_result["sys_descr"][:120]}' if snmp_result['connected']
-            else f'SNMP GET failed: {snmp_result["error"]}'
+            else 'SNMP GET failed — check read community and SNMP version'
         ),
         'oid_tested': '1.3.6.1.2.1.1.1.0 (sysDescr)',
-        'community_used': olt.snmp_read_community,
         'snmp_version': olt.snmp_version,
     })
 
@@ -378,9 +377,8 @@ def test_snmp(request, pk):
             'ok': write_result['writable'],
             'detail': (
                 'Write access confirmed' if write_result['writable']
-                else f'Write failed: {write_result["error"]}'
+                else 'SNMP write failed — check write community and OLT permissions'
             ),
-            'community_used': olt.snmp_write_community,
         })
     else:
         checks.append({'check': 'snmp_write', 'ok': None,
@@ -393,9 +391,9 @@ def test_snmp(request, pk):
             s.close()
             checks.append({'check': 'telnet_port', 'ok': True,
                             'detail': f'TCP {connect_ip}:{olt.telnet_port} is open'})
-        except Exception as e:
+        except Exception:
             checks.append({'check': 'telnet_port', 'ok': False,
-                            'detail': f'TCP {connect_ip}:{olt.telnet_port} refused — {e}'})
+                            'detail': f'TCP port {olt.telnet_port} is closed or refused'})
 
     overall_ok = all(c['ok'] for c in checks if c['ok'] is not None)
     return Response({

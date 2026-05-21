@@ -4,8 +4,20 @@ from django.contrib.auth import authenticate
 from .models import User
 
 
+def validate_password_strength(password: str) -> list[str]:
+    """Return a list of error strings, empty if password is acceptable."""
+    errors = []
+    if len(password) < 8:
+        errors.append('Password must be at least 8 characters.')
+    if not any(c.isupper() for c in password):
+        errors.append('Password must contain at least one uppercase letter.')
+    if not any(c.isdigit() for c in password):
+        errors.append('Password must contain at least one number.')
+    return errors
+
+
 class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, min_length=6)
+    password = serializers.CharField(write_only=True, min_length=8)
     password2 = serializers.CharField(write_only=True)
 
     class Meta:
@@ -15,6 +27,9 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['password'] != data['password2']:
             raise serializers.ValidationError({'password': 'Passwords do not match.'})
+        errors = validate_password_strength(data['password'])
+        if errors:
+            raise serializers.ValidationError({'password': errors[0]})
         return data
 
     def create(self, validated_data):

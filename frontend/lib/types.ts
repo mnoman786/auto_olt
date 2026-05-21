@@ -34,12 +34,12 @@ export interface OLT {
   wg_client_public_key: string;
   wg_client_subnet: string;
   snmp_version: SNMPVersion;
-  snmp_read_community: string;
-  snmp_write_community: string;
+  has_snmp_read_community: boolean;
+  has_snmp_write_community: boolean;
   telnet_enabled: boolean;
   telnet_port: number;
   olt_admin_username: string;
-  olt_admin_password: string;
+  has_admin_password: boolean;
   status: OLTStatus;
   system_name: string;
   system_description: string;

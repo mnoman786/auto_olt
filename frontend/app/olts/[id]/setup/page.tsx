@@ -577,7 +577,7 @@ export default function OLTSetupPage() {
                     ['IP', olt.ip_address],
                     ['Type', olt.connection_type === 'vpn' ? 'VPN (WireGuard)' : 'Direct'],
                     ['SNMP', olt.snmp_version.toUpperCase()],
-                    ['Community', olt.snmp_read_community],
+                    ['Community', olt.has_snmp_read_community ? 'Configured' : 'Not set'],
                     ['Telnet', olt.telnet_enabled ? 'Enabled' : 'Disabled'],
                     ['OLT Admin', olt.olt_admin_username || 'admin'],
                     olt.system_name && ['System', olt.system_name],

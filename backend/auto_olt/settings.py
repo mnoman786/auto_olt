@@ -40,6 +40,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'utils.security_headers.SecurityHeadersMiddleware',
+    'utils.hmac_signing.HMACSigningMiddleware',
 ]
 
 ROOT_URLCONF = 'auto_olt.urls'
@@ -106,6 +108,7 @@ REST_FRAMEWORK = {
         'auth_login': '5/minute',
         'auth_register': '3/minute',
         'forgot_password': '3/minute',
+        'otp_verify': '10/hour',
     },
 }
 
@@ -166,6 +169,8 @@ OLT_MGMT_PRIVILEGE = config('OLT_MGMT_PRIVILEGE', default=15, cast=int)
 
 # Registration — set to True in .env only when you want to allow new sign-ups
 REGISTRATION_OPEN = config('REGISTRATION_OPEN', default=False, cast=bool)
+HMAC_SECRET = config('HMAC_SECRET', default='')
+ADMIN_URL = config('ADMIN_URL', default='admin/')
 
 # Encryption key for sensitive DB fields (OLT credentials).
 # Must be a 32-byte url-safe base64 string (generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")

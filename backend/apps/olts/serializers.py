@@ -31,6 +31,7 @@ class OLTSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True)
     # Indicate whether credentials are set without exposing their values
     has_admin_password = serializers.SerializerMethodField()
+    has_snmp_read_community = serializers.SerializerMethodField()
     has_snmp_write_community = serializers.SerializerMethodField()
 
     class Meta:
@@ -38,13 +39,11 @@ class OLTSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'username', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
             'wg_client_public_key', 'wg_client_subnet',
-            'snmp_version', 'snmp_read_community',
+            'snmp_version',
             'telnet_enabled', 'telnet_port',
             'olt_admin_username',
-            # Sensitive fields are excluded from read responses:
-            # olt_admin_password and snmp_write_community are never returned.
-            # Use has_admin_password / has_snmp_write_community to show set/unset state.
-            'has_admin_password', 'has_snmp_write_community',
+            # Sensitive credentials never returned — use boolean flags instead
+            'has_admin_password', 'has_snmp_read_community', 'has_snmp_write_community',
             'status', 'system_name', 'system_description', 'system_uptime',
             'last_polled', 'created_at', 'updated_at',
             'onu_count', 'registered_onu_count',
@@ -74,6 +73,9 @@ class OLTSerializer(serializers.ModelSerializer):
     def get_has_admin_password(self, obj):
         return bool(obj.olt_admin_password)
 
+    def get_has_snmp_read_community(self, obj):
+        return bool(obj.snmp_read_community)
+
     def get_has_snmp_write_community(self, obj):
         return bool(obj.snmp_write_community)
 
@@ -93,6 +95,7 @@ class OLTCreateSerializer(serializers.ModelSerializer):
             'vpn_virtual_ip': {'required': False, 'allow_null': True, 'read_only': False},
             'wg_client_public_key': {'required': False, 'allow_blank': True},
             'wg_client_subnet': {'required': False, 'allow_blank': True},
+            'snmp_read_community': {'required': False, 'allow_blank': True, 'write_only': True},
             'snmp_write_community': {'required': False, 'allow_blank': True, 'write_only': True},
             'olt_admin_username': {'required': False, 'allow_blank': True},
             'olt_admin_password': {'required': False, 'allow_blank': True, 'write_only': True},

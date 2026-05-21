@@ -12,7 +12,7 @@ import { OLTDetailSkeleton } from '@/components/ui/Skeleton';
 import {
   ArrowLeft, Server, Wifi, Network, Settings,
   RefreshCw, Play, Pencil, Trash2, CheckCircle, AlertCircle,
-  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders, Eye, EyeOff,
+  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders,
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -27,8 +27,7 @@ const statusDot = {
 
 
 export default function OLTDetailPage() {
-  const { isAuthenticated, isLoading, user } = useAuth();
-  const isStaff = user?.is_staff || user?.is_superuser;
+  const { isAuthenticated, isLoading } = useAuth();
   const params = useParams();
   const router = useRouter();
   const oltId = parseInt(params.id as string);
@@ -37,8 +36,7 @@ export default function OLTDetailPage() {
   const [stats, setStats] = useState<OLTStats | null>(null);
   const [vlans, setVlans] = useState<VLAN[]>([]);
   const [fetching, setFetching] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [syncingVlans, setSyncingVlans] = useState(false);
+const [syncingVlans, setSyncingVlans] = useState(false);
   const [syncingProfiles, setSyncingProfiles] = useState(false);
 
   useEffect(() => {
@@ -396,8 +394,8 @@ export default function OLTDetailPage() {
                 {[
                   ['IP Address', olt.ip_address],
                   ['SNMP Version', olt.snmp_version.toUpperCase()],
-                  ['SNMP Read Community', olt.snmp_read_community],
-                  ['SNMP Write Community', olt.snmp_write_community || 'Not set'],
+                  ['SNMP Read Community', olt.has_snmp_read_community ? 'Configured' : 'Not set'],
+                  ['SNMP Write Community', olt.has_snmp_write_community ? 'Configured' : 'Not set'],
                   ['Telnet', olt.telnet_enabled ? `Enabled (port ${olt.telnet_port})` : 'Disabled'],
                   ['OLT Admin Username', olt.olt_admin_username || 'Not set'],
                 ].map(([k, v]) => (
@@ -410,17 +408,8 @@ export default function OLTDetailPage() {
                   <span className="text-gray-500">OLT Admin Password</span>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-800 font-mono tracking-wider">
-                      {isStaff && showPassword ? olt.olt_admin_password || 'Not set' : '••••••••'}
+                      {olt.has_admin_password ? '••••••••' : 'Not set'}
                     </span>
-                    {isStaff && (
-                      <button
-                        onClick={() => setShowPassword(v => !v)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                        title={showPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>

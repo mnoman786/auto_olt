@@ -4,12 +4,29 @@ import type {
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
   Ticket, TicketListItem, TicketReply,
 } from './types';
+import { verifyResponseHMAC } from './hmac';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
+  // Capture raw response body before axios parses JSON, for HMAC verification
+  transformResponse: [(rawData: string) => {
+    try {
+      const parsed = JSON.parse(rawData);
+      if (parsed && typeof parsed === 'object') {
+        Object.defineProperty(parsed, '__rawBody', {
+          value: rawData,
+          enumerable: false,
+          writable: false,
+        });
+      }
+      return parsed;
+    } catch {
+      return rawData;
+    }
+  }],
 });
 
 // Token management
@@ -38,6 +55,25 @@ apiClient.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// HMAC verification interceptor — runs before token refresh logic
+apiClient.interceptors.response.use(
+  async (response) => {
+    if (typeof window !== 'undefined') {
+      const timestamp = response.headers['x-timestamp'];
+      const signature = response.headers['x-signature'];
+      const rawBody = (response.data as any)?.__rawBody;
+      if (timestamp && signature && rawBody) {
+        const valid = await verifyResponseHMAC(timestamp, rawBody, signature);
+        if (!valid) {
+          return Promise.reject(Object.assign(new Error('Response signature invalid'), { tampered: true }));
+        }
+      }
+    }
+    return response;
+  },
+  (error) => Promise.reject(error),
+);
 
 // Response interceptor for token refresh and global error handling
 apiClient.interceptors.response.use(
