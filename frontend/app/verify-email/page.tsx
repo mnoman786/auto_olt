@@ -100,7 +100,12 @@ function VerifyEmailForm() {
       setOtp(['', '', '', '', '', '']);
       otpRefs.current[0]?.focus();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to resend. Please try again.');
+      const status = err?.response?.status;
+      if (status === 429) {
+        setError('Too many attempts. Please wait an hour before requesting a new code.');
+      } else {
+        setError(err?.response?.data?.detail || 'Failed to resend. Please try again.');
+      }
     } finally {
       setResending(false);
     }
