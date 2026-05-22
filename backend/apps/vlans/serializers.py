@@ -4,6 +4,8 @@ from .models import VLAN
 
 class VLANSerializer(serializers.ModelSerializer):
     onu_count = serializers.SerializerMethodField()
+    name = serializers.CharField(max_length=100, strip=True)
+    description = serializers.CharField(max_length=500, allow_blank=True, strip=True, required=False, default='')
 
     class Meta:
         model = VLAN
