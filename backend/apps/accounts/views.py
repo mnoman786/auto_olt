@@ -30,6 +30,10 @@ class OTPVerifyThrottle(AnonRateThrottle):
     scope = 'otp_verify'
 
 
+class ResendOTPThrottle(AnonRateThrottle):
+    scope = 'resend_otp'
+
+
 def _send_verification_email(user, otp):
     """Send 6-digit email verification OTP."""
     expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
@@ -161,6 +165,7 @@ def verify_email_view(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([ResendOTPThrottle])
 def resend_verification_view(request):
     """Resend email verification OTP."""
     from .models import User as UserModel
