@@ -137,8 +137,7 @@ export default function OLTSetupPage() {
     if (!isAuthenticated) return;
     (async () => {
       setFetching(true);
-      const oltData = await fetchOlt();
-      const logsData = await fetchLogs();
+      const [oltData, logsData] = await Promise.all([fetchOlt(), fetchLogs()]);
 
       if (oltData?.connection_type === 'vpn') {
         await fetchWgInfo();

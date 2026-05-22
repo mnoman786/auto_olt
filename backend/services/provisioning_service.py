@@ -558,43 +558,58 @@ def sync_vlans_from_olt(olt_id: int) -> Dict[str, Any]:
         result['error'] = 'No VLANs returned by SNMP or Telnet'
         return result
 
-    # ── Upsert into DB ───────────────────────────────────────────────────
+    # ── Upsert into DB (bulk) ────────────────────────────────────────────
     now = timezone.now()
-    created = 0
-    updated = 0
+
+    incoming_ids = [v['vlan_id'] for v in vlans_found]
+    existing_map = {
+        obj.vlan_id: obj
+        for obj in VLAN.objects.filter(olt=olt, vlan_id__in=incoming_ids)
+    }
+
+    to_create: List[VLAN] = []
+    to_update: List[VLAN] = []
+
     for v in vlans_found:
         vid = v['vlan_id']
-        defaults = {
-            'name': v.get('name') or f'VLAN{vid}',
-            'description': v.get('description') or '',
-            'last_seen_on_olt': now,
-            'pushed_to_olt': True,
-            'push_error': '',
-        }
-        obj, was_created = VLAN.objects.get_or_create(
-            olt=olt, vlan_id=vid,
-            defaults={**defaults, 'source': 'discovered'},
-        )
-        if was_created:
-            created += 1
+        name = v.get('name') or f'VLAN{vid}'
+        description = v.get('description') or ''
+
+        if vid not in existing_map:
+            to_create.append(VLAN(
+                olt=olt,
+                vlan_id=vid,
+                name=name,
+                description=description,
+                source='discovered',
+                last_seen_on_olt=now,
+                pushed_to_olt=True,
+                push_error='',
+            ))
         else:
-            # Refresh metadata but do not overwrite a managed VLAN's name/description
-            # unless they're empty — operator intent wins.
+            obj = existing_map[vid]
             obj.last_seen_on_olt = now
             obj.pushed_to_olt = True
             obj.push_error = ''
+            # Don't overwrite operator-set name/description
             if not obj.name or obj.name == f'VLAN{vid}':
-                obj.name = defaults['name']
-            if not obj.description and defaults['description']:
-                obj.description = defaults['description']
-            obj.save(update_fields=['last_seen_on_olt', 'pushed_to_olt',
-                                    'push_error', 'name', 'description', 'updated_at'])
-            updated += 1
+                obj.name = name
+            if not obj.description and description:
+                obj.description = description
+            to_update.append(obj)
+
+    if to_create:
+        VLAN.objects.bulk_create(to_create, ignore_conflicts=True)
+    if to_update:
+        VLAN.objects.bulk_update(
+            to_update,
+            ['last_seen_on_olt', 'pushed_to_olt', 'push_error', 'name', 'description'],
+        )
 
     result['success'] = True
     result['discovered'] = len(vlans_found)
-    result['created'] = created
-    result['updated'] = updated
+    result['created'] = len(to_create)
+    result['updated'] = len(to_update)
     return result
 
 
@@ -706,14 +721,14 @@ def provision_onu(onu_id: int, vlan_id: Optional[int] = None,
         return result
 
     def _prov_io(direction: str, text: str):
-        """Stream raw Telnet I/O into the ONU's provisioning log."""
-        clean = text.strip()
+        """Stream raw Telnet I/O into the ONU's provisioning log (credentials redacted)."""
+        clean = _redact_credentials(text.strip(), olt)
         if not clean:
             return
         if direction == 'send':
             _create_prov_log(onu, 'telnet_terminal', f'> {clean}', 'info')
         elif direction == 'auto':
-            _create_prov_log(onu, 'telnet_terminal', clean, 'warning')
+            _create_prov_log(onu, 'telnet_terminal', '[auto-credential sent]', 'warning')
         else:
             _create_prov_log(onu, 'telnet_terminal', clean, 'success')
 
