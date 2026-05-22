@@ -8,12 +8,31 @@ VPN_POOL = ipaddress.IPv4Network('10.100.0.0/16')
 
 
 def _assign_virtual_ip() -> str:
-    """Pick the next unused IP from the VPN pool (globally unique across all OLTs)."""
+    """Pick the next unused IP from the VPN pool.
+
+    Fast path: increment the highest currently-allocated IP — O(1).
+    Fallback: full scan for gaps left by deletions — O(n), rarely needed.
+    """
+    last = (
+        OLT.objects.filter(vpn_virtual_ip__isnull=False)
+        .order_by('vpn_virtual_ip')
+        .values_list('vpn_virtual_ip', flat=True)
+        .last()
+    )
+    if last:
+        try:
+            candidate = ipaddress.IPv4Address(last) + 1
+            candidate_str = str(candidate)
+            if candidate in VPN_POOL and not OLT.objects.filter(vpn_virtual_ip=candidate_str).exists():
+                return candidate_str
+        except ipaddress.AddressValueError:
+            pass
+
+    # Fallback: full scan (handles gaps from deletions or first allocation)
     used = set(OLT.objects.filter(vpn_virtual_ip__isnull=False).values_list('vpn_virtual_ip', flat=True))
     for ip in VPN_POOL.hosts():
-        candidate = str(ip)
-        if candidate not in used:
-            return candidate
+        if str(ip) not in used:
+            return str(ip)
     raise serializers.ValidationError('VPN IP pool exhausted. Contact administrator.')
 
 
@@ -56,19 +75,16 @@ class OLTSerializer(serializers.ModelSerializer):
                             'line_profiles', 'srv_profiles', 'profiles_last_synced')
 
     def get_onu_count(self, obj):
-        # Use annotation from queryset to avoid N+1; fall back for single-object retrieval
-        return getattr(obj, '_onu_count', obj.onus.count())
+        return getattr(obj, '_onu_count', None) or 0
 
     def get_registered_onu_count(self, obj):
-        return getattr(obj, '_registered_onu_count',
-                       obj.onus.filter(status__in=('registered', 'active')).count())
+        return getattr(obj, '_registered_onu_count', None) or 0
 
     def get_vlan_count(self, obj):
-        return getattr(obj, '_vlan_count', obj.vlans.count())
+        return getattr(obj, '_vlan_count', None) or 0
 
     def get_discovered_vlan_count(self, obj):
-        return getattr(obj, '_discovered_vlan_count',
-                       obj.vlans.filter(source='discovered').count())
+        return getattr(obj, '_discovered_vlan_count', None) or 0
 
     def get_has_admin_password(self, obj):
         return bool(obj.olt_admin_password)

@@ -62,6 +62,7 @@ class OLTListCreateView(generics.ListCreateAPIView):
         if olt.connection_type == 'vpn' and olt.wg_client_public_key:
             from services import wireguard_service
             wireguard_service.add_peer(olt)
+        olt = self.get_queryset().get(pk=olt.pk)
         output = OLTSerializer(olt, context={'request': request})
         headers = self.get_success_headers(output.data)
         return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -117,6 +118,7 @@ class OLTDetailView(generics.RetrieveUpdateDestroyAPIView):
                 wireguard_service.remove_peer(old_pubkey)
             if olt.wg_client_public_key:
                 wireguard_service.add_peer(olt)
+        olt = self.get_queryset().get(pk=olt.pk)
         output = OLTSerializer(olt, context={'request': request})
         return Response(output.data)
 
@@ -303,16 +305,30 @@ def olt_ports(request, pk):
             community=olt.snmp_read_community,
             version=olt.snmp_version,
         )
-        # Batch-load all ONU pon_port values once instead of querying per port
+        # Batch-load all ONU pon_port values once
         onu_ports = list(olt.onus.values_list('pon_port', flat=True))
+        port_objs = []
         for p in discovered:
             onu_count = 0
             if p['port_type'] == 'pon':
                 name_lower = p['name'].lower()
                 onu_count = sum(1 for pp in onu_ports if name_lower in pp.lower())
-            OLTPort.objects.update_or_create(
-                olt=olt, if_index=p['if_index'],
-                defaults={**p, 'onu_count': onu_count},
+            port_objs.append(OLTPort(
+                olt=olt,
+                if_index=p['if_index'],
+                name=p.get('name', ''),
+                description=p.get('description', ''),
+                port_type=p.get('port_type', 'other'),
+                status=p.get('status', 'unknown'),
+                speed_mbps=p.get('speed_mbps', 0),
+                onu_count=onu_count,
+            ))
+        if port_objs:
+            OLTPort.objects.bulk_create(
+                port_objs,
+                update_conflicts=True,
+                unique_fields=['olt', 'if_index'],
+                update_fields=['name', 'description', 'port_type', 'status', 'speed_mbps', 'onu_count', 'updated_at'],
             )
         ports = olt.ports.all()
         return Response({'count': ports.count(), 'ports': OLTPortSerializer(ports, many=True).data})

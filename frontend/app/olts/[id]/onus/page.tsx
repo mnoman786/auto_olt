@@ -253,20 +253,17 @@ export default function ONUManagementPage() {
     }
   }, [oltId]);
 
+  // Single mount effect — fetch OLT/VLANs and ONUs in parallel
   useEffect(() => {
-    if (isAuthenticated) { fetchData(); }
-  }, [isAuthenticated, fetchData]);
-
-  useEffect(() => {
-    if (isAuthenticated) fetchOnus();
-  }, [isAuthenticated, fetchOnus]);
+    if (isAuthenticated) { Promise.all([fetchData(), fetchOnus()]); }
+  }, [isAuthenticated, fetchData, fetchOnus]);
 
   const handlePoll = async () => {
     setPolling(true);
     try {
       await oltApi.poll(oltId);
       toast.success('SNMP poll started...');
-      setTimeout(() => { fetchData(); fetchOnus(); }, 5000);
+      setTimeout(() => Promise.all([fetchData(), fetchOnus()]), 5000);
     } catch {
       toast.error('Poll failed');
     } finally {
@@ -576,7 +573,7 @@ export default function ONUManagementPage() {
           onClose={() => setRegisterTarget(null)}
           onSuccess={() => {
             setRegisterTarget(null);
-            setTimeout(() => { fetchData(); fetchOnus(); }, 3000);
+            setTimeout(() => Promise.all([fetchData(), fetchOnus()]), 3000);
           }}
         />
       )}
@@ -591,7 +588,7 @@ export default function ONUManagementPage() {
           onSuccess={() => {
             setShowBulkModal(false);
             setSelectedIds(new Set());
-            setTimeout(() => { fetchData(); fetchOnus(); }, 3000);
+            setTimeout(() => Promise.all([fetchData(), fetchOnus()]), 3000);
           }}
         />
       )}
