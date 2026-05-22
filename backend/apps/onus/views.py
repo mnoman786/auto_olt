@@ -190,6 +190,25 @@ def bulk_register_onus(request, olt_pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+def reboot_onu(request, olt_pk, pk):
+    """Reboot an ONU via Telnet CLI."""
+    olt = get_olt_for_user(olt_pk, request.user)
+    onu = get_object_or_404(ONU, pk=pk, olt=olt)
+
+    if onu.status not in ('active', 'registered', 'offline'):
+        return Response(
+            {'detail': f'Cannot reboot ONU with status "{onu.status}".'},
+            status=400
+        )
+
+    result = provisioning_service.reboot_onu(onu.id)
+    if result['success']:
+        return Response({'detail': result['message']})
+    return Response({'detail': result['message']}, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def deregister_onu(request, olt_pk, pk):
     """Move ONU back to unregistered status."""
     olt = get_olt_for_user(olt_pk, request.user)

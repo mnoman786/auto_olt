@@ -225,6 +225,9 @@ export const onuApi = {
 
   bulkRegister: (oltId: number, data: { onu_ids: number[]; vlan_id?: number; description?: string }) =>
     apiClient.post(`/olts/${oltId}/onus/bulk-register/`, data),
+
+  reboot: (oltId: number, onuId: number) =>
+    apiClient.post(`/olts/${oltId}/onus/${onuId}/reboot/`),
 };
 
 // VLAN API

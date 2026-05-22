@@ -684,6 +684,80 @@ def pick_default_profile_ids(olt) -> Tuple[int, int]:
     return line_id, srv_id
 
 
+def reboot_onu(onu_id: int) -> Dict[str, Any]:
+    """
+    Reboot an ONU via Telnet CLI.
+    Supports Huawei GPON (ont reset) and ZTE (onu reset).
+    pon_port must be in "frame/slot/port" format (e.g. "0/1/0").
+    Returns {'success': bool, 'message': str}
+    """
+    from apps.onus.models import ONU
+    from services import telnet_service
+
+    result: Dict[str, Any] = {'success': False, 'message': ''}
+
+    try:
+        onu = ONU.objects.select_related('olt').get(id=onu_id)
+    except ONU.DoesNotExist:
+        result['message'] = 'ONU not found'
+        return result
+
+    olt = onu.olt
+
+    if not olt.telnet_enabled:
+        result['message'] = 'Telnet is not enabled on this OLT. Enable Telnet to reboot ONUs.'
+        return result
+
+    pon_parts = onu.pon_port.split('/')
+    if len(pon_parts) != 3:
+        result['message'] = f'Cannot parse PON port "{onu.pon_port}" — expected frame/slot/port format.'
+        return result
+
+    frame, slot, port = pon_parts
+    onu_id_str = str(onu.onu_id)
+    connect_ip = _connect_ip(olt)
+
+    success, message, client = telnet_service.telnet_login(
+        host=connect_ip,
+        port=olt.telnet_port,
+        username=olt.olt_admin_username or settings.DEFAULT_TELNET_USERNAME,
+        password=olt.olt_admin_password or settings.DEFAULT_TELNET_PASSWORD,
+    )
+    if not success:
+        result['message'] = f'Telnet login failed: {message}'
+        return result
+
+    try:
+        vendor = telnet_service._detect_vendor(client)
+
+        if vendor == 'zte':
+            # ZTE: interface gpon-olt_frame/slot/port → onu reset onu_id
+            iface = f'gpon-olt_{frame}/{slot}/{port}'
+            client.send_and_read(f'interface {iface}', '#', timeout=8)
+            found, output = client.send_and_read(f'onu reset {onu_id_str}', '#', 'y/n', timeout=10)
+            if 'y/n' in output.lower():
+                client.send_and_read('y', '#', timeout=10)
+            client.send_and_read('exit', '#', timeout=5)
+        else:
+            # Huawei (default): interface gpon frame/slot → ont reset port onu_id
+            client.send_and_read(f'interface gpon {frame}/{slot}', '#', timeout=8)
+            found, output = client.send_and_read(
+                f'ont reset {port} {onu_id_str}', '#', 'y/n', ']', timeout=10
+            )
+            if 'y/n' in output.lower() or ']' in output:
+                client.send_and_read('y', '#', timeout=10)
+            client.send_and_read('quit', '#', timeout=5)
+
+        result['success'] = True
+        result['message'] = f'ONU {onu.serial_number} reboot command sent successfully.'
+    except Exception as e:
+        result['message'] = f'Reboot command failed: {e}'
+    finally:
+        client.disconnect()
+
+    return result
+
+
 def push_vlan_to_olt_async(vlan_db_id: int) -> None:
     thread = threading.Thread(target=push_vlan_to_olt, args=(vlan_db_id,), daemon=True)
     thread.start()

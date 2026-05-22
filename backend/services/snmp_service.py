@@ -198,19 +198,37 @@ def validate_snmp_connectivity(host: str, community: str, version: str = 'v2c',
         'error': None,
     }
     try:
-        sys_descr = snmp_get(host, community, OID_SYS_DESCR, port=port, version=version)
-        if sys_descr is None:
+        from pysnmp.hlapi import (
+            getCmd, SnmpEngine, CommunityData, UdpTransportTarget,
+            ContextData, ObjectType, ObjectIdentity
+        )
+        version_map = {'v1': 0, 'v2c': 1}
+        mp_model = version_map.get(version, 1)
+
+        # Fetch sysDescr, sysName, sysUptime in a single GET PDU (3 OIDs → 1 round trip)
+        error_indication, error_status, error_index, var_binds = next(
+            getCmd(
+                SnmpEngine(),
+                CommunityData(community, mpModel=mp_model),
+                UdpTransportTarget((host, port), timeout=5, retries=2),
+                ContextData(),
+                ObjectType(ObjectIdentity(OID_SYS_DESCR)),
+                ObjectType(ObjectIdentity(OID_SYS_NAME)),
+                ObjectType(ObjectIdentity(OID_SYS_UPTIME)),
+            )
+        )
+        if error_indication:
             result['error'] = f'No SNMP response from {host}:{port} with community "{community}"'
             return result
+        if error_status:
+            result['error'] = f'SNMP error: {error_status.prettyPrint()}'
+            return result
 
+        values = [str(vb[1]) for vb in var_binds]
         result['connected'] = True
-        result['sys_descr'] = sys_descr
-
-        sys_name = snmp_get(host, community, OID_SYS_NAME, port=port, version=version)
-        result['sys_name'] = sys_name or ''
-
-        sys_uptime = snmp_get(host, community, OID_SYS_UPTIME, port=port, version=version)
-        result['sys_uptime'] = sys_uptime or ''
+        result['sys_descr'] = values[0] if len(values) > 0 else ''
+        result['sys_name']  = values[1] if len(values) > 1 else ''
+        result['sys_uptime'] = values[2] if len(values) > 2 else ''
 
     except Exception as e:
         result['error'] = str(e)
@@ -323,9 +341,8 @@ def get_onu_signal_strength(host: str, community: str, onu_index: int,
     value = snmp_get(host, community, oid, port=port, version=version)
     if value and value not in ('No Such Object', 'No Such Instance', 'None'):
         try:
-            # Value is typically in 0.01 dBm units
             raw = int(value)
-            return raw / 100.0 if abs(raw) > 1000 else float(raw)
+            return raw / 100.0  # Huawei reports in 0.01 dBm units
         except (ValueError, TypeError):
             pass
     return None
@@ -367,11 +384,11 @@ def discover_ports_snmp(host: str, community: str, version: str = 'v2c') -> List
 
     ports = []
     try:
-        descr_rows  = snmp_walk(host, community, OID_IF_DESCR,  version=version, max_rows=128)
-        type_rows   = snmp_walk(host, community, OID_IF_TYPE,   version=version, max_rows=128)
-        speed_rows  = snmp_walk(host, community, OID_IF_SPEED,  version=version, max_rows=128)
-        status_rows = snmp_walk(host, community, OID_IF_STATUS, version=version, max_rows=128)
-        alias_rows  = snmp_walk(host, community, OID_IF_ALIAS,  version=version, max_rows=128)
+        descr_rows  = snmp_bulk_walk(host, community, OID_IF_DESCR,  version=version, max_rows=256)
+        type_rows   = snmp_bulk_walk(host, community, OID_IF_TYPE,   version=version, max_rows=256)
+        speed_rows  = snmp_bulk_walk(host, community, OID_IF_SPEED,  version=version, max_rows=256)
+        status_rows = snmp_bulk_walk(host, community, OID_IF_STATUS, version=version, max_rows=256)
+        alias_rows  = snmp_bulk_walk(host, community, OID_IF_ALIAS,  version=version, max_rows=256)
 
         # Index by if_index (last OID segment)
         def index_by(rows):
@@ -486,16 +503,4 @@ def discover_vlans_snmp(host: str, community: str, version: str = 'v2c',
             if not (1 <= vid <= 4094):
                 continue
             vlans[vid] = {'vlan_id': vid, 'name': f'VLAN{vid}', 'description': value or ''}
-    else:
-        # Try to enrich with Huawei descriptions if available
-        huawei_rows = snmp_walk(host, community, OID_HUAWEI_VLAN_DESCR,
-                                version=version, port=port, max_rows=4096)
-        for oid, value in huawei_rows:
-            try:
-                vid = int(oid.split('.')[-1])
-            except (ValueError, IndexError):
-                continue
-            if vid in vlans and value:
-                vlans[vid]['description'] = value
-
     return sorted(vlans.values(), key=lambda v: v['vlan_id'])

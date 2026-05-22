@@ -13,7 +13,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import {
   ArrowLeft, RefreshCw, Wifi, Signal, Clock, Play,
   CheckCircle, XCircle, AlertCircle, Loader2, Search,
-  Server, CheckSquare, Square, Users
+  Server, CheckSquare, Square, Users, RotateCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -210,6 +210,7 @@ export default function ONUManagementPage() {
   const [registerTarget, setRegisterTarget] = useState<ONU | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [rebootingIds, setRebootingIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
@@ -257,6 +258,19 @@ export default function ONUManagementPage() {
   useEffect(() => {
     if (isAuthenticated) { Promise.all([fetchData(), fetchOnus()]); }
   }, [isAuthenticated, fetchData, fetchOnus]);
+
+  const handleReboot = async (onu: ONU) => {
+    if (!window.confirm(`Reboot ONU ${onu.serial_number}? It will be offline for ~30 seconds.`)) return;
+    setRebootingIds(prev => new Set(prev).add(onu.id));
+    try {
+      await onuApi.reboot(oltId, onu.id);
+      toast.success(`Reboot command sent to ${onu.serial_number}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Reboot failed');
+    } finally {
+      setRebootingIds(prev => { const s = new Set(prev); s.delete(onu.id); return s; });
+    }
+  };
 
   const handlePoll = async () => {
     setPolling(true);
@@ -532,6 +546,19 @@ export default function ONUManagementPage() {
                               <Loader2 className="h-3 w-3 animate-spin" />
                               Provisioning...
                             </span>
+                          )}
+                          {['active', 'registered', 'offline'].includes(onu.status) && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              icon={rebootingIds.has(onu.id)
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : <RotateCcw className="h-3.5 w-3.5" />}
+                              loading={rebootingIds.has(onu.id)}
+                              onClick={() => handleReboot(onu)}
+                            >
+                              Reboot
+                            </Button>
                           )}
                           {['active', 'registered'].includes(onu.status) && (
                             <Button
