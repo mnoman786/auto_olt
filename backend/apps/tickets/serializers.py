@@ -5,7 +5,7 @@ from .models import Ticket, TicketReply
 class TicketReplySerializer(serializers.ModelSerializer):
     author_username = serializers.CharField(source='author.username', read_only=True)
     is_staff = serializers.BooleanField(source='author.is_staff', read_only=True)
-    message = serializers.CharField(max_length=5000, strip=True)
+    message = serializers.CharField(max_length=5000, trim_whitespace=True)
 
     class Meta:
         model = TicketReply
@@ -18,8 +18,8 @@ class TicketSerializer(serializers.ModelSerializer):
     olt_name = serializers.CharField(source='olt.name', read_only=True, allow_null=True)
     replies = TicketReplySerializer(many=True, read_only=True)
     reply_count = serializers.IntegerField(source='replies.count', read_only=True)
-    subject = serializers.CharField(max_length=200, strip=True)
-    message = serializers.CharField(max_length=5000, strip=True)
+    subject = serializers.CharField(max_length=200, trim_whitespace=True)
+    message = serializers.CharField(max_length=5000, trim_whitespace=True)
 
     class Meta:
         model = Ticket
