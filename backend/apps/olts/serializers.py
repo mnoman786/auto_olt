@@ -42,37 +42,16 @@ class SetupLogSerializer(serializers.ModelSerializer):
         fields = ('id', 'step', 'message', 'level', 'created_at')
 
 
-class OLTSerializer(serializers.ModelSerializer):
+class _OLTSerializerBase(serializers.ModelSerializer):
+    """Shared fields for both list and detail OLT serializers."""
     onu_count = serializers.SerializerMethodField()
     registered_onu_count = serializers.SerializerMethodField()
     vlan_count = serializers.SerializerMethodField()
     discovered_vlan_count = serializers.SerializerMethodField()
     username = serializers.CharField(source='user.username', read_only=True)
-    # Indicate whether credentials are set without exposing their values
     has_admin_password = serializers.SerializerMethodField()
     has_snmp_read_community = serializers.SerializerMethodField()
     has_snmp_write_community = serializers.SerializerMethodField()
-
-    class Meta:
-        model = OLT
-        fields = (
-            'id', 'username', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
-            'wg_client_public_key', 'wg_client_subnet',
-            'snmp_version',
-            'telnet_enabled', 'telnet_port',
-            'olt_admin_username',
-            # Sensitive credentials never returned — use boolean flags instead
-            'has_admin_password', 'has_snmp_read_community', 'has_snmp_write_community',
-            'status', 'system_name', 'system_description', 'system_uptime',
-            'last_polled', 'created_at', 'updated_at',
-            'onu_count', 'registered_onu_count',
-            'vlan_count', 'discovered_vlan_count',
-            'line_profiles', 'srv_profiles', 'profiles_last_synced',
-        )
-        read_only_fields = ('id', 'status', 'system_name', 'system_description',
-                            'system_uptime', 'last_polled', 'created_at', 'updated_at',
-                            'vpn_virtual_ip',
-                            'line_profiles', 'srv_profiles', 'profiles_last_synced')
 
     def get_onu_count(self, obj):
         return getattr(obj, '_onu_count', None) or 0
@@ -94,6 +73,46 @@ class OLTSerializer(serializers.ModelSerializer):
 
     def get_has_snmp_write_community(self, obj):
         return bool(obj.snmp_write_community)
+
+
+class OLTListSerializer(_OLTSerializerBase):
+    """Lean serializer for list views — omits large profile JSONs."""
+    class Meta:
+        model = OLT
+        fields = (
+            'id', 'username', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
+            'snmp_version', 'telnet_enabled', 'telnet_port', 'olt_admin_username',
+            'has_admin_password', 'has_snmp_read_community', 'has_snmp_write_community',
+            'status', 'system_name', 'system_uptime',
+            'last_polled', 'created_at', 'updated_at',
+            'onu_count', 'registered_onu_count',
+            'vlan_count', 'discovered_vlan_count',
+        )
+        read_only_fields = ('id', 'status', 'system_name', 'system_uptime',
+                            'last_polled', 'created_at', 'updated_at', 'vpn_virtual_ip')
+
+
+class OLTSerializer(_OLTSerializerBase):
+    """Full serializer for detail views — includes profile JSON and all fields."""
+    class Meta:
+        model = OLT
+        fields = (
+            'id', 'username', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
+            'wg_client_public_key', 'wg_client_subnet',
+            'snmp_version',
+            'telnet_enabled', 'telnet_port',
+            'olt_admin_username',
+            'has_admin_password', 'has_snmp_read_community', 'has_snmp_write_community',
+            'status', 'system_name', 'system_description', 'system_uptime',
+            'last_polled', 'created_at', 'updated_at',
+            'onu_count', 'registered_onu_count',
+            'vlan_count', 'discovered_vlan_count',
+            'line_profiles', 'srv_profiles', 'profiles_last_synced',
+        )
+        read_only_fields = ('id', 'status', 'system_name', 'system_description',
+                            'system_uptime', 'last_polled', 'created_at', 'updated_at',
+                            'vpn_virtual_ip',
+                            'line_profiles', 'srv_profiles', 'profiles_last_synced')
 
 
 class OLTCreateSerializer(serializers.ModelSerializer):

@@ -75,3 +75,66 @@ def sync_vlans_from_olt_task(self, olt_id: int) -> dict:
     except Exception as exc:
         logger.warning(f"sync_vlans_from_olt failed for OLT {olt_id}, retrying: {exc}")
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=1, default_retry_delay=30, name='tasks.discover_ports')
+def discover_ports_task(self, olt_id: int) -> dict:
+    """
+    Discover OLT ports via SNMP and save to DB.
+    Runs in background — 5 parallel SNMP walks take ~10s total.
+    """
+    from apps.olts.models import OLT, OLTPort
+    from services import snmp_service
+    from services.provisioning_service import _connect_ip
+
+    result = {'success': False, 'count': 0, 'error': None}
+    try:
+        olt = OLT.objects.get(id=olt_id)
+    except OLT.DoesNotExist:
+        result['error'] = f'OLT {olt_id} not found'
+        return result
+
+    try:
+        discovered = snmp_service.discover_ports_snmp(
+            host=_connect_ip(olt),
+            community=olt.snmp_read_community,
+            version=olt.snmp_version,
+        )
+        # Count ONUs per PON port via DB query (one query total)
+        onu_port_counts = dict(
+            olt.onus.values_list('pon_port')
+                     .annotate(n=__import__('django.db.models', fromlist=['Count']).Count('id'))
+                     .values_list('pon_port', 'n')
+        )
+        port_objs = []
+        for p in discovered:
+            onu_count = 0
+            if p['port_type'] == 'pon':
+                name_lower = p['name'].lower()
+                onu_count = sum(v for k, v in onu_port_counts.items()
+                                if name_lower in k.lower())
+            port_objs.append(OLTPort(
+                olt=olt,
+                if_index=p['if_index'],
+                name=p.get('name', ''),
+                description=p.get('description', ''),
+                port_type=p.get('port_type', 'other'),
+                status=p.get('status', 'unknown'),
+                speed_mbps=p.get('speed_mbps', 0),
+                onu_count=onu_count,
+            ))
+        if port_objs:
+            OLTPort.objects.bulk_create(
+                port_objs,
+                update_conflicts=True,
+                unique_fields=['olt', 'if_index'],
+                update_fields=['name', 'description', 'port_type', 'status',
+                               'speed_mbps', 'onu_count', 'updated_at'],
+            )
+        result['success'] = True
+        result['count'] = len(port_objs)
+    except Exception as exc:
+        logger.warning(f"discover_ports failed for OLT {olt_id}, retrying: {exc}")
+        raise self.retry(exc=exc)
+
+    return result

@@ -4,6 +4,7 @@ Handles SNMP GET, GETNEXT, WALK, and SET operations.
 Uses pysnmp library for SNMP communication.
 """
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional, Dict, List, Tuple, Any
 
 logger = logging.getLogger(__name__)
@@ -384,11 +385,29 @@ def discover_ports_snmp(host: str, community: str, version: str = 'v2c') -> List
 
     ports = []
     try:
-        descr_rows  = snmp_bulk_walk(host, community, OID_IF_DESCR,  version=version, max_rows=256)
-        type_rows   = snmp_bulk_walk(host, community, OID_IF_TYPE,   version=version, max_rows=256)
-        speed_rows  = snmp_bulk_walk(host, community, OID_IF_SPEED,  version=version, max_rows=256)
-        status_rows = snmp_bulk_walk(host, community, OID_IF_STATUS, version=version, max_rows=256)
-        alias_rows  = snmp_bulk_walk(host, community, OID_IF_ALIAS,  version=version, max_rows=256)
+        # Run all 5 SNMP walks in parallel — cuts total time from ~50s to ~10s
+        walk_targets = {
+            'descr':  OID_IF_DESCR,
+            'type':   OID_IF_TYPE,
+            'speed':  OID_IF_SPEED,
+            'status': OID_IF_STATUS,
+            'alias':  OID_IF_ALIAS,
+        }
+        walk_results = {}
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            futures = {
+                pool.submit(snmp_bulk_walk, host, community, oid,
+                            version=version, max_rows=256): key
+                for key, oid in walk_targets.items()
+            }
+            for future in as_completed(futures):
+                walk_results[futures[future]] = future.result()
+
+        descr_rows  = walk_results.get('descr',  [])
+        type_rows   = walk_results.get('type',   [])
+        speed_rows  = walk_results.get('speed',  [])
+        status_rows = walk_results.get('status', [])
+        alias_rows  = walk_results.get('alias',  [])
 
         # Index by if_index (last OID segment)
         def index_by(rows):

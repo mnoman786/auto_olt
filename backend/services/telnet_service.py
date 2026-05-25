@@ -31,7 +31,7 @@ _CREDENTIAL_PROMPTS: List[Tuple[str, str]] = [
 class TelnetClient:
     """Simple Telnet client for OLT CLI interaction."""
 
-    def __init__(self, host: str, port: int = 23, timeout: int = 15,
+    def __init__(self, host: str, port: int = 23, timeout: int = 8,
                  on_io=None, credentials: Optional[Dict[str, str]] = None):
         self.host = host
         self.port = port

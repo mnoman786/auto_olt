@@ -32,6 +32,9 @@ class ONU(models.Model):
         db_table = 'onus'
         unique_together = ('olt', 'serial_number')
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['olt', 'status'], name='onus_olt_status_idx'),
+        ]
 
     def __str__(self):
         return f'ONU {self.serial_number} on {self.olt.name} [{self.status}]'

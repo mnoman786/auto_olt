@@ -1,5 +1,6 @@
 import ipaddress
 import socket
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from django.db.models import Count, Q
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
@@ -8,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from django.shortcuts import get_object_or_404
 from .models import OLT, SetupLog, OLTPort
-from .serializers import OLTSerializer, OLTCreateSerializer, SetupLogSerializer, OLTPortSerializer
+from .serializers import OLTSerializer, OLTListSerializer, OLTCreateSerializer, SetupLogSerializer, OLTPortSerializer
 from services import provisioning_service
 
 
@@ -32,7 +33,7 @@ class OLTListCreateView(generics.ListCreateAPIView):
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return OLTCreateSerializer
-        return OLTSerializer
+        return OLTListSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -71,7 +72,7 @@ class OLTListCreateView(generics.ListCreateAPIView):
             from services import wireguard_service
             wireguard_service.add_peer(olt)
         olt = self.get_queryset().get(pk=olt.pk)
-        output = OLTSerializer(olt, context={'request': request})
+        output = OLTListSerializer(olt, context={'request': request})
         headers = self.get_success_headers(output.data)
         return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -257,7 +258,7 @@ def reset_status(request, pk):
 def setup_logs(request, pk):
     """Get setup logs for an OLT."""
     olt = get_olt_for_user(pk, request.user)
-    logs = olt.setup_logs.all().order_by('created_at')
+    logs = olt.setup_logs.all().order_by('created_at')[:200]
     serializer = SetupLogSerializer(logs, many=True)
     return Response({
         'olt_id': olt.id,
@@ -300,44 +301,18 @@ def olt_stats(request, pk):
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def olt_ports(request, pk):
-    """GET: list saved ports. POST: re-discover ports via SNMP and save."""
+    """GET: list saved ports. POST: enqueue background SNMP port discovery."""
     olt = get_olt_for_user(pk, request.user)
 
     if request.method == 'POST':
-        from services import snmp_service
-        from services.provisioning_service import _connect_ip
-        discovered = snmp_service.discover_ports_snmp(
-            host=_connect_ip(olt),
-            community=olt.snmp_read_community,
-            version=olt.snmp_version,
-        )
-        # Batch-load all ONU pon_port values once
-        onu_ports = list(olt.onus.values_list('pon_port', flat=True))
-        port_objs = []
-        for p in discovered:
-            onu_count = 0
-            if p['port_type'] == 'pon':
-                name_lower = p['name'].lower()
-                onu_count = sum(1 for pp in onu_ports if name_lower in pp.lower())
-            port_objs.append(OLTPort(
-                olt=olt,
-                if_index=p['if_index'],
-                name=p.get('name', ''),
-                description=p.get('description', ''),
-                port_type=p.get('port_type', 'other'),
-                status=p.get('status', 'unknown'),
-                speed_mbps=p.get('speed_mbps', 0),
-                onu_count=onu_count,
-            ))
-        if port_objs:
-            OLTPort.objects.bulk_create(
-                port_objs,
-                update_conflicts=True,
-                unique_fields=['olt', 'if_index'],
-                update_fields=['name', 'description', 'port_type', 'status', 'speed_mbps', 'onu_count', 'updated_at'],
-            )
+        from tasks import discover_ports_task
+        discover_ports_task.delay(olt.id)
         ports = olt.ports.all()
-        return Response({'count': ports.count(), 'ports': OLTPortSerializer(ports, many=True).data})
+        return Response({
+            'detail': 'Port discovery queued. Refresh in a few seconds.',
+            'count': ports.count(),
+            'ports': OLTPortSerializer(ports, many=True).data,
+        })
 
     ports = olt.ports.all()
     return Response({'count': ports.count(), 'ports': OLTPortSerializer(ports, many=True).data})
@@ -347,58 +322,69 @@ def olt_ports(request, pk):
 @permission_classes([IsAuthenticated])
 def test_snmp(request, pk):
     """
-    Diagnostic endpoint — tests SNMP connectivity step by step and returns
+    Diagnostic endpoint — runs all connectivity checks in parallel and returns
     detailed results so the user can see exactly what is failing.
     """
     from services import snmp_service
-
     from services.provisioning_service import _connect_ip
+
     olt = get_olt_for_user(pk, request.user)
     connect_ip = _connect_ip(olt)
+
+    def check_tcp(host, port, timeout=3):
+        try:
+            s = socket.create_connection((host, port), timeout=timeout)
+            s.close()
+            return True, f'TCP {host}:{port} is reachable'
+        except Exception:
+            return False, f'TCP port {port} is unreachable'
+
+    def check_snmp_read():
+        return snmp_service.validate_snmp_connectivity(
+            host=connect_ip, community=olt.snmp_read_community, version=olt.snmp_version,
+        )
+
+    def check_snmp_write():
+        return snmp_service.validate_snmp_write_access(
+            host=connect_ip, write_community=olt.snmp_write_community, version=olt.snmp_version,
+        )
+
+    # Run all independent checks concurrently
+    futures_map = {}
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        if olt.telnet_enabled:
+            futures_map['tcp_reach'] = pool.submit(check_tcp, connect_ip, olt.telnet_port, 3)
+            futures_map['tcp_telnet'] = pool.submit(check_tcp, connect_ip, olt.telnet_port, 4)
+        futures_map['snmp_read'] = pool.submit(check_snmp_read)
+        if olt.snmp_write_community:
+            futures_map['snmp_write'] = pool.submit(check_snmp_write)
+        results = {k: f.result() for k, f in futures_map.items()}
+
     checks = []
 
-    # 1. ICMP-free reachability: attempt a TCP connection to the Telnet port (23)
-    # UDP port 161 cannot be reliably probed (connectionless) so we use Telnet port
-    # if enabled, otherwise skip and let the SNMP GET below prove connectivity.
-    if olt.telnet_enabled:
-        try:
-            s = socket.create_connection((connect_ip, olt.telnet_port), timeout=3)
-            s.close()
-            checks.append({'check': 'network_reach', 'ok': True,
-                            'detail': f'TCP {connect_ip}:{olt.telnet_port} is reachable'})
-        except Exception:
-            checks.append({'check': 'network_reach', 'ok': False,
-                            'detail': f'TCP port {olt.telnet_port} is unreachable'})
+    if 'tcp_reach' in results:
+        ok, detail = results['tcp_reach']
+        checks.append({'check': 'network_reach', 'ok': ok, 'detail': detail})
 
-    # 2. SNMP GET sysDescr with read community
-    snmp_result = snmp_service.validate_snmp_connectivity(
-        host=connect_ip,
-        community=olt.snmp_read_community,
-        version=olt.snmp_version,
-    )
+    snmp_result = results.get('snmp_read', {})
     checks.append({
         'check': 'snmp_read',
-        'ok': snmp_result['connected'],
+        'ok': snmp_result.get('connected', False),
         'detail': (
-            f'sysDescr = {snmp_result["sys_descr"][:120]}' if snmp_result['connected']
+            f'sysDescr = {snmp_result["sys_descr"][:120]}' if snmp_result.get('connected')
             else 'SNMP GET failed — check read community and SNMP version'
         ),
         'oid_tested': '1.3.6.1.2.1.1.1.0 (sysDescr)',
         'snmp_version': olt.snmp_version,
     })
 
-    # 3. SNMP write access (if write community set)
-    if olt.snmp_write_community:
-        write_result = snmp_service.validate_snmp_write_access(
-            host=connect_ip,
-            write_community=olt.snmp_write_community,
-            version=olt.snmp_version,
-        )
+    if 'snmp_write' in results:
+        write_result = results['snmp_write']
         checks.append({
             'check': 'snmp_write',
-            'ok': write_result['writable'],
+            'ok': write_result.get('writable', False),
             'detail': (
-                'Write access confirmed' if write_result['writable']
+                'Write access confirmed' if write_result.get('writable')
                 else 'SNMP write failed — check write community and OLT permissions'
             ),
         })
@@ -406,16 +392,10 @@ def test_snmp(request, pk):
         checks.append({'check': 'snmp_write', 'ok': None,
                         'detail': 'No write community configured — skipped'})
 
-    # 4. Telnet port reachability (if enabled)
-    if olt.telnet_enabled:
-        try:
-            s = socket.create_connection((connect_ip, olt.telnet_port), timeout=4)
-            s.close()
-            checks.append({'check': 'telnet_port', 'ok': True,
-                            'detail': f'TCP {connect_ip}:{olt.telnet_port} is open'})
-        except Exception:
-            checks.append({'check': 'telnet_port', 'ok': False,
-                            'detail': f'TCP port {olt.telnet_port} is closed or refused'})
+    if 'tcp_telnet' in results:
+        ok, detail = results['tcp_telnet']
+        checks.append({'check': 'telnet_port', 'ok': ok,
+                        'detail': detail.replace('reachable', 'open').replace('unreachable', 'closed or refused')})
 
     overall_ok = all(c['ok'] for c in checks if c['ok'] is not None)
     return Response({

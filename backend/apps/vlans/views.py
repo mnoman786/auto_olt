@@ -1,4 +1,3 @@
-import threading
 from django.db.models import Count
 from rest_framework import generics, status
 from rest_framework.decorators import api_view, permission_classes
@@ -81,13 +80,10 @@ def push_vlan(request, olt_pk, pk):
 @permission_classes([IsAuthenticated])
 def sync_vlans(request, olt_pk):
     """
-    Read all VLANs from the OLT and upsert them into the DB.
-    Tries SNMP first, falls back to Telnet. Runs synchronously so the caller
-    sees the count immediately.
+    Queue a background SNMP/Telnet VLAN sync for this OLT.
+    Returns immediately — poll the VLAN list after a few seconds to see results.
     """
     olt = get_olt_for_user(olt_pk, request.user)
-    from services import provisioning_service
-    result = provisioning_service.sync_vlans_from_olt(olt.id)
-    if not result.get('success'):
-        return Response({'detail': result.get('error') or 'Sync failed', **result}, status=400)
-    return Response(result)
+    from tasks import sync_vlans_from_olt_task
+    sync_vlans_from_olt_task.delay(olt.id)
+    return Response({'detail': 'VLAN sync queued. Refresh in a few seconds.', 'olt_id': olt.id})
