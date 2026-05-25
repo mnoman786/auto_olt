@@ -105,10 +105,10 @@ export default function PortForwardingDocsPage() {
               <CheckCircle2 className="h-4 w-4" /> Use this method when:
             </p>
             <ul className="text-sm text-green-700 dark:text-green-400 space-y-1">
-              <li>â€¢ You have a MikroTik router with a public IP</li>
-              <li>â€¢ OLT sits behind the MikroTik on the LAN</li>
-              <li>â€¢ ISP gives you a static IP</li>
-              <li>â€¢ You want the simplest setup without VPN</li>
+              <li>• You have a MikroTik router with a public IP</li>
+              <li>• OLT sits behind the MikroTik on the LAN</li>
+              <li>• ISP gives you a static IP</li>
+              <li>• You want the simplest setup without VPN</li>
             </ul>
           </div>
           <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
@@ -116,10 +116,10 @@ export default function PortForwardingDocsPage() {
               <AlertTriangle className="h-4 w-4" /> Not suitable when:
             </p>
             <ul className="text-sm text-red-700 dark:text-red-400 space-y-1">
-              <li>â€¢ MikroTik is behind double NAT (CGNAT)</li>
-              <li>â€¢ ISP blocks inbound ports</li>
-              <li>â€¢ You only have a dynamic IP</li>
-              <li>â€¢ No public IP at all</li>
+              <li>• MikroTik is behind double NAT (CGNAT)</li>
+              <li>• ISP blocks inbound ports</li>
+              <li>• You only have a dynamic IP</li>
+              <li>• No public IP at all</li>
             </ul>
           </div>
         </div>
@@ -130,9 +130,9 @@ export default function PortForwardingDocsPage() {
           <div className="flex items-center justify-between text-sm flex-wrap gap-2">
             {[
               { icon: Monitor, label: 'OLT Device', sub: '192.168.1.1 (LAN)', color: 'bg-orange-100 text-orange-600' },
-              { label: 'â†’', color: '' },
+              { label: '→', color: '' },
               { icon: Router, label: 'MikroTik', sub: 'Port Forwarding', color: 'bg-purple-100 text-purple-600' },
-              { label: 'â†’ Internet â†’', color: '' },
+              { label: '→ Internet →', color: '' },
               { icon: Server, label: 'Auto OLT Server', sub: '162.217.248.75', color: 'bg-blue-100 text-blue-600' },
             ].map((item, i) => (
               item.icon ? (
@@ -151,7 +151,7 @@ export default function PortForwardingDocsPage() {
         </div>
 
         {/* MikroTik Port Forwarding */}
-        <Section title="MikroTik Router â€” Port Forwarding Setup" icon={Layers} color="bg-orange-500">
+        <Section title="MikroTik Router — Port Forwarding Setup" icon={Layers} color="bg-orange-500">
           <Note>Step-by-step guide for forwarding OLT ports on a MikroTik router using Winbox or CLI.</Note>
 
           {/* Winbox method */}
@@ -161,11 +161,11 @@ export default function PortForwardingDocsPage() {
               Using Winbox (GUI)
             </p>
             <div className="space-y-6">
-              <Step num={1} title="Open IP â†’ Firewall â†’ NAT">
-                <p>In Winbox: go to <strong>IP</strong> â†’ <strong>Firewall</strong> â†’ tab <strong>NAT</strong> â†’ click <strong>+</strong> to add a rule.</p>
+              <Step num={1} title="Open IP → Firewall → NAT">
+                <p>In Winbox: go to <strong>IP</strong> → <strong>Firewall</strong> → tab <strong>NAT</strong> → click <strong>+</strong> to add a rule.</p>
               </Step>
 
-              <Step num={2} title="Forward SNMP â€” UDP 161">
+              <Step num={2} title="Forward SNMP — UDP 161">
                 <p>Fill in the <strong>General</strong> tab:</p>
                 <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs mt-2">
                   <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Chain:</span><span>dstnat</span></div>
@@ -182,7 +182,7 @@ export default function PortForwardingDocsPage() {
                 <p className="mt-1">Click <strong>OK</strong>.</p>
               </Step>
 
-              <Step num={3} title="Forward Telnet â€” TCP 23">
+              <Step num={3} title="Forward Telnet — TCP 23">
                 <p>Add another NAT rule. <strong>General</strong> tab:</p>
                 <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs mt-2">
                   <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Chain:</span><span>dstnat</span></div>
@@ -201,7 +201,7 @@ export default function PortForwardingDocsPage() {
 
               <Step num={4} title="Disable MikroTik Telnet service on port 23 (important!)">
                 <p>By default MikroTik itself listens on port 23. Forwarding port 23 inbound will hit the router, not the OLT.</p>
-                <p className="mt-1">Go to <strong>IP</strong> â†’ <strong>Services</strong> â†’ find <strong>telnet</strong> â†’ either <strong>Disable</strong> it or change its port to something else (e.g. 2222).</p>
+                <p className="mt-1">Go to <strong>IP</strong> → <strong>Services</strong> → find <strong>telnet</strong> → either <strong>Disable</strong> it or change its port to something else (e.g. 2222).</p>
                 <Note type="warn">Skip this step and port 23 will connect you to the MikroTik router instead of the OLT.</Note>
               </Step>
             </div>
@@ -235,7 +235,7 @@ export default function PortForwardingDocsPage() {
 
           <div className="mt-4">
             <Step num={5} title="Add OLT in Auto OLT">
-              <p>Go to <strong>Add OLT</strong> â†’ select <strong>Connection Type: Direct (Public IP)</strong></p>
+              <p>Go to <strong>Add OLT</strong> → select <strong>Connection Type: Direct (Public IP)</strong></p>
               <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">IP Address:</span><span className="text-blue-600">{'<MikroTik WAN/public IP>'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Connection Type:</span><span>Direct (Public IP)</span></div>
@@ -276,9 +276,9 @@ export default function PortForwardingDocsPage() {
               {
                 problem: 'Port forwarding set up but still cannot connect',
                 solutions: [
-                  'Your ISP may be using CGNAT â€” check if MikroTik WAN IP matches whatismyip.com',
+                  'Your ISP may be using CGNAT — check if MikroTik WAN IP matches whatismyip.com',
                   'Some ISPs block inbound connections on port 23 and 161',
-                  'Try the WireGuard VPN method instead â€” it works behind any NAT',
+                  'Try the WireGuard VPN method instead — it works behind any NAT',
                 ]
               },
             ].map(({ problem, solutions }, i) => (
@@ -287,7 +287,7 @@ export default function PortForwardingDocsPage() {
                 <ul className="space-y-1">
                   {solutions.map((s, j) => (
                     <li key={j} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <span className="text-green-500 mt-0.5">â†’</span>
+                      <span className="text-green-500 mt-0.5">→</span>
                       <span>{s}</span>
                     </li>
                   ))}
@@ -304,7 +304,7 @@ export default function PortForwardingDocsPage() {
             <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-0.5">
               Consider using the{' '}
               <Link href="/docs/wireguard" className="underline font-medium">WireGuard VPN method</Link>
-              {' '}â€” it works behind any NAT, CGNAT, or firewall without requiring port forwarding.
+              {' '}— it works behind any NAT, CGNAT, or firewall without requiring port forwarding.
             </p>
           </div>
         </div>
