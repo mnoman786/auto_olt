@@ -87,6 +87,7 @@ export default function AdminUserDetailPage() {
   const [userData, setUserData] = useState<AdminUserDetail | null>(null);
   const [fetching, setFetching] = useState(true);
   const [toggling, setToggling] = useState(false);
+  const [confirmToggle, setConfirmToggle] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -115,6 +116,7 @@ export default function AdminUserDetailPage() {
   const handleToggleActive = async () => {
     if (!userData) return;
     setToggling(true);
+    setConfirmToggle(false);
     try {
       const res = await adminApi.updateUser(userData.id, { is_active: !userData.is_active });
       setUserData(res.data);
@@ -207,29 +209,50 @@ export default function AdminUserDetailPage() {
               <div className="flex items-center gap-2 pb-1">
                 {!isSelf && (
                   <>
-                    <button
-                      onClick={handleToggleActive}
-                      disabled={toggling}
-                      className={clsx(
-                        'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-60',
-                        userData.is_active
-                          ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                          : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                      )}
-                    >
-                      {toggling ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : userData.is_active ? (
-                        <ToggleRight className="h-4 w-4" />
-                      ) : (
-                        <ToggleLeft className="h-4 w-4" />
-                      )}
-                      {toggling ? 'Saving…' : userData.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
+                    {!confirmToggle ? (
+                      <button
+                        onClick={() => { setConfirmDelete(false); setConfirmToggle(true); }}
+                        disabled={toggling}
+                        className={clsx(
+                          'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-60',
+                          userData.is_active
+                            ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                            : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                        )}
+                      >
+                        {userData.is_active ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+                        {userData.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                        <AlertTriangle className={clsx('h-4 w-4 shrink-0', userData.is_active ? 'text-amber-500' : 'text-emerald-500')} />
+                        <span className="text-xs text-gray-700 font-medium">
+                          {userData.is_active ? `Deactivate ${userData.username}?` : `Activate ${userData.username}?`}
+                        </span>
+                        <button
+                          onClick={handleToggleActive}
+                          disabled={toggling}
+                          className={clsx(
+                            'px-2.5 py-1 text-xs font-semibold rounded-md transition-colors disabled:opacity-60',
+                            userData.is_active
+                              ? 'bg-amber-600 text-white hover:bg-amber-700'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          )}
+                        >
+                          {toggling ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Yes, confirm'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmToggle(false)}
+                          className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
 
                     {!confirmDelete ? (
                       <button
-                        onClick={() => setConfirmDelete(true)}
+                        onClick={() => { setConfirmToggle(false); setConfirmDelete(true); }}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 transition-all"
                       >
                         <Trash2 className="h-4 w-4" />

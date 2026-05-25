@@ -63,6 +63,7 @@ export default function AdminUsersPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [confirmToggleId, setConfirmToggleId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
@@ -88,6 +89,7 @@ export default function AdminUsersPage() {
   const handleToggleActive = async (u: AdminUser) => {
     if (u.id === user?.id) return;
     setTogglingId(u.id);
+    setConfirmToggleId(null);
     try {
       await adminApi.updateUser(u.id, { is_active: !u.is_active });
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, is_active: !u.is_active } : x));
@@ -292,24 +294,44 @@ export default function AdminUsersPage() {
                         </Link>
 
                         {/* Toggle active */}
-                        <button
-                          onClick={() => handleToggleActive(u)}
-                          disabled={isSelf || togglingId === u.id}
-                          title={isSelf ? 'Cannot change your own status' : u.is_active ? 'Deactivate' : 'Activate'}
-                          className={clsx(
-                            'p-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-                            u.is_active
-                              ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'
-                              : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
-                          )}
-                        >
-                          {togglingId === u.id
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : u.is_active
-                              ? <ToggleRight className="h-4 w-4" />
-                              : <ToggleLeft className="h-4 w-4" />
-                          }
-                        </button>
+                        {!isSelf && (
+                          confirmToggleId === u.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleToggleActive(u)}
+                                disabled={togglingId === u.id}
+                                className={clsx(
+                                  'px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-colors disabled:opacity-60',
+                                  u.is_active
+                                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                )}
+                              >
+                                {togglingId === u.id ? <Loader2 className="h-3 w-3 animate-spin" /> : u.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                              <button
+                                onClick={() => setConfirmToggleId(null)}
+                                className="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setConfirmDeleteId(null); setConfirmToggleId(u.id); }}
+                              disabled={togglingId === u.id}
+                              title={u.is_active ? 'Deactivate user' : 'Activate user'}
+                              className={clsx(
+                                'p-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
+                                u.is_active
+                                  ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'
+                                  : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                              )}
+                            >
+                              {u.is_active ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
+                            </button>
+                          )
+                        )}
 
                         {/* Delete */}
                         {!isSelf && (
@@ -331,7 +353,7 @@ export default function AdminUsersPage() {
                             </div>
                           ) : (
                             <button
-                              onClick={() => setConfirmDeleteId(u.id)}
+                              onClick={() => { setConfirmToggleId(null); setConfirmDeleteId(u.id); }}
                               className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                               title="Delete user"
                             >
