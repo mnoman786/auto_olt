@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
-  Ticket, TicketListItem, TicketReply,
+  Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail,
 } from './types';
 import { verifyResponseHMAC } from './hmac';
 
@@ -272,6 +272,21 @@ export const ticketApi = {
 
   reply: (id: number, message: string) =>
     apiClient.post<TicketReply>(`/tickets/${id}/reply/`, { message }),
+};
+
+// Admin API
+export const adminApi = {
+  listUsers: () =>
+    apiClient.get<AdminUser[]>('/auth/admin/users/'),
+
+  getUser: (id: number) =>
+    apiClient.get<AdminUserDetail>(`/auth/admin/users/${id}/`),
+
+  updateUser: (id: number, data: { is_active: boolean }) =>
+    apiClient.patch<AdminUserDetail>(`/auth/admin/users/${id}/`, data),
+
+  deleteUser: (id: number) =>
+    apiClient.delete(`/auth/admin/users/${id}/`),
 };
 
 export default apiClient;

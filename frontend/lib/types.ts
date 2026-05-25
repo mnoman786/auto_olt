@@ -182,6 +182,24 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+// Admin types
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  is_staff: boolean;
+  is_superuser: boolean;
+  olt_count: number;
+  date_joined: string;
+}
+
+export interface AdminUserDetail extends Omit<AdminUser, 'olt_count'> {
+  olts: OLT[];
+}
+
 export type TicketStatus = 'open' | 'answered' | 'closed';
 
 export interface TicketReply {

@@ -338,6 +338,10 @@ def forgot_password_view(request):
     return Response({'detail': 'If an account with that email exists, a reset code has been sent.'})
 
 
+def _is_admin(user):
+    return user.is_authenticated and (user.is_staff or user.is_superuser)
+
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 @throttle_classes([OTPVerifyThrottle])
@@ -399,3 +403,102 @@ def reset_password_view(request):
     user.set_password(new_pw)
     user.save(update_fields=['password'])
     return Response({'detail': 'Password reset successfully. You can now log in.'})
+
+
+# ---------------------------------------------------------------------------
+# Admin: user management
+# ---------------------------------------------------------------------------
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def admin_user_list(request):
+    """List all users with OLT counts. Admin only."""
+    if not _is_admin(request.user):
+        return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+
+    from .models import User as UserModel
+    from django.db.models import Count
+
+    users = (
+        UserModel.objects
+        .annotate(olt_count=Count('olts', distinct=True))
+        .order_by('-date_joined')
+    )
+
+    data = [
+        {
+            'id': u.id,
+            'username': u.username,
+            'email': u.email,
+            'first_name': u.first_name,
+            'last_name': u.last_name,
+            'is_active': u.is_active,
+            'is_staff': u.is_staff,
+            'is_superuser': u.is_superuser,
+            'olt_count': u.olt_count,
+            'date_joined': u.date_joined,
+        }
+        for u in users
+    ]
+    return Response(data)
+
+
+@api_view(['GET', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def admin_user_detail(request, pk):
+    """Get / update / delete a single user. Admin only."""
+    if not _is_admin(request.user):
+        return Response({'detail': 'Admin access required.'}, status=status.HTTP_403_FORBIDDEN)
+
+    from .models import User as UserModel
+
+    try:
+        target = UserModel.objects.get(pk=pk)
+    except UserModel.DoesNotExist:
+        return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'DELETE':
+        if target.pk == request.user.pk:
+            return Response({'detail': 'You cannot delete your own account.'}, status=status.HTTP_400_BAD_REQUEST)
+        target.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    if request.method == 'PATCH':
+        if 'is_active' in request.data and target.pk == request.user.pk:
+            return Response({'detail': 'You cannot change your own active status.'}, status=status.HTTP_400_BAD_REQUEST)
+        if 'is_active' in request.data:
+            target.is_active = bool(request.data['is_active'])
+            target.save(update_fields=['is_active'])
+
+    # GET or post-PATCH: return full user + their OLTs
+    from apps.olts.models import OLT
+    from apps.olts.serializers import OLTSerializer
+    from django.db.models import Count, Q
+
+    olts = OLT.objects.filter(user=target).annotate(
+        _onu_count=Count('onus', distinct=True),
+        _registered_onu_count=Count(
+            'onus',
+            filter=Q(onus__status__in=('registered', 'active')),
+            distinct=True,
+        ),
+        _vlan_count=Count('vlans', distinct=True),
+        _discovered_vlan_count=Count(
+            'vlans',
+            filter=Q(vlans__source='discovered'),
+            distinct=True,
+        ),
+    )
+
+    return Response({
+        'id': target.id,
+        'username': target.username,
+        'email': target.email,
+        'first_name': target.first_name,
+        'last_name': target.last_name,
+        'is_active': target.is_active,
+        'is_staff': target.is_staff,
+        'is_superuser': target.is_superuser,
+        'date_joined': target.date_joined,
+        'olts': OLTSerializer(olts, many=True).data,
+    })

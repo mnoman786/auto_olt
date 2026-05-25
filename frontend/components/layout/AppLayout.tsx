@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy, UserCircle,
+  Bell, Search, LifeBuoy, UserCircle, ShieldCheck,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect } from 'react';
@@ -19,6 +19,7 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
+  const isAdmin = user?.is_staff || user?.is_superuser;
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -95,6 +96,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {isAdmin && (
+            <>
+              <p className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                Administration
+              </p>
+              {(() => {
+                const active = pathname.startsWith('/admin');
+                return (
+                  <Link
+                    href="/admin/users"
+                    onClick={() => setSidebarOpen(false)}
+                    className={clsx(
+                      'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                      active
+                        ? 'bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-purple-900/30'
+                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                    )}
+                  >
+                    <ShieldCheck className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
+                    User Management
+                    {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                  </Link>
+                );
+              })()}
+            </>
+          )}
         </nav>
 
         {/* User section */}
