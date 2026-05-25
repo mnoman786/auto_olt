@@ -213,3 +213,15 @@ LOG_LEVEL = config('LOG_LEVEL', default='INFO')
 # Must be a 32-byte url-safe base64 string (generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
 # Falls back to a SHA-256 digest of SECRET_KEY if not set.
 FIELD_ENCRYPTION_KEY = config('FIELD_ENCRYPTION_KEY', default='')
+
+# Celery
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+# Hard kill a task after 10 minutes; soft limit warns at 8 minutes
+CELERY_TASK_TIME_LIMIT = 600
+CELERY_TASK_SOFT_TIME_LIMIT = 480

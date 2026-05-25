@@ -38,6 +38,26 @@ PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_i
 apt-get install -y -qq "python${PY_VER}-venv" 2>/dev/null || true
 info "System packages installed (Python $PY_VER)"
 
+# ── Redis (native — no Docker) ────────────────────────────────────────────────
+section "1b — Redis"
+if ! command -v redis-server &>/dev/null; then
+  apt-get install -y -qq redis-server
+  info "Redis installed"
+else
+  info "Redis already installed — skipping"
+fi
+# Bind to loopback only (default is already 127.0.0.1, but enforce it)
+sed -i 's/^# *bind .*/bind 127.0.0.1 ::1/' /etc/redis/redis.conf 2>/dev/null || true
+systemctl enable redis-server
+systemctl restart redis-server
+# Smoke-test: make sure Redis responds before we continue
+if redis-cli ping | grep -q PONG; then
+  info "Redis is up and responding"
+else
+  echo -e "${RED}[ERROR] Redis did not start correctly — check: journalctl -u redis-server${NC}"
+  exit 1
+fi
+
 # ── Node.js ───────────────────────────────────────────────────────────────────
 section "2 — Node.js $NODE_VERSION"
 if ! command -v node &>/dev/null || [[ "$(node -v | cut -d. -f1 | tr -d 'v')" -lt "$NODE_VERSION" ]]; then
@@ -137,6 +157,10 @@ OLT_MGMT_PRIVILEGE=15
 WG_INTERFACE=wg0
 WG_ENDPOINT=$SERVER_IP:51820
 WG_SERVER_PUBLIC_KEY=REPLACE_WITH_WG_SERVER_PUBLIC_KEY
+
+# ── Celery / Redis ────────────────────────────────────────────
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0
+CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
 EOF
 info ".env written at $ENV_FILE"
 
@@ -209,16 +233,41 @@ WantedBy=multi-user.target
 EOF
 info "Frontend service file written"
 
+# ── systemctl — Celery worker ─────────────────────────────────────────────────
+section "10 — systemctl service: auto-olt-celery (worker)"
+cat > /etc/systemd/system/auto-olt-celery.service <<EOF
+[Unit]
+Description=Auto OLT Celery Worker
+After=network.target redis-server.service auto-olt-backend.service
+
+[Service]
+Type=simple
+User=$SERVICE_USER
+WorkingDirectory=$BACKEND_DIR
+EnvironmentFile=$ENV_FILE
+ExecStart=$VENV_DIR/bin/celery -A auto_olt worker --loglevel=info --concurrency=4
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+info "Celery worker service file written"
+
 # ── Enable & start ────────────────────────────────────────────────────────────
-section "10 — Enable & start services"
+section "11 — Enable & start services"
 systemctl daemon-reload
-systemctl enable auto-olt-backend auto-olt-frontend
+systemctl enable auto-olt-backend auto-olt-frontend auto-olt-celery
 systemctl restart auto-olt-backend
+systemctl restart auto-olt-celery
 systemctl restart auto-olt-frontend
 
 sleep 3
 BE_STATUS=$(systemctl is-active auto-olt-backend)
 FE_STATUS=$(systemctl is-active auto-olt-frontend)
+CELERY_STATUS=$(systemctl is-active auto-olt-celery)
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
@@ -228,14 +277,18 @@ echo -e "${GREEN}║${NC}  Backend  : http://$SERVER_IP:$BE_PORT   ${GREEN}║${
 echo -e "${GREEN}║${NC}  Frontend : http://$SERVER_IP:$FE_PORT   ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Login    : admin / admin123             ${GREEN}║${NC}"
 echo -e "${GREEN}╠══════════════════════════════════════════╣${NC}"
-echo -e "${GREEN}║${NC}  BE service : $BE_STATUS                       ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}  FE service : $FE_STATUS                       ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  BE     service : $BE_STATUS                    ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  FE     service : $FE_STATUS                    ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Celery service : $CELERY_STATUS                ${GREEN}║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
 echo "  Useful commands:"
 echo "  sudo systemctl status  auto-olt-backend"
 echo "  sudo systemctl status  auto-olt-frontend"
+echo "  sudo systemctl status  auto-olt-celery"
 echo "  sudo journalctl -u auto-olt-backend  -f"
 echo "  sudo journalctl -u auto-olt-frontend -f"
+echo "  sudo journalctl -u auto-olt-celery   -f"
 echo "  sudo systemctl restart auto-olt-backend"
 echo "  sudo systemctl restart auto-olt-frontend"
+echo "  sudo systemctl restart auto-olt-celery"

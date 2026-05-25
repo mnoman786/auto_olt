@@ -3,7 +3,6 @@ Provisioning Service - orchestrates OLT setup and ONU provisioning.
 Implements the full setup workflow and SNMP-first hybrid provisioning logic.
 """
 import logging
-import threading
 from typing import Optional, Dict, Any, List, Tuple
 from django.conf import settings
 from django.utils import timezone
@@ -260,9 +259,9 @@ def run_olt_setup(olt_id: int) -> None:
 
 
 def start_olt_setup_async(olt_id: int) -> None:
-    """Start OLT setup in a background thread."""
-    thread = threading.Thread(target=run_olt_setup, args=(olt_id,), daemon=True)
-    thread.start()
+    """Enqueue OLT setup as a Celery task."""
+    from tasks import run_olt_setup_task
+    run_olt_setup_task.delay(olt_id)
 
 
 def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
@@ -614,8 +613,8 @@ def sync_vlans_from_olt(olt_id: int) -> Dict[str, Any]:
 
 
 def sync_vlans_from_olt_async(olt_id: int) -> None:
-    thread = threading.Thread(target=sync_vlans_from_olt, args=(olt_id,), daemon=True)
-    thread.start()
+    from tasks import sync_vlans_from_olt_task
+    sync_vlans_from_olt_task.delay(olt_id)
 
 
 def sync_profiles_from_olt(olt_id: int) -> Dict[str, Any]:
@@ -759,8 +758,8 @@ def reboot_onu(onu_id: int) -> Dict[str, Any]:
 
 
 def push_vlan_to_olt_async(vlan_db_id: int) -> None:
-    thread = threading.Thread(target=push_vlan_to_olt, args=(vlan_db_id,), daemon=True)
-    thread.start()
+    from tasks import push_vlan_to_olt_task
+    push_vlan_to_olt_task.delay(vlan_db_id)
 
 
 def provision_onu(onu_id: int, vlan_id: Optional[int] = None,

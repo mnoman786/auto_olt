@@ -1,4 +1,3 @@
-import threading
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -93,16 +92,13 @@ def register_onu(request, olt_pk, pk):
         onu.service_profile = service_profile
     onu.save()
 
-    def _provision():
-        provisioning_service.provision_onu(
-            onu.id,
-            vlan_id=vlan_id_param,
-            line_profile_id=line_profile_id,
-            srv_profile_id=srv_profile_id,
-        )
-
-    thread = threading.Thread(target=_provision, daemon=True)
-    thread.start()
+    from tasks import provision_onu_task
+    provision_onu_task.delay(
+        onu.id,
+        vlan_id=vlan_id_param,
+        line_profile_id=line_profile_id,
+        srv_profile_id=srv_profile_id,
+    )
 
     return Response({'detail': 'ONU provisioning started.', 'onu_id': onu.id})
 
@@ -172,13 +168,13 @@ def bulk_register_onus(request, olt_pk):
 
         line_pid, srv_pid = provisioning_service.pick_default_profile_ids(olt)
 
-        def _provision(oid=onu.id, lpid=line_pid, spid=srv_pid):
-            provisioning_service.provision_onu(
-                oid, vlan_id=vlan_id_param,
-                line_profile_id=lpid, srv_profile_id=spid,
-            )
-
-        threading.Thread(target=_provision, daemon=True).start()
+        from tasks import provision_onu_task
+        provision_onu_task.delay(
+            onu.id,
+            vlan_id=vlan_id_param,
+            line_profile_id=line_pid,
+            srv_profile_id=srv_pid,
+        )
         started.append({'onu_id': onu_id, 'serial': onu.serial_number})
 
     return Response({

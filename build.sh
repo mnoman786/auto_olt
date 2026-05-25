@@ -6,7 +6,7 @@
 #  What it does:
 #    1. Backend deps + migrations
 #    2. Frontend deps + production build
-#    3. Restart auto-olt-backend + auto-olt-frontend systemd services
+#    3. Restart auto-olt-backend + auto-olt-celery + auto-olt-frontend systemd services
 # =============================================================================
 set -e
 
@@ -65,7 +65,7 @@ fi
 # ── Restart services ──────────────────────────────────────────────────────────
 section "3 — Restart systemd services"
 systemctl daemon-reload
-systemctl restart auto-olt-backend.service auto-olt-frontend.service
+systemctl restart auto-olt-backend.service auto-olt-celery.service auto-olt-frontend.service
 info "Services restarted"
 
 # Brief status report so you can spot a startup failure immediately
@@ -73,9 +73,12 @@ sleep 1
 echo
 systemctl --no-pager --lines=0 status auto-olt-backend.service  || true
 echo
+systemctl --no-pager --lines=0 status auto-olt-celery.service   || true
+echo
 systemctl --no-pager --lines=0 status auto-olt-frontend.service || true
 
 section "Done"
 info "Deploy complete. Tail logs with:"
 echo "    journalctl -u auto-olt-backend.service  -f"
+echo "    journalctl -u auto-olt-celery.service   -f"
 echo "    journalctl -u auto-olt-frontend.service -f"

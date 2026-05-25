@@ -1,6 +1,5 @@
 import ipaddress
 import socket
-import threading
 from django.db.models import Count, Q
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
@@ -272,13 +271,9 @@ def setup_logs(request, pk):
 @throttle_classes([OLTPollThrottle])
 def poll_olt(request, pk):
     """Trigger SNMP poll for ONU discovery."""
+    from tasks import poll_olt_onus_task
     olt = get_olt_for_user(pk, request.user)
-
-    def _poll():
-        provisioning_service.poll_olt_onus(olt.id)
-
-    thread = threading.Thread(target=_poll, daemon=True)
-    thread.start()
+    poll_olt_onus_task.delay(olt.id)
     return Response({'detail': 'Poll started.'})
 
 
