@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy, UserCircle, ShieldCheck,
+  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect } from 'react';
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/olts', label: 'OLT Devices', icon: Server },
   { href: '/tickets', label: 'Support', icon: LifeBuoy },
   { href: '/docs', label: 'Documentation', icon: BookOpen },
+  { href: '/plans', label: 'Plans & Pricing', icon: Gift, highlight: true },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -78,6 +79,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
+            const isHighlight = (item as any).highlight;
             return (
               <Link
                 key={item.href}
@@ -87,11 +89,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
                   active
                     ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/30'
-                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                    : isHighlight
+                      ? 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-emerald-500/20'
+                      : 'text-gray-300 hover:bg-white/5 hover:text-white'
                 )}
               >
                 <Icon className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
                 {item.label}
+                {isHighlight && !active && (
+                  <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500/20 text-emerald-400 rounded uppercase tracking-wide">Free</span>
+                )}
                 {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
               </Link>
             );

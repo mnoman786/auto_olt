@@ -133,7 +133,16 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <p className="text-center text-xs text-gray-500 mt-6">
+        <div className="text-center mt-4">
+          <Link
+            href="/plans"
+            className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
+          >
+            🎁 100% free — see everything that&apos;s included →
+          </Link>
+        </div>
+
+        <p className="text-center text-xs text-gray-500 mt-4">
           &copy; {new Date().getFullYear()} Auto OLT &middot; Built for Pakistan local ISPs
         </p>
       </div>
