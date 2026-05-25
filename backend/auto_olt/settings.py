@@ -4,12 +4,13 @@ Django settings for auto_olt project.
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY')  # No fallback — app will not start without this set in .env
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,198.105.112.56').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -110,6 +111,8 @@ REST_FRAMEWORK = {
         'forgot_password': '3/minute',
         'otp_verify': '10/hour',
         'resend_otp': '3/hour',
+        'olt_setup': '10/hour',
+        'olt_poll': '30/hour',
     },
 }
 
@@ -125,7 +128,7 @@ SIMPLE_JWT = {
 CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:3000,http://localhost:6000,http://127.0.0.1:3000,http://198.105.112.56:6000'
+    default='http://localhost:3000,http://localhost:6000,http://127.0.0.1:3000'
 ).split(',')
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [
@@ -164,22 +167,44 @@ WG_ENDPOINT = config('WG_ENDPOINT', default='')
 WG_SERVER_PUBLIC_KEY = config('WG_SERVER_PUBLIC_KEY', default='')
 
 # ONU provisioning (Telnet-only — SNMP/hybrid path was removed)
-DEFAULT_TELNET_USERNAME = config('DEFAULT_TELNET_USERNAME', default='admin')
-DEFAULT_TELNET_PASSWORD = config('DEFAULT_TELNET_PASSWORD', default='admin')
+DEFAULT_TELNET_USERNAME = config('DEFAULT_TELNET_USERNAME', default='')
+DEFAULT_TELNET_PASSWORD = config('DEFAULT_TELNET_PASSWORD', default='')
 DEFAULT_TELNET_PORT = config('DEFAULT_TELNET_PORT', default=23, cast=int)
-OLT_MGMT_USER = config('OLT_MGMT_USER', default='autoolt')
-OLT_MGMT_PASSWORD = config('OLT_MGMT_PASSWORD', default='autoolt123')
+OLT_MGMT_USER = config('OLT_MGMT_USER', default='')
+OLT_MGMT_PASSWORD = config('OLT_MGMT_PASSWORD', default='')
 OLT_MGMT_PRIVILEGE = config('OLT_MGMT_PRIVILEGE', default=15, cast=int)
+
+# Enforce that production credentials are explicitly set in .env
+if not DEBUG:
+    _required_credentials = {
+        'DEFAULT_TELNET_USERNAME': DEFAULT_TELNET_USERNAME,
+        'DEFAULT_TELNET_PASSWORD': DEFAULT_TELNET_PASSWORD,
+        'OLT_MGMT_USER': OLT_MGMT_USER,
+        'OLT_MGMT_PASSWORD': OLT_MGMT_PASSWORD,
+    }
+    _missing = [k for k, v in _required_credentials.items() if not v]
+    if _missing:
+        raise ImproperlyConfigured(
+            f"The following credentials must be set in .env for production: {', '.join(_missing)}"
+        )
 
 # Registration — set to True in .env only when you want to allow new sign-ups
 REGISTRATION_OPEN = config('REGISTRATION_OPEN', default=False, cast=bool)
 HMAC_SECRET = config('HMAC_SECRET', default='')
 ADMIN_URL = config('ADMIN_URL', default='admin/')
 
-# HTTPS security — set all to True in production behind SSL
+# HTTPS security — must be True in production behind SSL
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
+
+import warnings as _warnings
+if not DEBUG and not SECURE_SSL_REDIRECT:
+    _warnings.warn(
+        'SECURE_SSL_REDIRECT is False in a non-DEBUG environment. '
+        'Set SECURE_SSL_REDIRECT=True, SESSION_COOKIE_SECURE=True, and CSRF_COOKIE_SECURE=True in .env.',
+        stacklevel=2,
+    )
 
 # Logging level
 LOG_LEVEL = config('LOG_LEVEL', default='INFO')

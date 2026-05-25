@@ -5,13 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { auth } from '@/lib/api';
 import { Network, KeyRound, ArrowLeft, Loader2, Eye, EyeOff } from 'lucide-react';
 
+const OTP_LENGTH = 8;
+
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email') || '';
 
   const [email, setEmail] = useState(emailParam);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -21,15 +23,14 @@ function ResetPasswordForm() {
 
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Auto-focus first OTP box
   useEffect(() => { otpRefs.current[0]?.focus(); }, []);
 
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
+    const cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(-1);
     const next = [...otp];
-    next[index] = value.slice(-1);
+    next[index] = cleaned;
     setOtp(next);
-    if (value && index < 5) otpRefs.current[index + 1]?.focus();
+    if (cleaned && index < OTP_LENGTH - 1) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -40,12 +41,12 @@ function ResetPasswordForm() {
 
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const pasted = e.clipboardData.getData('text').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, OTP_LENGTH);
     if (!pasted) return;
     const next = [...otp];
-    pasted.split('').forEach((ch, i) => { if (i < 6) next[i] = ch; });
+    pasted.split('').forEach((ch, i) => { if (i < OTP_LENGTH) next[i] = ch; });
     setOtp(next);
-    otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+    otpRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,7 +55,7 @@ function ResetPasswordForm() {
     const otpValue = otp.join('');
     const errs: Record<string, string> = {};
     if (!email.trim()) errs.email = 'Email is required.';
-    if (otpValue.length !== 6) errs.otp = 'Enter the complete 6-digit OTP.';
+    if (otpValue.length !== OTP_LENGTH) errs.otp = `Enter the complete ${OTP_LENGTH}-character OTP.`;
     if (newPassword.length < 6) errs.new_password = 'Password must be at least 6 characters.';
     if (newPassword !== confirmPassword) errs.confirm_password = 'Passwords do not match.';
     if (Object.keys(errs).length) { setErrors(errs); return; }
@@ -106,7 +107,7 @@ function ResetPasswordForm() {
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900">Reset password</h1>
                   <p className="text-gray-500 text-sm mt-1.5">
-                    Enter the 6-digit code from your email and choose a new password.
+                    Enter the 8-character code from your email and choose a new password.
                   </p>
                 </div>
 
@@ -129,21 +130,21 @@ function ResetPasswordForm() {
                   {/* OTP boxes */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      6-Digit OTP
+                      OTP Code
                     </label>
-                    <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
-                      {otp.map((digit, i) => (
+                    <div className="flex gap-1.5 justify-between" onPaste={handleOtpPaste}>
+                      {otp.map((char, i) => (
                         <input
                           key={i}
                           ref={el => { otpRefs.current[i] = el; }}
                           type="text"
-                          inputMode="numeric"
+                          inputMode="text"
                           maxLength={1}
-                          value={digit}
+                          value={char}
                           onChange={e => handleOtpChange(i, e.target.value)}
                           onKeyDown={e => handleOtpKeyDown(i, e)}
-                          className="w-12 h-14 text-center text-xl font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-gray-50 text-gray-900"
-                          style={{ borderColor: digit ? '#6366f1' : undefined }}
+                          className="w-10 h-12 text-center text-lg font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-gray-50 text-gray-900 uppercase"
+                          style={{ borderColor: char ? '#6366f1' : undefined }}
                         />
                       ))}
                     </div>

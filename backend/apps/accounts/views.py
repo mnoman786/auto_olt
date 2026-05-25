@@ -1,4 +1,5 @@
-import random
+import hmac
+import secrets
 import string
 from django.conf import settings
 from django.core.mail import send_mail
@@ -12,6 +13,18 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import PasswordResetOTP, EmailVerificationOTP
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, validate_password_strength
+
+
+_OTP_ALPHABET = string.ascii_uppercase + string.digits
+_OTP_LENGTH = 8
+
+
+def _generate_otp() -> str:
+    return ''.join(secrets.choice(_OTP_ALPHABET) for _ in range(_OTP_LENGTH))
+
+
+def _otp_matches(record_otp: str, submitted_otp: str) -> bool:
+    return hmac.compare_digest(record_otp.upper(), submitted_otp.upper())
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -64,17 +77,21 @@ def register_view(request):
         )
     from .models import User as UserModel
 
-    # Remove any unverified accounts with the same username or email so the
-    # user can retry registration without hitting duplicate-key errors.
+    # Remove stale unverified accounts (older than 24 h) to allow re-registration.
+    # Require a minimum age so an attacker cannot block someone's email by
+    # continuously re-registering and deleting the pending account.
+    stale_cutoff = timezone.now() - timezone.timedelta(hours=24)
     incoming_username = request.data.get('username', '').strip()
     incoming_email = request.data.get('email', '').strip()
     UserModel.objects.filter(
         is_active=False,
         username=incoming_username,
+        date_joined__lt=stale_cutoff,
     ).delete()
     UserModel.objects.filter(
         is_active=False,
         email=incoming_email,
+        date_joined__lt=stale_cutoff,
     ).delete()
 
     is_first_user = not UserModel.objects.exists()
@@ -94,7 +111,7 @@ def register_view(request):
             'refresh': str(refresh),
         }, status=status.HTTP_201_CREATED)
 
-    otp = ''.join(random.choices(string.digits, k=6))
+    otp = _generate_otp()
     EmailVerificationOTP.objects.create(user=user, otp=otp)
 
     try:
@@ -140,7 +157,7 @@ def verify_email_view(request):
         record.is_used = True
         record.save(update_fields=['is_used'])
         return Response({'otp': 'This code has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
-    if record.otp != otp:
+    if not _otp_matches(record.otp, otp):
         record.attempts += 1
         record.save(update_fields=['attempts'])
         remaining = EmailVerificationOTP.MAX_ATTEMPTS - record.attempts
@@ -181,7 +198,7 @@ def resend_verification_view(request):
     # Invalidate old unused OTPs
     EmailVerificationOTP.objects.filter(user=user, is_used=False).update(is_used=True)
 
-    otp = ''.join(random.choices(string.digits, k=6))
+    otp = _generate_otp()
     EmailVerificationOTP.objects.create(user=user, otp=otp)
 
     try:
@@ -286,13 +303,13 @@ def forgot_password_view(request):
     try:
         user = UserModel.objects.get(email__iexact=email)
     except UserModel.DoesNotExist:
-        return Response({'email': 'No account found with this email address.'}, status=status.HTTP_404_NOT_FOUND)
+        # Generic response to prevent user enumeration
+        return Response({'detail': 'If an account with that email exists, a reset code has been sent.'})
 
     # Invalidate any existing unused OTPs for this user
     PasswordResetOTP.objects.filter(user=user, is_used=False).update(is_used=True)
 
-    # Generate 6-digit numeric OTP
-    otp = ''.join(random.choices(string.digits, k=6))
+    otp = _generate_otp()
     PasswordResetOTP.objects.create(user=user, otp=otp)
 
     expiry = getattr(settings, 'OTP_EXPIRY_MINUTES', 10)
@@ -318,7 +335,7 @@ def forgot_password_view(request):
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
-    return Response({'detail': 'OTP sent successfully.'})
+    return Response({'detail': 'If an account with that email exists, a reset code has been sent.'})
 
 
 @api_view(['POST'])
@@ -367,7 +384,7 @@ def reset_password_view(request):
         record.is_used = True
         record.save(update_fields=['is_used'])
         return Response({'otp': 'This code has expired. Please request a new one.'}, status=status.HTTP_400_BAD_REQUEST)
-    if record.otp != otp:
+    if not _otp_matches(record.otp, otp):
         record.attempts += 1
         record.save(update_fields=['attempts'])
         remaining = PasswordResetOTP.MAX_ATTEMPTS - record.attempts

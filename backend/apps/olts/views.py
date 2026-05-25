@@ -3,13 +3,22 @@ import socket
 import threading
 from django.db.models import Count, Q
 from rest_framework import status, generics
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from django.shortcuts import get_object_or_404
 from .models import OLT, SetupLog, OLTPort
 from .serializers import OLTSerializer, OLTCreateSerializer, SetupLogSerializer, OLTPortSerializer
 from services import provisioning_service
+
+
+class OLTSetupThrottle(UserRateThrottle):
+    scope = 'olt_setup'
+
+
+class OLTPollThrottle(UserRateThrottle):
+    scope = 'olt_poll'
 
 
 def get_olt_for_user(pk, user):
@@ -125,6 +134,7 @@ class OLTDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([OLTSetupThrottle])
 def trigger_setup(request, pk):
     """Trigger OLT setup workflow (async)."""
     olt = get_olt_for_user(pk, request.user)
@@ -259,6 +269,7 @@ def setup_logs(request, pk):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([OLTPollThrottle])
 def poll_olt(request, pk):
     """Trigger SNMP poll for ONU discovery."""
     olt = get_olt_for_user(pk, request.user)

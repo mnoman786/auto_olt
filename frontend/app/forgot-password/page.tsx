@@ -64,7 +64,7 @@ export default function ForgotPasswordPage() {
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900">Forgot password?</h1>
                   <p className="text-gray-500 text-sm mt-1.5">
-                    Enter your account email and we'll send you a 6-digit OTP to reset your password.
+                    Enter your account email and we'll send you an 8-character OTP to reset your password.
                   </p>
                 </div>
 
@@ -108,7 +108,7 @@ export default function ForgotPasswordPage() {
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 mb-2">Check your inbox</h2>
                 <p className="text-gray-500 text-sm mb-6">
-                  We sent a 6-digit OTP to <strong className="text-gray-700">{email}</strong>.
+                  We sent an 8-character OTP to <strong className="text-gray-700">{email}</strong>.
                   It expires in <strong>10 minutes</strong>.
                 </p>
                 <button

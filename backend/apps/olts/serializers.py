@@ -134,6 +134,36 @@ class OLTCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('WireGuard public key is not valid base64.')
         return value
 
+    def validate_wg_client_subnet(self, value):
+        if not value:
+            return value
+        try:
+            ipaddress.IPv4Network(value, strict=False)
+        except ValueError:
+            raise serializers.ValidationError(
+                'Invalid CIDR notation. Expected format: e.g. 10.0.0.0/24'
+            )
+        return value
+
+    def _validate_snmp_community(self, value, field_name):
+        if not value:
+            return value
+        # Reject characters that could break OLT CLI commands
+        if re.search(r'[\r\n\t"\'`;|&$<>\\]', value):
+            raise serializers.ValidationError(
+                f'{field_name} must not contain shell or CLI metacharacters '
+                r'(newlines, quotes, semicolons, pipes, etc.).'
+            )
+        if len(value) > 64:
+            raise serializers.ValidationError(f'{field_name} must not exceed 64 characters.')
+        return value
+
+    def validate_snmp_read_community(self, value):
+        return self._validate_snmp_community(value, 'SNMP read community')
+
+    def validate_snmp_write_community(self, value):
+        return self._validate_snmp_community(value, 'SNMP write community')
+
     def validate(self, attrs):
         user = self.context['request'].user
         olt_id = self.instance.id if self.instance else None

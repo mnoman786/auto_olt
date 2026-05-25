@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth';
 import { Network, ShieldCheck, ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
 import type { AuthResponse } from '@/lib/types';
 
+const OTP_LENGTH = 8;
+
 function VerifyEmailForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -14,7 +16,7 @@ function VerifyEmailForm() {
   const { setUser } = useAuth();
 
   const [email] = useState(emailParam);
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +27,6 @@ function VerifyEmailForm() {
 
   useEffect(() => { otpRefs.current[0]?.focus(); }, []);
 
-  // Countdown for resend cooldown
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setInterval(() => {
@@ -38,11 +39,11 @@ function VerifyEmailForm() {
   }, [resendCooldown]);
 
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
+    const cleaned = value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(-1);
     const next = [...otp];
-    next[index] = value.slice(-1);
+    next[index] = cleaned;
     setOtp(next);
-    if (value && index < 5) otpRefs.current[index + 1]?.focus();
+    if (cleaned && index < OTP_LENGTH - 1) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
@@ -53,20 +54,20 @@ function VerifyEmailForm() {
 
   const handleOtpPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const pasted = e.clipboardData.getData('text').replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, OTP_LENGTH);
     if (!pasted) return;
     const next = [...otp];
-    pasted.split('').forEach((ch, i) => { if (i < 6) next[i] = ch; });
+    pasted.split('').forEach((ch, i) => { if (i < OTP_LENGTH) next[i] = ch; });
     setOtp(next);
-    otpRefs.current[Math.min(pasted.length, 5)]?.focus();
+    otpRefs.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     const otpValue = otp.join('');
-    if (otpValue.length !== 6) {
-      setError('Please enter the complete 6-digit code.');
+    if (otpValue.length !== OTP_LENGTH) {
+      setError(`Please enter the complete ${OTP_LENGTH}-character code.`);
       return;
     }
     if (!email) {
@@ -97,7 +98,7 @@ function VerifyEmailForm() {
     try {
       await auth.resendVerification(email);
       setResendCooldown(60);
-      setOtp(['', '', '', '', '', '']);
+      setOtp(Array(OTP_LENGTH).fill(''));
       otpRefs.current[0]?.focus();
     } catch (err: any) {
       const status = err?.response?.status;
@@ -140,7 +141,7 @@ function VerifyEmailForm() {
                   </div>
                   <h1 className="text-2xl font-bold text-gray-900">Verify your email</h1>
                   <p className="text-gray-500 text-sm mt-1.5">
-                    We sent a 6-digit code to{' '}
+                    We sent an 8-character code to{' '}
                     {email ? (
                       <strong className="text-gray-700">{email}</strong>
                     ) : (
@@ -154,22 +155,22 @@ function VerifyEmailForm() {
                   {/* OTP boxes */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
-                      6-Digit Verification Code
+                      Verification Code
                     </label>
-                    <div className="flex gap-2 justify-between" onPaste={handleOtpPaste}>
-                      {otp.map((digit, i) => (
+                    <div className="flex gap-1.5 justify-between" onPaste={handleOtpPaste}>
+                      {otp.map((char, i) => (
                         <input
                           key={i}
                           ref={el => { otpRefs.current[i] = el; }}
                           type="text"
-                          inputMode="numeric"
+                          inputMode="text"
                           maxLength={1}
-                          value={digit}
+                          value={char}
                           onChange={e => handleOtpChange(i, e.target.value)}
                           onKeyDown={e => handleOtpKeyDown(i, e)}
                           disabled={loading}
-                          className="w-12 h-14 text-center text-xl font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-gray-50 text-gray-900 disabled:opacity-50"
-                          style={{ borderColor: digit ? '#6366f1' : undefined }}
+                          className="w-10 h-12 text-center text-lg font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-gray-50 text-gray-900 disabled:opacity-50 uppercase"
+                          style={{ borderColor: char ? '#6366f1' : undefined }}
                         />
                       ))}
                     </div>

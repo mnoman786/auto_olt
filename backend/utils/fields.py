@@ -12,6 +12,7 @@ Then set FIELD_ENCRYPTION_KEY=<output> in backend/.env
 """
 import base64
 import hashlib
+import warnings
 
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
@@ -25,7 +26,15 @@ def _get_fernet() -> Fernet:
     if raw_key:
         key = raw_key.encode()
     else:
-        # Derive a 32-byte key from SECRET_KEY so no extra config is needed
+        # Deriving from SECRET_KEY means a leaked SECRET_KEY also exposes all
+        # encrypted OLT credentials. Set FIELD_ENCRYPTION_KEY in .env for production.
+        if not getattr(settings, 'DEBUG', True):
+            warnings.warn(
+                'FIELD_ENCRYPTION_KEY is not set. Encrypted fields are using a key '
+                'derived from SECRET_KEY. Generate a dedicated key: '
+                'python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"',
+                stacklevel=2,
+            )
         key = base64.urlsafe_b64encode(
             hashlib.sha256(settings.SECRET_KEY.encode()).digest()
         )

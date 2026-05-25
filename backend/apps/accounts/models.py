@@ -21,7 +21,7 @@ class PasswordResetOTP(models.Model):
     MAX_ATTEMPTS = 5
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reset_otps')
-    otp = models.CharField(max_length=6, db_index=True)
+    otp = models.CharField(max_length=8, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_used = models.BooleanField(default=False)
     attempts = models.SmallIntegerField(default=0)
@@ -43,7 +43,7 @@ class EmailVerificationOTP(models.Model):
     MAX_ATTEMPTS = 5
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verification_otps')
-    otp = models.CharField(max_length=6, db_index=True)
+    otp = models.CharField(max_length=8, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     is_used = models.BooleanField(default=False)
     attempts = models.SmallIntegerField(default=0)
