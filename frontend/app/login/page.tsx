@@ -140,7 +140,7 @@ export default function LoginPage() {
             href="/plans"
             className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
           >
-            🎁 100% free — see everything that&apos;s included →
+            🎁 Free during beta — see what&apos;s included →
           </Link>
         </div>
 

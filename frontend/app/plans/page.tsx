@@ -97,11 +97,11 @@ const vendors = ['Huawei', 'ZTE', 'C-Data', 'V-SOL'];
 
 const included = [
   'All current features',
-  'All future features',
   'No usage limits',
   'No credit card required',
   'No hidden charges',
   'No feature paywalls',
+  'Free during beta',
 ];
 
 export default function PlansPage() {
@@ -120,7 +120,7 @@ export default function PlansPage() {
           <div className="relative max-w-4xl mx-auto px-6 pt-16 pb-20 text-center">
             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 mb-6">
               <Gift className="h-3.5 w-3.5 text-emerald-400" />
-              <span className="text-xs font-semibold text-white/90 tracking-wide uppercase">Forever Free — No Catch</span>
+              <span className="text-xs font-semibold text-white/90 tracking-wide uppercase">Free During Beta — No Credit Card</span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight mb-5 leading-tight">
@@ -133,7 +133,7 @@ export default function PlansPage() {
 
             <p className="text-lg text-white/70 max-w-2xl mx-auto mb-10">
               Auto OLT is a complete ISP management platform — OLT provisioning, ONU management,
-              VLAN control, VPN, monitoring and more. All of it, at zero cost, forever.
+              VLAN control, VPN, monitoring and more. All of it, completely free right now.
             </p>
 
             {/* Price callout */}
@@ -142,7 +142,7 @@ export default function PlansPage() {
                 <span className="text-7xl font-black text-white">$0</span>
                 <span className="text-xl text-white/50 mb-2.5">/month</span>
               </div>
-              <span className="text-sm text-emerald-400 font-semibold">Free forever · No credit card · No limits</span>
+              <span className="text-sm text-emerald-400 font-semibold">Free now · No credit card · No limits</span>
             </div>
           </div>
         </section>
@@ -223,7 +223,7 @@ export default function PlansPage() {
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-3 gap-6 text-center text-white">
               {[
-                { value: '100%', label: 'Free forever' },
+                { value: '100%', label: 'Free right now' },
                 { value: '$0', label: 'Hidden fees' },
                 { value: '∞', label: 'No limits' },
               ].map(s => (
