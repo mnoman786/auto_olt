@@ -30,16 +30,16 @@ function OltRowSkeleton() {
     <div className="px-6 py-4 animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gray-100" />
+          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700" />
           <div className="space-y-2">
-            <div className="h-3.5 w-32 bg-gray-100 rounded" />
-            <div className="h-3 w-24 bg-gray-100 rounded" />
+            <div className="h-3.5 w-32 bg-gray-100 dark:bg-gray-700 rounded" />
+            <div className="h-3 w-24 bg-gray-100 dark:bg-gray-700 rounded" />
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="h-3 w-24 bg-gray-100 rounded hidden md:block" />
-          <div className="h-6 w-16 bg-gray-100 rounded-full" />
-          <div className="h-8 w-20 bg-gray-100 rounded-md" />
+          <div className="h-3 w-24 bg-gray-100 dark:bg-gray-700 rounded hidden md:block" />
+          <div className="h-6 w-16 bg-gray-100 dark:bg-gray-700 rounded-full" />
+          <div className="h-8 w-20 bg-gray-100 dark:bg-gray-700 rounded-md" />
         </div>
       </div>
     </div>
@@ -95,20 +95,20 @@ export default function DashboardPage() {
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
 
         <div className="relative p-6 max-w-7xl mx-auto">
           {/* Header */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">
                 Dashboard
               </p>
-              <h1 className="text-3xl font-bold text-gray-900 mt-1">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
                 {greeting}{displayName ? `, ${displayName}` : ''}
               </h1>
-              <p className="text-gray-500 text-sm mt-1.5">
+              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
                 Here's a snapshot of your OLT network today.
               </p>
             </div>
@@ -161,12 +161,12 @@ export default function DashboardPage() {
 
           {/* OLT List */}
           <Card padding="none" className="overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-linear-to-r from-gray-50/60 to-transparent">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-linear-to-r from-gray-50/60 dark:from-gray-800/60 to-transparent">
               <div className="flex items-center gap-2">
                 <Network className="h-4 w-4 text-gray-400" />
-                <h2 className="font-semibold text-gray-900">{isStaff ? 'All OLT Devices' : 'Your OLT Devices'}</h2>
+                <h2 className="font-semibold text-gray-900 dark:text-white">{isStaff ? 'All OLT Devices' : 'Your OLT Devices'}</h2>
               </div>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">
                 {olts.length} device{olts.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -179,11 +179,11 @@ export default function DashboardPage() {
               </div>
             ) : olts.length === 0 ? (
               <div className="text-center py-20 px-6">
-                <div className="w-16 h-16 mx-auto rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center mb-4">
-                  <Server className="h-7 w-7 text-blue-500" />
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mb-4">
+                  <Server className="h-7 w-7 text-blue-500 dark:text-blue-400" />
                 </div>
-                <p className="text-gray-900 font-semibold">No OLT devices yet</p>
-                <p className="text-gray-500 text-sm mt-1 mb-5 max-w-sm mx-auto">
+                <p className="text-gray-900 dark:text-white font-semibold">No OLT devices yet</p>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 mb-5 max-w-sm mx-auto">
                   Add your first OLT to start auto-provisioning and monitoring your PON network.
                 </p>
                 <Link href="/olts/add">
@@ -191,30 +191,30 @@ export default function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
                 {olts.map(olt => {
                   const dot = statusDot[olt.status as keyof typeof statusDot] ?? statusDot.pending;
                   return (
                     <Link
                       key={olt.id}
                       href={`/olts/${olt.id}`}
-                      className="group block px-6 py-4 hover:bg-gray-50/70 transition-colors"
+                      className="group block px-6 py-4 hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="relative">
-                            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600">
+                            <div className="w-10 h-10 rounded-lg bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                               <Cpu className="h-5 w-5" />
                             </div>
                             <span
-                              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${dot}`}
+                              className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-gray-800 ${dot}`}
                             />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                            <p className="font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {olt.name}
                             </p>
-                            <p className="text-sm text-gray-500 truncate">
+                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                               {olt.ip_address}
                               {olt.system_name ? ` • ${olt.system_name}` : ''}
                             </p>
@@ -226,24 +226,24 @@ export default function DashboardPage() {
                             {isStaff && (
                               <span className="inline-flex items-center gap-1 text-gray-400">
                                 <User className="h-3 w-3" />
-                                <span className="font-medium text-gray-600">{olt.username}</span>
+                                <span className="font-medium text-gray-600 dark:text-gray-300">{olt.username}</span>
                               </span>
                             )}
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 border border-gray-100 font-medium">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 font-medium dark:text-gray-300">
                               {olt.snmp_version.toUpperCase()}
                             </span>
                             <span className="inline-flex items-center gap-1.5">
                               <Wifi className="h-3.5 w-3.5 text-gray-400" />
-                              <span className="text-gray-700 font-medium">{olt.onu_count}</span>
-                              <span className="text-gray-400">/ {olt.registered_onu_count} reg</span>
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">{olt.onu_count}</span>
+                              <span className="text-gray-400 dark:text-gray-500">/ {olt.registered_onu_count} reg</span>
                             </span>
                           </div>
                           <OLTStatusBadge status={olt.status} />
-                          <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all" />
+                          <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </div>
                       {olt.system_uptime && (
-                        <p className="text-xs text-gray-400 mt-2 ml-13 pl-1">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 ml-13 pl-1">
                           Uptime: {olt.system_uptime}
                         </p>
                       )}

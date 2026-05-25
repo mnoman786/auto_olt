@@ -12,7 +12,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, className, rightAdornment, ...props }, ref) => (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -22,11 +22,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           {...props}
           className={clsx(
-            'w-full px-3 py-2 text-sm border rounded-lg bg-white',
+            'w-full px-3 py-2 text-sm border rounded-lg',
+            'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-            'placeholder:text-gray-400 transition-colors',
-            error ? 'border-red-400' : 'border-gray-300',
-            props.disabled && 'bg-gray-50 cursor-not-allowed text-gray-500',
+            'placeholder:text-gray-400 dark:placeholder:text-gray-500 transition-colors',
+            error ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600',
+            props.disabled && 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed text-gray-500 dark:text-gray-500',
             rightAdornment && 'pr-10',
             className
           )}
@@ -38,7 +39,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
       </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
-      {hint && !error && <p className="text-xs text-gray-500">{hint}</p>}
+      {hint && !error && <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>}
     </div>
   )
 );
@@ -54,7 +55,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, className, ...props }, ref) => (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
           {label}
           {props.required && <span className="text-red-500 ml-1">*</span>}
         </label>
@@ -63,11 +64,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         ref={ref}
         {...props}
         className={clsx(
-          'w-full px-3 py-2 text-sm border rounded-lg bg-white',
+          'w-full px-3 py-2 text-sm border rounded-lg',
+          'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
           'transition-colors',
-          error ? 'border-red-400' : 'border-gray-300',
-          props.disabled && 'bg-gray-50 cursor-not-allowed',
+          error ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600',
+          props.disabled && 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed',
           className
         )}
       >
@@ -90,15 +92,16 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, className, ...props }, ref) => (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
       )}
       <textarea
         ref={ref}
         {...props}
         className={clsx(
-          'w-full px-3 py-2 text-sm border rounded-lg bg-white resize-y',
+          'w-full px-3 py-2 text-sm border rounded-lg resize-y',
+          'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100',
           'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-          error ? 'border-red-400' : 'border-gray-300',
+          error ? 'border-red-400 dark:border-red-500' : 'border-gray-300 dark:border-gray-600',
           className
         )}
       />

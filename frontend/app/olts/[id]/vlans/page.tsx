@@ -157,21 +157,21 @@ export default function VLANManagementPage() {
   return (
     <AppLayout>
       <div className="relative">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-emerald-50/70 via-green-50/40 to-transparent pointer-events-none" />
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-emerald-50/70 dark:from-emerald-950/20 via-green-50/40 dark:via-transparent to-transparent pointer-events-none" />
         <div className="relative p-6 max-w-5xl mx-auto">
-        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           Back to OLT
         </Link>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-emerald-50 to-green-100 flex items-center justify-center text-emerald-600 shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0">
               <Network className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80">Network Segmentation</p>
-              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">VLAN Management</h1>
-              <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600/80 dark:text-emerald-400/80">Network Segmentation</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">VLAN Management</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{olt?.name} — {olt?.ip_address}</p>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -198,10 +198,10 @@ export default function VLANManagementPage() {
         {showForm && (
           <Card className="mb-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900">
+              <h2 className="font-semibold text-gray-900 dark:text-white">
                 {editTarget ? `Edit VLAN ${editTarget.vlan_id}` : 'Add New VLAN'}
               </h2>
-              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -251,9 +251,9 @@ export default function VLANManagementPage() {
 
         {/* VLAN List */}
         <Card padding="none" className="overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-linear-to-r from-emerald-50/40 to-transparent flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">VLANs</h2>
-            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">{vlans.length} configured</span>
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-emerald-50/40 dark:from-emerald-900/10 to-transparent flex items-center justify-between">
+            <h2 className="font-semibold text-gray-900 dark:text-white">VLANs</h2>
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-full">{vlans.length} configured</span>
           </div>
 
           {fetching ? (
@@ -262,9 +262,9 @@ export default function VLANManagementPage() {
             </div>
           ) : vlans.length === 0 ? (
             <div className="text-center py-16">
-              <Network className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">No VLANs configured</p>
-              <p className="text-gray-400 text-sm mb-4">Sync existing VLANs from the OLT, or add a new one manually</p>
+              <Network className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium">No VLANs configured</p>
+              <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">Sync existing VLANs from the OLT, or add a new one manually</p>
               <div className="flex justify-center gap-2">
                 <Button
                   variant="outline"
@@ -281,7 +281,7 @@ export default function VLANManagementPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <tr className="bg-gray-50 dark:bg-gray-800/80 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide border-b border-gray-100 dark:border-gray-700">
                     <th className="px-6 py-3">VLAN ID</th>
                     <th className="px-6 py-3">Name</th>
                     <th className="px-6 py-3">Source</th>
@@ -292,47 +292,47 @@ export default function VLANManagementPage() {
                     <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {vlans.map(vlan => (
-                    <tr key={vlan.id} className="hover:bg-gray-50">
+                    <tr key={vlan.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                       <td className="px-6 py-3">
-                        <span className="font-mono font-bold text-gray-900">{vlan.vlan_id}</span>
+                        <span className="font-mono font-bold text-gray-900 dark:text-gray-100">{vlan.vlan_id}</span>
                       </td>
-                      <td className="px-6 py-3 font-medium text-gray-800">{vlan.name}</td>
+                      <td className="px-6 py-3 font-medium text-gray-800 dark:text-gray-200">{vlan.name}</td>
                       <td className="px-6 py-3">
                         {vlan.source === 'discovered' ? (
-                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 font-medium">
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 font-medium">
                             <Cloud className="h-3 w-3" /> Discovered
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium">
+                          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800 font-medium">
                             <Wrench className="h-3 w-3" /> Managed
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-3 text-gray-500">{vlan.description || '—'}</td>
+                      <td className="px-6 py-3 text-gray-500 dark:text-gray-400">{vlan.description || '—'}</td>
                       <td className="px-6 py-3">
-                        <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full">
+                        <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs px-2 py-0.5 rounded-full">
                           {vlan.onu_count} ONUs
                         </span>
                       </td>
                       <td className="px-6 py-3">
                         {vlan.pushed_to_olt ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-green-700">
+                          <span className="inline-flex items-center gap-1 text-xs text-green-700 dark:text-green-400">
                             <CheckCircle2 className="h-3.5 w-3.5" /> Pushed
                           </span>
                         ) : vlan.push_error ? (
-                          <span className="inline-flex items-center gap-1 text-xs text-red-600" title={vlan.push_error}>
+                          <span className="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400" title={vlan.push_error}>
                             <AlertCircle className="h-3.5 w-3.5" /> Failed
                           </span>
                         ) : (
-                          <span className="text-xs text-gray-400">Not pushed</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-500">Not pushed</span>
                         )}
                       </td>
-                      <td className="px-6 py-3 text-gray-500 text-xs">
+                      <td className="px-6 py-3 text-gray-500 dark:text-gray-400 text-xs">
                         {vlan.last_seen_on_olt
                           ? new Date(vlan.last_seen_on_olt).toLocaleString()
-                          : <span className="text-gray-400">Never</span>}
+                          : <span className="text-gray-400 dark:text-gray-500">Never</span>}
                       </td>
                       <td className="px-6 py-3 text-right">
                         <div className="flex items-center gap-2 justify-end">
@@ -361,7 +361,7 @@ export default function VLANManagementPage() {
                             variant="ghost"
                             icon={<Trash2 className="h-3.5 w-3.5 text-red-500" />}
                             onClick={() => handleDelete(vlan)}
-                            className="text-red-500 hover:bg-red-50"
+                            className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
                           >
                             Delete
                           </Button>

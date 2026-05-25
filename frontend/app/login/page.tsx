@@ -73,10 +73,10 @@ export default function LoginPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white/95 backdrop-blur rounded-2xl shadow-2xl ring-1 ring-white/10 p-8">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-2xl shadow-2xl ring-1 ring-white/10 dark:ring-white/5 p-8">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Welcome back</p>
-            <h2 className="text-xl font-semibold text-gray-900 mt-1">Sign in to your account</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mt-1">Sign in to your account</h2>
           </div>
 
           {throttledFor > 0 && (
@@ -90,7 +90,7 @@ export default function LoginPage() {
           )}
 
           {errors.general && !throttledFor && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
               {errors.general}
             </div>
           )}
@@ -127,9 +127,9 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-blue-600 hover:underline font-medium">
+            <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
               Create one
             </Link>
           </p>

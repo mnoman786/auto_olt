@@ -148,15 +148,15 @@ export default function PlansPage() {
         </section>
 
         {/* ── What's included strip ── */}
-        <section className="bg-white border-b border-gray-100">
+        <section className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
           <div className="max-w-5xl mx-auto px-6 py-7">
             <div className="flex flex-wrap justify-center gap-x-8 gap-y-3">
               {included.map(item => (
                 <div key={item} className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                    <Check className="h-3 w-3 text-emerald-600" />
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                    <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <span className="text-sm font-medium text-gray-700">{item}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{item}</span>
                 </div>
               ))}
             </div>
@@ -164,16 +164,16 @@ export default function PlansPage() {
         </section>
 
         {/* ── Vendor support ── */}
-        <section className="bg-white py-6 border-b border-gray-100">
+        <section className="bg-white dark:bg-gray-900 py-6 border-b border-gray-100 dark:border-gray-800">
           <div className="max-w-4xl mx-auto px-6 text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
               Supports all major Pakistan ISP vendors
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {vendors.map(v => (
                 <span
                   key={v}
-                  className="px-4 py-1.5 text-sm font-semibold text-gray-600 bg-gray-100 rounded-full border border-gray-200"
+                  className="px-4 py-1.5 text-sm font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700"
                 >
                   {v}
                 </span>
@@ -183,17 +183,17 @@ export default function PlansPage() {
         </section>
 
         {/* ── Features grid ── */}
-        <section className="py-16 px-6">
+        <section className="py-16 px-6 bg-gray-50 dark:bg-gray-950">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-4">
-                <Star className="h-3.5 w-3.5 text-blue-500" />
-                <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Everything included</span>
+              <div className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-full px-4 py-1.5 mb-4">
+                <Star className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Everything included</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-3">
                 A complete platform, for free
               </h2>
-              <p className="text-gray-500 max-w-xl mx-auto text-base">
+              <p className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto text-base">
                 Every feature below is available to every user, from day one, with no restrictions.
               </p>
             </div>
@@ -204,13 +204,13 @@ export default function PlansPage() {
                 return (
                   <div
                     key={f.title}
-                    className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all p-6"
+                    className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-gray-600 transition-all p-6"
                   >
                     <div className={`w-11 h-11 rounded-xl ${f.bg} flex items-center justify-center mb-4`}>
                       <Icon className={`h-5 w-5 ${f.color}`} />
                     </div>
-                    <h3 className="text-sm font-bold text-gray-900 mb-1.5">{f.title}</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">{f.description}</p>
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1.5">{f.title}</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{f.description}</p>
                   </div>
                 );
               })}

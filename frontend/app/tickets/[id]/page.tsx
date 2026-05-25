@@ -16,9 +16,9 @@ import { clsx } from 'clsx';
 import toast from 'react-hot-toast';
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
-  open: 'bg-blue-50 text-blue-700 border-blue-100',
-  answered: 'bg-green-50 text-green-700 border-green-100',
-  closed: 'bg-gray-100 text-gray-500 border-gray-200',
+  open: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800',
+  answered: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-100 dark:border-green-800',
+  closed: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600',
 };
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
@@ -123,10 +123,10 @@ export default function TicketDetailPage() {
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
         <div className="relative p-6 max-w-3xl mx-auto">
-          <Link href="/tickets" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <Link href="/tickets" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Support
           </Link>
@@ -134,12 +134,12 @@ export default function TicketDetailPage() {
           {/* Ticket header */}
           <Card className="mb-4">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
                 <LifeBuoy className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <span className="text-xs text-gray-400 font-mono">#{ticket.id}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">#{ticket.id}</span>
                   <span className={clsx(
                     'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border',
                     STATUS_STYLES[ticket.status]
@@ -147,8 +147,8 @@ export default function TicketDetailPage() {
                     {STATUS_LABELS[ticket.status]}
                   </span>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">{ticket.subject}</h1>
-                <div className="flex items-center gap-4 mt-1.5 text-xs text-gray-400 flex-wrap">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">{ticket.subject}</h1>
+                <div className="flex items-center gap-4 mt-1.5 text-xs text-gray-400 dark:text-gray-500 flex-wrap">
                   <span className="flex items-center gap-1">
                     <User className="h-3 w-3" />
                     {ticket.username}
@@ -165,14 +165,13 @@ export default function TicketDetailPage() {
                   </span>
                 </div>
               </div>
-              {/* Staff status controls */}
               {isStaff && (
                 <div className="flex items-center gap-2 shrink-0">
                   {canClose && (
                     <button
                       onClick={() => handleStatusChange('closed')}
                       disabled={statusLoading}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
                       <XCircle className="h-3.5 w-3.5" />
                       Close
@@ -182,7 +181,7 @@ export default function TicketDetailPage() {
                     <button
                       onClick={() => handleStatusChange('open')}
                       disabled={statusLoading}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                     >
                       <RefreshCw className="h-3.5 w-3.5" />
                       Reopen
@@ -196,15 +195,15 @@ export default function TicketDetailPage() {
           {/* Thread */}
           <div className="space-y-3 mb-4">
             {/* Original message */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
                   {ticket.username.slice(0, 2).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium text-gray-800">{ticket.username}</span>
-                <span className="text-xs text-gray-400">{fmt(ticket.created_at)}</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{ticket.username}</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(ticket.created_at)}</span>
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
             </div>
 
             {/* Replies */}
@@ -214,8 +213,8 @@ export default function TicketDetailPage() {
                 className={clsx(
                   'border rounded-xl p-4',
                   r.is_staff
-                    ? 'bg-indigo-50/60 border-indigo-100 ml-4'
-                    : 'bg-white border-gray-200'
+                    ? 'bg-indigo-50/60 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-800 ml-4'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 )}
               >
                 <div className="flex items-center gap-2 mb-3">
@@ -227,15 +226,15 @@ export default function TicketDetailPage() {
                   )}>
                     {r.is_staff ? <Shield className="h-3.5 w-3.5" /> : r.author_username.slice(0, 2).toUpperCase()}
                   </div>
-                  <span className="text-sm font-medium text-gray-800">{r.author_username}</span>
+                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{r.author_username}</span>
                   {r.is_staff && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded-full">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 px-1.5 py-0.5 rounded-full">
                       Staff
                     </span>
                   )}
-                  <span className="text-xs text-gray-400">{fmt(r.created_at)}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(r.created_at)}</span>
                 </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{r.message}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{r.message}</p>
               </div>
             ))}
             <div ref={bottomRef} />
@@ -244,12 +243,12 @@ export default function TicketDetailPage() {
           {/* Reply box */}
           {ticket.status !== 'closed' ? (
             <Card>
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
                 {isStaff ? 'Reply to ticket' : 'Add reply'}
               </h3>
               <form onSubmit={handleReply} className="space-y-3">
                 <textarea
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                   rows={4}
                   placeholder="Write your reply..."
                   value={reply}
@@ -269,7 +268,7 @@ export default function TicketDetailPage() {
               </form>
             </Card>
           ) : (
-            <div className="flex items-center gap-2.5 p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm text-gray-500">
+            <div className="flex items-center gap-2.5 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-gray-400" />
               This ticket is closed. {isStaff && 'You can reopen it using the button above.'}
             </div>

@@ -144,10 +144,10 @@ setForm({
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
         <div className="relative p-6 max-w-3xl mx-auto">
-        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           Back to OLT
         </Link>
@@ -157,8 +157,8 @@ setForm({
           </div>
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-orange-600/80">Edit Device</p>
-            <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Edit OLT Device</h1>
-            <p className="text-gray-500 text-sm">Update OLT credentials and connectivity settings</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">Edit OLT Device</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">Update OLT credentials and connectivity settings</p>
           </div>
         </div>
 
@@ -166,7 +166,7 @@ setForm({
           <Card>
             <div className="flex items-center gap-2 mb-4">
               <Server className="h-5 w-5 text-blue-600" />
-              <h2 className="font-semibold text-gray-900">Basic Information</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-white">Basic Information</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="OLT Name" value={form.name} onChange={e => set('name', e.target.value)} error={errors.name} required />

@@ -13,9 +13,9 @@ import { LifeBuoy, Plus, MessageSquare, Clock, ChevronRight } from 'lucide-react
 import { clsx } from 'clsx';
 
 const STATUS_STYLES: Record<TicketStatus, string> = {
-  open: 'bg-blue-50 text-blue-700 border-blue-100',
-  answered: 'bg-green-50 text-green-700 border-green-100',
-  closed: 'bg-gray-100 text-gray-500 border-gray-200',
+  open: 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800',
+  answered: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-100 dark:border-green-800',
+  closed: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600',
 };
 
 const STATUS_LABELS: Record<TicketStatus, string> = {
@@ -49,7 +49,6 @@ export default function TicketsPage() {
     if (!isLoading && !isAuthenticated) router.replace('/login');
   }, [isAuthenticated, isLoading, router]);
 
-  // Reset page when filter changes
   useEffect(() => { setPage(1); }, [filter]);
 
   const fetchTickets = useCallback(async () => {
@@ -73,21 +72,21 @@ export default function TicketsPage() {
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
         <div className="relative p-6 max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
                 <LifeBuoy className="h-6 w-6" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">
+                <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">
                   {isStaff ? 'All Users' : 'My'} Tickets
                 </p>
-                <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Support</h1>
-                <p className="text-gray-500 text-sm">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">Support</h1>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">
                   {isStaff ? 'View and reply to all support requests' : 'Submit and track your support requests'}
                 </p>
               </div>
@@ -98,7 +97,7 @@ export default function TicketsPage() {
           </div>
 
           {/* Filter tabs */}
-          <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+          <div className="flex items-center gap-1 mb-4 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 w-fit">
             {(['all', 'open', 'answered', 'closed'] as const).map(s => (
               <button
                 key={s}
@@ -106,13 +105,13 @@ export default function TicketsPage() {
                 className={clsx(
                   'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
                   filter === s
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 )}
               >
                 {s === 'all' ? 'All' : STATUS_LABELS[s]}
                 {filter === s && (
-                  <span className="ml-1.5 text-xs text-gray-400">{ticketCount}</span>
+                  <span className="ml-1.5 text-xs text-gray-400 dark:text-gray-500">{ticketCount}</span>
                 )}
               </button>
             ))}
@@ -122,15 +121,15 @@ export default function TicketsPage() {
           {fetching ? (
             <div className="space-y-3">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-20 bg-white rounded-xl border border-gray-200 animate-pulse" />
+                <div key={i} className="h-20 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 animate-pulse" />
               ))}
             </div>
           ) : tickets.length === 0 ? (
             <Card>
               <div className="py-12 flex flex-col items-center gap-3 text-center">
-                <LifeBuoy className="h-10 w-10 text-gray-300" />
-                <p className="text-gray-500 font-medium">No tickets found</p>
-                <p className="text-sm text-gray-400">
+                <LifeBuoy className="h-10 w-10 text-gray-300 dark:text-gray-600" />
+                <p className="text-gray-500 dark:text-gray-400 font-medium">No tickets found</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
                   {filter !== 'all' ? 'Try a different filter.' : 'Open a new ticket if you need help.'}
                 </p>
                 {filter === 'all' && (
@@ -145,7 +144,7 @@ export default function TicketsPage() {
               <div className="space-y-2">
                 {tickets.map(ticket => (
                   <Link key={ticket.id} href={`/tickets/${ticket.id}`}>
-                    <div className="bg-white border border-gray-200 rounded-xl px-4 py-3.5 flex items-center gap-4 hover:border-blue-200 hover:shadow-sm transition-all group">
+                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 flex items-center gap-4 hover:border-blue-200 dark:hover:border-blue-700 hover:shadow-sm transition-all group">
                       <div className="shrink-0">
                         <span className={clsx(
                           'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border',
@@ -155,12 +154,12 @@ export default function TicketsPage() {
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate group-hover:text-blue-700 transition-colors">
+                        <p className="font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                           #{ticket.id} — {ticket.subject}
                         </p>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400">
+                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                           {isStaff && (
-                            <span className="font-medium text-gray-500">{ticket.username}</span>
+                            <span className="font-medium text-gray-500 dark:text-gray-400">{ticket.username}</span>
                           )}
                           {ticket.olt_name && (
                             <span>OLT: {ticket.olt_name}</span>
@@ -177,7 +176,7 @@ export default function TicketsPage() {
                           )}
                         </div>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-blue-400 transition-colors shrink-0" />
+                      <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-400 transition-colors shrink-0" />
                     </div>
                   </Link>
                 ))}

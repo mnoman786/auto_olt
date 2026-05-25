@@ -52,15 +52,15 @@ const RegisterModal = memo(function RegisterModal({ onu, oltId, vlans, onClose, 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Register ONU</h3>
-        <p className="text-sm text-gray-500 mb-4">Serial: <code className="bg-gray-100 px-1 rounded">{onu.serial_number}</code></p>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Register ONU</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Serial: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded text-gray-800 dark:text-gray-200">{onu.serial_number}</code></p>
 
         <div className="space-y-3 mb-5">
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">VLAN (optional)</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">VLAN (optional)</label>
             <select
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               value={vlanId}
               onChange={e => setVlanId(e.target.value)}
             >
@@ -71,9 +71,9 @@ const RegisterModal = memo(function RegisterModal({ onu, oltId, vlans, onClose, 
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Description (optional)</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Description (optional)</label>
             <input
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="e.g., Customer A - Apartment 101"
@@ -81,7 +81,7 @@ const RegisterModal = memo(function RegisterModal({ onu, oltId, vlans, onClose, 
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-xs text-blue-700">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-4 text-xs text-blue-700 dark:text-blue-300">
           The system will automatically provision this ONU using the configured method
           (SNMP / Telnet / Hybrid) without any manual CLI interaction.
         </div>
@@ -131,23 +131,23 @@ const BulkRegisterModal = memo(function BulkRegisterModal({ selectedOnus, oltId,
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Bulk Register ONUs</h3>
-        <p className="text-sm text-gray-500 mb-4">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Bulk Register ONUs</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
           {selectedOnus.length} ONU(s) selected for provisioning
         </p>
 
-        <div className="bg-gray-50 rounded-lg p-3 mb-4 max-h-32 overflow-y-auto">
+        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4 max-h-32 overflow-y-auto">
           {selectedOnus.map(o => (
-            <div key={o.id} className="text-xs font-mono text-gray-700">{o.serial_number}</div>
+            <div key={o.id} className="text-xs font-mono text-gray-700 dark:text-gray-300">{o.serial_number}</div>
           ))}
         </div>
 
         <div className="space-y-3 mb-5">
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">VLAN (applied to all)</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">VLAN (applied to all)</label>
             <select
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               value={vlanId}
               onChange={e => setVlanId(e.target.value)}
             >
@@ -158,9 +158,9 @@ const BulkRegisterModal = memo(function BulkRegisterModal({ selectedOnus, oltId,
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Description (applied to all, optional)</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Description (applied to all, optional)</label>
             <input
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="e.g., Bulk provisioned"
@@ -168,7 +168,7 @@ const BulkRegisterModal = memo(function BulkRegisterModal({ selectedOnus, oltId,
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-xs text-blue-700">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-4 text-xs text-blue-700 dark:text-blue-300">
           Each ONU will be provisioned in parallel using the configured method (SNMP / Telnet / Hybrid).
         </div>
 
@@ -319,10 +319,10 @@ export default function ONUManagementPage() {
   return (
     <AppLayout>
       <div className="relative">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none" />
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none" />
         <div className="relative p-6 max-w-7xl mx-auto">
         {/* Back link */}
-        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           Back to OLT
         </Link>
@@ -330,13 +330,13 @@ export default function ONUManagementPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
               <Wifi className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Subscribers</p>
-              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">ONU Management</h1>
-              <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">Subscribers</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">ONU Management</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{olt?.name} — {olt?.ip_address}</p>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -365,37 +365,37 @@ export default function ONUManagementPage() {
 
         {/* Stat summary chips */}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="rounded-xl bg-white border border-gray-200 p-3 flex items-center gap-3 shadow-sm">
-            <div className="p-2 rounded-lg bg-linear-to-br from-blue-50 to-indigo-100 text-blue-600">
+          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 shadow-sm">
+            <div className="p-2 rounded-lg bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400">
               <Wifi className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs text-gray-500">Total</p>
-              <p className="text-lg font-bold text-gray-900 leading-none">{counts.all}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">{counts.all}</p>
             </div>
           </div>
-          <div className="rounded-xl bg-white border border-gray-200 p-3 flex items-center gap-3 shadow-sm">
-            <div className="p-2 rounded-lg bg-linear-to-br from-emerald-50 to-green-100 text-emerald-600">
+          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 shadow-sm">
+            <div className="p-2 rounded-lg bg-linear-to-br from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400">
               <CheckCircle className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs text-gray-500">Registered</p>
-              <p className="text-lg font-bold text-gray-900 leading-none">{counts.registered}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Registered</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">{counts.registered}</p>
             </div>
           </div>
-          <div className="rounded-xl bg-white border border-gray-200 p-3 flex items-center gap-3 shadow-sm">
-            <div className="p-2 rounded-lg bg-linear-to-br from-amber-50 to-orange-100 text-orange-600">
+          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 shadow-sm">
+            <div className="p-2 rounded-lg bg-linear-to-br from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-orange-600 dark:text-orange-400">
               <AlertCircle className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs text-gray-500">Unregistered</p>
-              <p className="text-lg font-bold text-gray-900 leading-none">{counts.unregistered}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Unregistered</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">{counts.unregistered}</p>
             </div>
           </div>
         </div>
 
         {/* Sub-nav */}
-        <div className="flex items-center gap-1 mb-4 border-b border-gray-200">
+        <div className="flex items-center gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
           {(['unregistered', 'registered', 'all'] as TabType[]).map(tab => (
             <button
               key={tab}
@@ -403,14 +403,14 @@ export default function ONUManagementPage() {
               className={clsx(
                 'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
                 activeTab === tab
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               )}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)} ONUs
               <span className={clsx(
                 'ml-2 px-1.5 py-0.5 text-xs rounded-full',
-                activeTab === tab ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
+                activeTab === tab ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               )}>
                 {counts[tab]}
               </span>
@@ -430,7 +430,7 @@ export default function ONUManagementPage() {
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <input
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Search by serial, description, or port..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -443,13 +443,13 @@ export default function ONUManagementPage() {
             <ONUTableSkeleton />
           ) : onus.length === 0 ? (
             <div className="text-center py-16">
-              <Wifi className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 font-medium">
+              <Wifi className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-500 dark:text-gray-400 font-medium">
                 {debouncedSearch ? 'No ONUs match your search' :
                  activeTab === 'unregistered' ? 'No unregistered ONUs' :
                  activeTab === 'registered' ? 'No registered ONUs' : 'No ONUs found'}
               </p>
-              <p className="text-gray-400 text-sm mt-1">
+              <p className="text-gray-400 dark:text-gray-500 text-sm mt-1">
                 {debouncedSearch ? 'Try a different serial number, description, or port' :
                  activeTab === 'unregistered'
                   ? 'All ONUs are registered, or click "Poll ONUs" to discover new ones'
@@ -460,11 +460,11 @@ export default function ONUManagementPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <tr className="bg-gray-50 dark:bg-gray-800/80 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide border-b border-gray-100 dark:border-gray-700">
                     {/* Checkbox header — only visible on unregistered tab */}
                     <th className="px-4 py-3 w-10">
                       {unregisteredInView.length > 0 && (
-                        <button onClick={toggleSelectAll} className="text-gray-400 hover:text-gray-700">
+                        <button onClick={toggleSelectAll} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                           {allUnregSelected
                             ? <CheckSquare className="h-4 w-4 text-blue-600" />
                             : <Square className="h-4 w-4" />}
@@ -480,18 +480,18 @@ export default function ONUManagementPage() {
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {onus.map(onu => (
                     <tr
                       key={onu.id}
                       className={clsx(
-                        'hover:bg-gray-50 transition-colors',
-                        selectedIds.has(onu.id) && 'bg-blue-50 hover:bg-blue-50'
+                        'hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors',
+                        selectedIds.has(onu.id) && 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/20'
                       )}
                     >
                       <td className="px-4 py-3">
                         {onu.status === 'unregistered' && (
-                          <button onClick={() => toggleSelect(onu.id)} className="text-gray-400 hover:text-gray-700">
+                          <button onClick={() => toggleSelect(onu.id)} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                             {selectedIds.has(onu.id)
                               ? <CheckSquare className="h-4 w-4 text-blue-600" />
                               : <Square className="h-4 w-4" />}
@@ -500,13 +500,13 @@ export default function ONUManagementPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <code className="font-mono text-sm text-gray-900">{onu.serial_number}</code>
+                          <code className="font-mono text-sm text-gray-900 dark:text-gray-100">{onu.serial_number}</code>
                           {onu.description && (
-                            <p className="text-xs text-gray-500 mt-0.5">{onu.description}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{onu.description}</p>
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">
                         {onu.pon_port || '—'}
                       </td>
                       <td className="px-4 py-3">
@@ -514,15 +514,15 @@ export default function ONUManagementPage() {
                       </td>
                       <td className="px-4 py-3">
                         {onu.vlan_id_num ? (
-                          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                          <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full">
                             VLAN {onu.vlan_id_num}
                           </span>
-                        ) : <span className="text-gray-400 text-xs">—</span>}
+                        ) : <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>}
                       </td>
                       <td className="px-4 py-3">
                         <ONUStatusBadge status={onu.status} />
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500">
+                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
                         {onu.last_seen
                           ? new Date(onu.last_seen).toLocaleString()
                           : '—'}

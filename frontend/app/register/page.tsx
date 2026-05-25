@@ -70,14 +70,14 @@ export default function RegisterPage() {
           <p className="text-gray-400 text-sm mt-1">ISP Management System</p>
         </div>
 
-        <div className="bg-white/95 backdrop-blur rounded-2xl shadow-2xl ring-1 ring-white/10 p-8">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur rounded-2xl shadow-2xl ring-1 ring-white/10 dark:ring-white/5 p-8">
           <div className="mb-6">
             <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Get started</p>
-            <h2 className="text-xl font-semibold text-gray-900 mt-1">Create your account</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mt-1">Create your account</h2>
           </div>
 
           {errors.general && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-600 dark:text-red-400">
               {errors.general}
             </div>
           )}
@@ -125,9 +125,9 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">
+            <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
               Sign in
             </Link>
           </p>

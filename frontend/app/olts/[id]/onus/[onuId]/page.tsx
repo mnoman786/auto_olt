@@ -24,9 +24,9 @@ function SignalStrength({ value }: { value: number | null }) {
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-      <span className="text-sm text-gray-500 w-40 shrink-0">{label}</span>
-      <span className="text-sm text-gray-900 font-medium break-all">{value ?? '—'}</span>
+    <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+      <span className="text-sm text-gray-500 dark:text-gray-400 w-40 shrink-0">{label}</span>
+      <span className="text-sm text-gray-900 dark:text-gray-100 font-medium break-all">{value ?? '—'}</span>
     </div>
   );
 }
@@ -57,16 +57,16 @@ function RegisterModal({ onu, oltId, vlans, onClose, onSuccess }: {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Register ONU</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Serial: <code className="bg-gray-100 px-1 rounded">{onu.serial_number}</code>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Register ONU</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Serial: <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1 rounded">{onu.serial_number}</code>
         </p>
         <div className="space-y-3 mb-5">
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">VLAN (optional)</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">VLAN (optional)</label>
             <select
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               value={vlanId}
               onChange={e => setVlanId(e.target.value)}
             >
@@ -77,16 +77,16 @@ function RegisterModal({ onu, oltId, vlans, onClose, onSuccess }: {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 block mb-1">Description (optional)</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Description (optional)</label>
             <input
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="e.g., Customer A - Apartment 101"
             />
           </div>
         </div>
-        <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-4 text-xs text-blue-700">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-4 text-xs text-blue-700 dark:text-blue-300">
           The system will automatically provision this ONU using the configured method (SNMP / Telnet / Hybrid).
         </div>
         <div className="flex gap-3">
@@ -178,9 +178,9 @@ export default function ONUDetailPage() {
   return (
     <AppLayout>
       <div className="relative">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none" />
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none" />
         <div className="relative p-6 max-w-5xl mx-auto">
-        <Link href={`/olts/${oltId}/onus`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+        <Link href={`/olts/${oltId}/onus`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           Back to ONUs
         </Link>
@@ -188,11 +188,11 @@ export default function ONUDetailPage() {
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-6">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
               <Wifi className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">ONU Device</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">ONU Device</p>
               <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                 <h1 className="text-2xl font-bold text-gray-900 font-mono truncate">
                   {onu?.serial_number}
@@ -261,19 +261,19 @@ export default function ONUDetailPage() {
           <Card>
             <div className="flex items-center gap-2 mb-4">
               <Info className="h-4 w-4 text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">ONU Information</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">ONU Information</h2>
             </div>
             <DetailRow label="Serial Number" value={
-              <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{onu?.serial_number}</code>
+              <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-xs">{onu?.serial_number}</code>
             } />
             <DetailRow label="MAC Address" value={
               onu?.mac_address
-                ? <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{onu.mac_address}</code>
+                ? <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-xs">{onu.mac_address}</code>
                 : null
             } />
             <DetailRow label="PON Port" value={
               onu?.pon_port
-                ? <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">{onu.pon_port}</code>
+                ? <code className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-1.5 py-0.5 rounded text-xs">{onu.pon_port}</code>
                 : null
             } />
             <DetailRow label="ONU Index" value={onu?.onu_index} />
@@ -282,7 +282,7 @@ export default function ONUDetailPage() {
             <DetailRow label="Description" value={onu?.description || null} />
             <DetailRow label="VLAN" value={
               onu?.vlan_id_num
-                ? <span className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-xs">
+                ? <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full text-xs">
                     {onu.vlan_name ? `${onu.vlan_name} (VLAN ${onu.vlan_id_num})` : `VLAN ${onu.vlan_id_num}`}
                   </span>
                 : null
@@ -293,7 +293,7 @@ export default function ONUDetailPage() {
           <Card>
             <div className="flex items-center gap-2 mb-4">
               <Clock className="h-4 w-4 text-gray-400" />
-              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Timestamps</h2>
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Timestamps</h2>
             </div>
             <DetailRow label="Last Seen" value={
               onu?.last_seen ? new Date(onu.last_seen).toLocaleString() : null
@@ -310,10 +310,10 @@ export default function ONUDetailPage() {
 
             {/* Signal visual */}
             {onu?.signal_strength !== null && onu?.signal_strength !== undefined && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-xs text-gray-500 mb-2">Signal Quality</p>
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Signal Quality</p>
                 <div className="flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
@@ -324,7 +324,7 @@ export default function ONUDetailPage() {
                   </div>
                   <SignalStrength value={onu.signal_strength} />
                 </div>
-                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mt-1">
                   <span>Weak (-35)</span>
                   <span>Good (-15)</span>
                 </div>
@@ -335,36 +335,36 @@ export default function ONUDetailPage() {
 
         {/* Provisioning Logs */}
         <Card padding="none" className="overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-linear-to-r from-gray-50/60 to-transparent">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-gray-50/60 dark:from-gray-800/60 to-transparent">
             <List className="h-4 w-4 text-gray-400" />
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Provisioning Logs</h2>
-            <span className="ml-auto text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{logs.length} entries</span>
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Provisioning Logs</h2>
+            <span className="ml-auto text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">{logs.length} entries</span>
           </div>
           {logs.length === 0 ? (
             <div className="text-center py-10">
-              <Wifi className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-400 text-sm">No provisioning logs yet</p>
+              <Wifi className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+              <p className="text-gray-400 dark:text-gray-500 text-sm">No provisioning logs yet</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  <tr className="bg-gray-50 dark:bg-gray-800/80 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide border-b border-gray-100 dark:border-gray-700">
                     <th className="px-4 py-3">Level</th>
                     <th className="px-4 py-3">Step</th>
                     <th className="px-4 py-3">Message</th>
                     <th className="px-4 py-3 whitespace-nowrap">Time</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {logs.map(log => (
-                    <tr key={log.id} className="hover:bg-gray-50">
+                    <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40">
                       <td className="px-4 py-2.5">
                         <LogLevelBadge level={log.level} />
                       </td>
-                      <td className="px-4 py-2.5 text-gray-700 font-medium whitespace-nowrap">{log.step}</td>
-                      <td className="px-4 py-2.5 text-gray-600">{log.message}</td>
-                      <td className="px-4 py-2.5 text-xs text-gray-400 whitespace-nowrap">
+                      <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 font-medium whitespace-nowrap">{log.step}</td>
+                      <td className="px-4 py-2.5 text-gray-600 dark:text-gray-400">{log.message}</td>
+                      <td className="px-4 py-2.5 text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap">
                         {new Date(log.created_at).toLocaleString()}
                       </td>
                     </tr>

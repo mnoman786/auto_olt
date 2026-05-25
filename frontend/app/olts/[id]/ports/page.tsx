@@ -17,17 +17,17 @@ import { clsx } from 'clsx';
 
 function PortStatusBadge({ status }: { status: string }) {
   if (status === 'up') return (
-    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-medium">
       <CheckCircle2 className="h-3 w-3" /> Up
     </span>
   );
   if (status === 'down') return (
-    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium">
       <XCircle className="h-3 w-3" /> Down
     </span>
   );
   return (
-    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 font-medium">
+    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-medium">
       <HelpCircle className="h-3 w-3" /> Unknown
     </span>
   );
@@ -55,7 +55,7 @@ function PortSection({ title, ports, color }: { title: string; ports: OLTPort[];
         <h2 className={clsx('text-sm font-semibold uppercase tracking-wide', color)}>
           {title}
         </h2>
-        <span className="text-xs text-gray-500">{up}/{ports.length} up</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{up}/{ports.length} up</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
         {ports.map(port => (
@@ -64,14 +64,14 @@ function PortSection({ title, ports, color }: { title: string; ports: OLTPort[];
             className={clsx(
               'rounded-lg border p-4 transition-colors',
               port.status === 'up'
-                ? 'border-gray-200 bg-white hover:border-gray-300'
-                : 'border-gray-100 bg-gray-50'
+                ? 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-500'
+                : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'
             )}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="flex items-center gap-2 min-w-0">
                 <PortTypeIcon type={port.port_type} />
-                <span className="font-mono text-sm font-semibold text-gray-800 truncate">
+                <span className="font-mono text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">
                   {port.name}
                 </span>
               </div>
@@ -79,13 +79,13 @@ function PortSection({ title, ports, color }: { title: string; ports: OLTPort[];
             </div>
 
             {port.description && (
-              <p className="text-xs text-gray-500 mb-2 truncate">{port.description}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2 truncate">{port.description}</p>
             )}
 
-            <div className="flex items-center gap-4 text-xs text-gray-500">
-              <span>Speed: <strong className="text-gray-700">{formatSpeed(port.speed_mbps)}</strong></span>
+            <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <span>Speed: <strong className="text-gray-700 dark:text-gray-300">{formatSpeed(port.speed_mbps)}</strong></span>
               {port.port_type === 'pon' && (
-                <span>ONUs: <strong className="text-gray-700">{port.onu_count}</strong></span>
+                <span>ONUs: <strong className="text-gray-700 dark:text-gray-300">{port.onu_count}</strong></span>
               )}
             </div>
           </div>
@@ -163,21 +163,21 @@ export default function OLTPortsPage() {
   return (
     <AppLayout>
       <div className="relative">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-purple-50/70 via-fuchsia-50/40 to-transparent pointer-events-none" />
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-purple-50/70 dark:from-purple-950/20 via-fuchsia-50/40 dark:via-transparent to-transparent pointer-events-none" />
         <div className="relative p-6 max-w-6xl mx-auto">
-        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           Back to OLT
         </Link>
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-purple-50 to-fuchsia-100 flex items-center justify-center text-purple-600 shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 shadow-sm shrink-0">
               <Network className="h-6 w-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80">Hardware Inventory</p>
-              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">Ports & Uplinks</h1>
-              <p className="text-gray-500 text-sm">{olt?.name} — {olt?.ip_address}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80">Hardware Inventory</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">Ports & Uplinks</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{olt?.name} — {olt?.ip_address}</p>
             </div>
           </div>
           <Button
@@ -200,7 +200,7 @@ export default function OLTPortsPage() {
               { label: 'Total ONUs',  value: totalOnus,       color: 'text-blue-600' },
             ].map(s => (
               <Card key={s.label} padding="sm">
-                <p className="text-xs text-gray-500 mb-1">{s.label}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{s.label}</p>
                 <p className={clsx('text-2xl font-bold', s.color)}>{s.value}</p>
               </Card>
             ))}
@@ -210,9 +210,9 @@ export default function OLTPortsPage() {
         {ports.length === 0 ? (
           <Card>
             <div className="text-center py-12">
-              <Network className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <h3 className="text-gray-600 font-medium mb-1">No ports discovered yet</h3>
-              <p className="text-gray-400 text-sm mb-4">
+              <Network className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+              <h3 className="text-gray-600 dark:text-gray-300 font-medium mb-1">No ports discovered yet</h3>
+              <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">
                 Click "Discover Ports" to poll the OLT via SNMP and retrieve all port information.
               </p>
               <Button onClick={handleDiscover} loading={discovering} icon={<RefreshCw className="h-4 w-4" />}>

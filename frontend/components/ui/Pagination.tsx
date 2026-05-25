@@ -27,22 +27,22 @@ export function Pagination({ count, pageSize, page, onPageChange, className = ''
   }
 
   return (
-    <div className={`flex items-center justify-between px-4 py-3 border-t border-gray-100 ${className}`}>
-      <p className="text-xs text-gray-500">
-        Showing <span className="font-medium text-gray-700">{from}–{to}</span> of{' '}
-        <span className="font-medium text-gray-700">{count}</span>
+    <div className={`flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 ${className}`}>
+      <p className="text-xs text-gray-500 dark:text-gray-400">
+        Showing <span className="font-medium text-gray-700 dark:text-gray-300">{from}–{to}</span> of{' '}
+        <span className="font-medium text-gray-700 dark:text-gray-300">{count}</span>
       </p>
       <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page === 1}
-          className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         {pages.map((p, i) =>
           p === '...' ? (
-            <span key={`ellipsis-${i}`} className="px-1 text-gray-400 text-sm">…</span>
+            <span key={`ellipsis-${i}`} className="px-1 text-gray-400 dark:text-gray-500 text-sm">…</span>
           ) : (
             <button
               key={p}
@@ -50,7 +50,7 @@ export function Pagination({ count, pageSize, page, onPageChange, className = ''
               className={`min-w-[2rem] h-8 px-2 rounded-md text-sm font-medium transition-colors ${
                 p === page
                   ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
             >
               {p}
@@ -60,7 +60,7 @@ export function Pagination({ count, pageSize, page, onPageChange, className = ''
         <button
           onClick={() => onPageChange(page + 1)}
           disabled={page === totalPages}
-          className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-30 disabled:pointer-events-none transition-colors"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

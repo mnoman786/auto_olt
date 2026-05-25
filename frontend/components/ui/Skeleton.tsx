@@ -3,7 +3,7 @@ import React from 'react';
 
 /** Single shimmer block — base primitive used by all skeletons. */
 export function Sk({ className = '', style }: { className?: string; style?: React.CSSProperties }) {
-  return <div className={`bg-gray-100 animate-pulse rounded ${className}`} style={style} />;
+  return <div className={`bg-gray-100 dark:bg-gray-700 animate-pulse rounded ${className}`} style={style} />;
 }
 
 // ─────────────────────────────────────────────
@@ -29,7 +29,7 @@ export function DashboardSkeleton() {
       {/* 4 stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[0, 1, 2, 3].map(i => (
-          <div key={i} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+          <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <Sk className="h-3 w-20" />
               <Sk className="h-8 w-8 rounded-lg" />
@@ -41,15 +41,15 @@ export function DashboardSkeleton() {
       </div>
 
       {/* OLT list card */}
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
         {/* Card header */}
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <Sk className="h-4 w-32" />
           <Sk className="h-5 w-16 rounded-full" />
         </div>
         {/* Rows */}
         {[0, 1, 2, 3].map(i => (
-          <div key={i} className="px-6 py-4 border-b border-gray-50 last:border-0">
+          <div key={i} className="px-6 py-4 border-b border-gray-50 dark:border-gray-700 last:border-0">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <Sk className="w-10 h-10 rounded-lg shrink-0" />
@@ -99,7 +99,7 @@ export function OLTDetailSkeleton() {
       {/* 4 stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[0, 1, 2, 3].map(i => (
-          <div key={i} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+          <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <Sk className="h-3 w-20" />
               <Sk className="h-8 w-8 rounded-lg" />
@@ -112,7 +112,7 @@ export function OLTDetailSkeleton() {
       {/* 4 quick-link cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {[0, 1, 2, 3].map(i => (
-          <div key={i} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+          <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <Sk className="w-10 h-10 rounded-xl shrink-0" />
               <div className="flex-1 space-y-2">
@@ -125,8 +125,8 @@ export function OLTDetailSkeleton() {
       </div>
 
       {/* VLANs card */}
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden mb-5">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden mb-5">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sk className="h-4 w-4 rounded" />
             <Sk className="h-4 w-32" />
@@ -144,8 +144,8 @@ export function OLTDetailSkeleton() {
       </div>
 
       {/* Profiles card */}
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden mb-5">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden mb-5">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sk className="h-4 w-4 rounded" />
             <Sk className="h-4 w-40" />
@@ -171,14 +171,14 @@ export function OLTDetailSkeleton() {
       {/* Two info cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {[0, 1].map(card => (
-          <div key={card} className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
+          <div key={card} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
               <Sk className="h-4 w-4 rounded" />
               <Sk className="h-4 w-36" />
             </div>
             <div className="px-6 py-4 space-y-3">
               {[0, 1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="flex justify-between items-center py-1 border-b border-gray-50 last:border-0">
+                <div key={i} className="flex justify-between items-center py-1 border-b border-gray-50 dark:border-gray-700 last:border-0">
                   <Sk className="h-3 w-28" />
                   <Sk className="h-3 w-24" />
                 </div>
@@ -200,7 +200,7 @@ export function ONUTableSkeleton({ rows = 6 }: { rows?: number }) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 border-b border-gray-100">
+          <tr className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
             {/* checkbox / serial / port / signal / vlan / status / last seen / actions */}
             {[10, 180, 80, 70, 70, 90, 110, 80].map((w, i) => (
               <th key={i} className="px-4 py-3">
@@ -209,7 +209,7 @@ export function ONUTableSkeleton({ rows = 6 }: { rows?: number }) {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
           {Array.from({ length: rows }).map((_, r) => (
             <tr key={r}>
               <td className="px-4 py-3"><Sk className="h-4 w-4 rounded" /></td>
@@ -263,7 +263,7 @@ export function ONUPageSkeleton() {
       {/* 3 stat chips */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[0, 1, 2].map(i => (
-          <div key={i} className="rounded-xl bg-white border border-gray-200 p-3 flex items-center gap-3 shadow-sm">
+          <div key={i} className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 shadow-sm">
             <Sk className="w-9 h-9 rounded-lg shrink-0" />
             <div className="space-y-1.5">
               <Sk className="h-3 w-16" />
@@ -274,7 +274,7 @@ export function ONUPageSkeleton() {
       </div>
 
       {/* Tab nav */}
-      <div className="flex items-center gap-1 mb-4 border-b border-gray-200 pb-0">
+      <div className="flex items-center gap-1 mb-4 border-b border-gray-200 dark:border-gray-700 pb-0">
         {[0, 1, 2].map(i => (
           <Sk key={i} className="h-9 w-32 rounded-t-lg" />
         ))}
@@ -284,7 +284,7 @@ export function ONUPageSkeleton() {
       <Sk className="h-9 w-full rounded-lg mb-4" />
 
       {/* Table card */}
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden">
         <ONUTableSkeleton />
       </div>
     </div>

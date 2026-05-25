@@ -12,7 +12,7 @@ import toast from 'react-hot-toast';
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+      <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">
         {label}
       </label>
       {children}
@@ -24,7 +24,7 @@ function Input({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
+      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 placeholder:text-gray-400 dark:placeholder:text-gray-500"
     />
   );
 }
@@ -96,7 +96,7 @@ export default function ProfilePage() {
   return (
     <AppLayout>
       <div className="relative">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none" />
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none" />
         <div className="relative p-6 max-w-2xl mx-auto">
 
           {/* Header */}
@@ -105,20 +105,20 @@ export default function ProfilePage() {
               {(user?.username || '?').slice(0, 2).toUpperCase()}
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Account</p>
-              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">{user?.username}</h1>
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">Account</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">{user?.username}</h1>
               <div className="flex items-center gap-3 mt-1">
                 {(user as any)?.is_superuser && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 border border-purple-100 dark:border-purple-800 px-2 py-0.5 rounded-full">
                     <ShieldCheck className="h-3 w-3" /> Superuser
                   </span>
                 )}
                 {(user as any)?.is_staff && !(user as any)?.is_superuser && (
-                  <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 px-2 py-0.5 rounded-full">
                     <ShieldCheck className="h-3 w-3" /> Staff
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                <span className="inline-flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500">
                   <Calendar className="h-3 w-3" /> Joined {joinedDate}
                 </span>
               </div>
@@ -129,7 +129,7 @@ export default function ProfilePage() {
           <Card className="mb-5">
             <div className="flex items-center gap-2 mb-5">
               <User className="h-4 w-4 text-gray-400" />
-              <h2 className="font-semibold text-gray-900">Personal Information</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-white">Personal Information</h2>
             </div>
             <div className="space-y-4">
               <Field label="Username">
@@ -177,7 +177,7 @@ export default function ProfilePage() {
           <Card>
             <div className="flex items-center gap-2 mb-5">
               <KeyRound className="h-4 w-4 text-gray-400" />
-              <h2 className="font-semibold text-gray-900">Change Password</h2>
+              <h2 className="font-semibold text-gray-900 dark:text-white">Change Password</h2>
             </div>
             <div className="space-y-4">
               <Field label="Current Password">

@@ -43,7 +43,7 @@ function StepIcon({ status }: { status: string }) {
   if (status === 'warning') return <CheckCircle2 className="h-5 w-5 text-yellow-500" />;
   if (status === 'running') return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />;
   if (status === 'skipped') return <ChevronRight className="h-5 w-5 text-gray-400" />;
-  return <div className="h-5 w-5 rounded-full border-2 border-gray-300" />;
+  return <div className="h-5 w-5 rounded-full border-2 border-gray-300 dark:border-gray-600" />;
 }
 
 export default function OLTSetupPage() {
@@ -271,30 +271,30 @@ export default function OLTSetupPage() {
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
         <div className="relative p-6 max-w-5xl mx-auto">
         {/* Back link */}
-        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+        <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
           <ArrowLeft className="h-4 w-4" />
           Back to OLT
         </Link>
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
             <Play className="h-6 w-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Setup Wizard</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">Setup Wizard</p>
             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900 truncate">{olt?.name || 'OLT Setup'}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">{olt?.name || 'OLT Setup'}</h1>
               <OLTStatusBadge status={oltStatus} />
               {oltStatus === 'configuring' && (
                 <button
                   type="button"
                   onClick={handleResetStatus}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-full px-2.5 py-1 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-full px-2.5 py-1 transition-colors"
                   title="Use if setup is stuck (e.g. server was restarted mid-setup)"
                 >
                   <RefreshCw className="h-3 w-3" />
@@ -302,7 +302,7 @@ export default function OLTSetupPage() {
                 </button>
               )}
             </div>
-            <p className="text-gray-500 text-sm">{olt?.ip_address}</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">{olt?.ip_address}</p>
           </div>
         </div>
 
@@ -310,7 +310,7 @@ export default function OLTSetupPage() {
         {isVpn && (
           <Card className="mb-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <ShieldCheck className={clsx(
                   'h-5 w-5',
                   wgConnected === true ? 'text-green-500' :
@@ -322,10 +322,10 @@ export default function OLTSetupPage() {
               <div className="flex items-center gap-2">
                 <span className={clsx(
                   'text-xs px-2 py-1 rounded-full font-medium',
-                  wgConnected === true ? 'bg-green-100 text-green-700' :
-                  wgConnected === false ? 'bg-red-100 text-red-700' :
-                  wgReady ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-gray-100 text-gray-600'
+                  wgConnected === true ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                  wgConnected === false ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                  wgReady ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                  'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                 )}>
                   {wgConnected === true ? 'Connected' :
                    wgConnected === false ? 'Not Connected' :
@@ -359,10 +359,10 @@ export default function OLTSetupPage() {
                     { label: 'Server Public Key', value: wgInfo?.server_public_key, key: 'spk' },
                     { label: 'Assigned Virtual IP', value: wgInfo?.virtual_ip ? `${wgInfo.virtual_ip}/32` : '—', key: 'vip' },
                   ].map(({ label, value, key }) => (
-                    <div key={key} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg gap-2">
+                    <div key={key} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/60 rounded-lg gap-2">
                       <div className="min-w-0">
-                        <p className="text-xs text-gray-500">{label}</p>
-                        <p className="text-xs font-mono font-medium text-gray-800 break-all">{value || '—'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+                        <p className="text-xs font-mono font-medium text-gray-800 dark:text-gray-200 break-all">{value || '—'}</p>
                       </div>
                       {value && value !== '—' && (
                         <button
@@ -387,16 +387,16 @@ export default function OLTSetupPage() {
 
                 {wgReady && !wgEditing ? (
                   <div className="space-y-2">
-                    <div className="p-2 bg-green-50 rounded-lg border border-green-100">
-                      <p className="text-xs text-gray-500">Customer Public Key</p>
-                      <p className="text-xs font-mono text-gray-700 break-all mt-0.5">
+                    <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Customer Public Key</p>
+                      <p className="text-xs font-mono text-gray-700 dark:text-gray-300 break-all mt-0.5">
                         {wgInfo?.client_public_key}
                       </p>
                     </div>
                     {wgInfo?.client_subnet && (
-                      <div className="p-2 bg-green-50 rounded-lg border border-green-100">
-                        <p className="text-xs text-gray-500">LAN Subnet</p>
-                        <p className="text-xs font-mono text-gray-700 mt-0.5">{wgInfo.client_subnet}</p>
+                      <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">LAN Subnet</p>
+                        <p className="text-xs font-mono text-gray-700 dark:text-gray-300 mt-0.5">{wgInfo.client_subnet}</p>
                       </div>
                     )}
                     <Button
@@ -409,27 +409,27 @@ export default function OLTSetupPage() {
                       {wgTesting ? 'Testing...' : 'Test Connection'}
                     </Button>
                     {wgConnected === true && (
-                      <div className="p-2 bg-green-50 border border-green-100 rounded-lg">
-                        <p className="text-xs text-green-700 flex items-center gap-1 font-medium">
+                      <div className="p-2 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-lg">
+                        <p className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1 font-medium">
                           <CheckCircle2 className="h-3 w-3" />
                           ✓ Connected — handshake confirmed.
                         </p>
                       </div>
                     )}
                     {wgConnected === false && (
-                      <div className="p-2 bg-red-50 border border-red-100 rounded-lg">
-                        <p className="text-xs text-red-700 flex items-center gap-1 font-medium">
+                      <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg">
+                        <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-1 font-medium">
                           <XCircle className="h-3 w-3" />
                           ✗ Not connected — check MikroTik config.
                         </p>
                       </div>
                     )}
                     {wgConnected === null && (
-                      <div className="p-2 bg-yellow-50 border border-yellow-100 rounded-lg">
-                        <p className="text-xs text-yellow-700 flex items-center gap-1">
+                      <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-lg">
+                        <p className="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
                           ⏳ Peer configured but handshake not yet established.
                         </p>
-                        <p className="text-xs text-yellow-600 mt-1">
+                        <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
                           Click "Test Connection" to verify the peer is connected.
                         </p>
                       </div>
@@ -443,7 +443,7 @@ export default function OLTSetupPage() {
                       </label>
                       <textarea
                         rows={2}
-                        className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        className="w-full text-xs border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                         placeholder="Paste MikroTik WireGuard public key here..."
                         value={wgForm.wg_client_public_key}
                         onChange={e => setWgForm(f => ({ ...f, wg_client_public_key: e.target.value.trim() }))}
@@ -452,7 +452,7 @@ export default function OLTSetupPage() {
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">Customer LAN Subnet</label>
                       <input
-                        className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full text-sm border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="192.168.1.0/24"
                         value={wgForm.wg_client_subnet}
                         onChange={e => setWgForm(f => ({ ...f, wg_client_subnet: e.target.value }))}
@@ -485,8 +485,8 @@ export default function OLTSetupPage() {
           {/* Steps Panel */}
           <div className="space-y-3">
             <Card padding="none" className="overflow-hidden">
-              <div className="px-5 py-3 bg-linear-to-r from-blue-50/60 to-transparent border-b border-gray-100">
-                <h2 className="font-semibold text-gray-800 text-xs uppercase tracking-wider">
+              <div className="px-5 py-3 bg-linear-to-r from-blue-50/60 dark:from-blue-900/20 to-transparent border-b border-gray-100 dark:border-gray-700">
+                <h2 className="font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider">
                   {isVpn ? 'Step 2 — OLT Setup' : 'Setup Steps'}
                 </h2>
               </div>
@@ -501,10 +501,10 @@ export default function OLTSetupPage() {
                       <StepIcon status={effectiveStatus} />
                       <span className={clsx(
                         'text-sm',
-                        effectiveStatus === 'success' ? 'text-gray-800 font-medium' :
-                        effectiveStatus === 'error' ? 'text-red-600 font-medium' :
-                        effectiveStatus === 'running' ? 'text-blue-700 font-medium' :
-                        'text-gray-500'
+                        effectiveStatus === 'success' ? 'text-gray-800 dark:text-gray-200 font-medium' :
+                        effectiveStatus === 'error' ? 'text-red-600 dark:text-red-400 font-medium' :
+                        effectiveStatus === 'running' ? 'text-blue-700 dark:text-blue-400 font-medium' :
+                        'text-gray-500 dark:text-gray-400'
                       )}>
                         {step.label}
                       </span>
@@ -513,7 +513,7 @@ export default function OLTSetupPage() {
                 })}
               </div>
 
-              <div className="mt-5 pt-4 border-t border-gray-100">
+              <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
                 {isComplete ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-green-600 text-sm font-medium">
@@ -583,7 +583,7 @@ export default function OLTSetupPage() {
                   ].filter(Boolean).map(([k, v]) => (
                     <div key={k as string} className="flex justify-between">
                       <span className="text-gray-500">{k}</span>
-                      <span className="font-medium text-gray-800 text-right">{v}</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-200 text-right">{v}</span>
                     </div>
                   ))}
                 </div>
@@ -638,14 +638,14 @@ export default function OLTSetupPage() {
               {activeTab === 'setup' && (
                 <div className="bg-gray-950 font-mono text-xs overflow-y-auto h-[480px] p-4">
                   {logs.filter(l => l.step !== 'telnet_terminal').length === 0 ? (
-                    <p className="text-gray-600 italic">
+                    <p className="text-gray-500 italic">
                       {setupStarted ? '⟳ Initializing setup...' : '# No setup logs yet. Click "Start Setup" to begin.'}
                     </p>
                   ) : (
                     <div className="space-y-0.5">
                       {logs.filter(l => l.step !== 'telnet_terminal').map((log) => (
                         <div key={log.id} className="flex gap-3 hover:bg-white/5 px-1 py-0.5 rounded">
-                          <span className="text-gray-600 shrink-0 w-20">
+                          <span className="text-gray-500 shrink-0 w-20">
                             {new Date(log.created_at).toLocaleTimeString()}
                           </span>
                           <span className={clsx('shrink-0 w-16', levelColor[log.level] || 'text-gray-400')}>
@@ -727,7 +727,7 @@ export default function OLTSetupPage() {
                         <div className={`p-2 rounded-lg bg-linear-to-br ${item.tone}`}>
                           <item.icon className="h-5 w-5" />
                         </div>
-                        <span className="text-xs font-medium text-gray-700 text-center group-hover:text-blue-600 transition-colors">{item.label}</span>
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.label}</span>
                       </div>
                     </Card>
                   </Link>

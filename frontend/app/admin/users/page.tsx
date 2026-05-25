@@ -17,20 +17,20 @@ import { clsx } from 'clsx';
 function UserRowSkeleton() {
   return (
     <div className="px-6 py-4 animate-pulse flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-gray-100 shrink-0" />
+      <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 shrink-0" />
       <div className="flex-1 space-y-2">
-        <div className="h-3.5 w-36 bg-gray-100 rounded" />
-        <div className="h-3 w-48 bg-gray-100 rounded" />
+        <div className="h-3.5 w-36 bg-gray-100 dark:bg-gray-700 rounded" />
+        <div className="h-3 w-48 bg-gray-100 dark:bg-gray-700 rounded" />
       </div>
       <div className="hidden md:flex items-center gap-6">
-        <div className="h-6 w-16 bg-gray-100 rounded-full" />
-        <div className="h-4 w-10 bg-gray-100 rounded" />
-        <div className="h-4 w-24 bg-gray-100 rounded" />
+        <div className="h-6 w-16 bg-gray-100 dark:bg-gray-700 rounded-full" />
+        <div className="h-4 w-10 bg-gray-100 dark:bg-gray-700 rounded" />
+        <div className="h-4 w-24 bg-gray-100 dark:bg-gray-700 rounded" />
       </div>
       <div className="flex gap-2">
-        <div className="h-8 w-8 bg-gray-100 rounded-lg" />
-        <div className="h-8 w-8 bg-gray-100 rounded-lg" />
-        <div className="h-8 w-8 bg-gray-100 rounded-lg" />
+        <div className="h-8 w-8 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+        <div className="h-8 w-8 bg-gray-100 dark:bg-gray-700 rounded-lg" />
+        <div className="h-8 w-8 bg-gray-100 dark:bg-gray-700 rounded-lg" />
       </div>
     </div>
   );
@@ -140,20 +140,20 @@ export default function AdminUsersPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
-              <ShieldCheck className="h-5 w-5 text-violet-600" />
-              <h1 className="text-xl font-bold text-gray-900">User Management</h1>
-              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-violet-100 text-violet-700 rounded-full">
+              <ShieldCheck className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">User Management</h1>
+              <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-400 rounded-full">
                 Admin
               </span>
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {users.length} registered user{users.length !== 1 ? 's' : ''}
             </p>
           </div>
           <button
             onClick={fetchUsers}
             disabled={fetching}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
           >
             <RefreshCw className={clsx('h-3.5 w-3.5', fetching && 'animate-spin')} />
             Refresh
@@ -163,18 +163,18 @@ export default function AdminUsersPage() {
         {/* Stat cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Users', value: users.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
-            { label: 'Active', value: totalActive, icon: UserCheck, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Inactive', value: totalInactive, icon: UserX, color: 'text-amber-600', bg: 'bg-amber-50' },
-            { label: 'Total OLTs', value: totalOlts, icon: Server, color: 'text-violet-600', bg: 'bg-violet-50' },
+            { label: 'Total Users', value: users.length, icon: Users, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
+            { label: 'Active', value: totalActive, icon: UserCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
+            { label: 'Inactive', value: totalInactive, icon: UserX, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/30' },
+            { label: 'Total OLTs', value: totalOlts, icon: Server, color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/30' },
           ].map(({ label, value, icon: Icon, color, bg }) => (
-            <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+            <div key={label} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
               <div className={clsx('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', bg)}>
                 <Icon className={clsx('h-5 w-5', color)} />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900">{value}</p>
-                <p className="text-xs text-gray-500">{label}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
               </div>
             </div>
           ))}
@@ -189,10 +189,10 @@ export default function AdminUsersPage() {
               placeholder="Search by username or email…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white"
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             />
           </div>
-          <div className="flex rounded-lg border border-gray-200 bg-white overflow-hidden text-sm">
+          <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden text-sm">
             {(['all', 'active', 'inactive'] as const).map(f => (
               <button
                 key={f}
@@ -201,7 +201,7 @@ export default function AdminUsersPage() {
                   'px-4 py-2.5 font-medium capitalize transition-colors',
                   filter === f
                     ? 'bg-violet-600 text-white'
-                    : 'text-gray-600 hover:bg-gray-50'
+                    : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 )}
               >
                 {f}
@@ -211,32 +211,32 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Users list */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-3.5 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm font-semibold text-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+          <div className="px-6 py-3.5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
               {filtered.length} user{filtered.length !== 1 ? 's' : ''}
               {search || filter !== 'all' ? ' (filtered)' : ''}
             </p>
           </div>
 
           {fetching ? (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-gray-50 dark:divide-gray-700">
               {Array.from({ length: 5 }).map((_, i) => <UserRowSkeleton key={i} />)}
             </div>
           ) : filtered.length === 0 ? (
             <div className="py-16 text-center">
-              <Users className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No users found</p>
+              <Users className="h-10 w-10 text-gray-200 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No users found</p>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-50">
+            <ul className="divide-y divide-gray-50 dark:divide-gray-700">
               {filtered.map(u => {
                 const initials = (u.username).slice(0, 2).toUpperCase();
                 const isSelf = u.id === user?.id;
                 const isConfirmingDelete = confirmDeleteId === u.id;
 
                 return (
-                  <li key={u.id} className="px-6 py-4 hover:bg-gray-50/60 transition-colors">
+                  <li key={u.id} className="px-6 py-4 hover:bg-gray-50/60 dark:hover:bg-gray-700/40 transition-colors">
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
                       <div className={clsx(
@@ -249,18 +249,18 @@ export default function AdminUsersPage() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-semibold text-gray-900">{u.username}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{u.username}</span>
                           {(u.is_superuser || u.is_staff) && (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-700 rounded">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded">
                               <Crown className="h-2.5 w-2.5" />
                               {u.is_superuser ? 'Superuser' : 'Staff'}
                             </span>
                           )}
                           {isSelf && (
-                            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-blue-100 text-blue-700 rounded">You</span>
+                            <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded">You</span>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.email}</p>
                       </div>
 
                       {/* Meta */}
@@ -268,16 +268,16 @@ export default function AdminUsersPage() {
                         <span className={clsx(
                           'px-2.5 py-1 text-xs font-semibold rounded-full',
                           u.is_active
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-gray-100 text-gray-500'
+                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                         )}>
                           {u.is_active ? 'Active' : 'Inactive'}
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
+                        <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                           <Server className="h-3 w-3" />
                           {u.olt_count} OLT{u.olt_count !== 1 ? 's' : ''}
                         </span>
-                        <span className="text-xs text-gray-400 hidden lg:block">
+                        <span className="text-xs text-gray-400 dark:text-gray-500 hidden lg:block">
                           {new Date(u.date_joined).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       </div>
@@ -287,7 +287,7 @@ export default function AdminUsersPage() {
                         {/* View detail */}
                         <Link
                           href={`/admin/users/${u.id}`}
-                          className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          className="p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                           title="View details"
                         >
                           <ChevronRight className="h-4 w-4" />
@@ -311,7 +311,7 @@ export default function AdminUsersPage() {
                               </button>
                               <button
                                 onClick={() => setConfirmToggleId(null)}
-                                className="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                className="px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                               >
                                 Cancel
                               </button>
@@ -324,8 +324,8 @@ export default function AdminUsersPage() {
                               className={clsx(
                                 'p-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
                                 u.is_active
-                                  ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50'
-                                  : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50'
+                                  ? 'text-gray-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                                  : 'text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
                               )}
                             >
                               {u.is_active ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
@@ -346,7 +346,7 @@ export default function AdminUsersPage() {
                               </button>
                               <button
                                 onClick={() => setConfirmDeleteId(null)}
-                                className="px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                className="px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                               >
                                 Cancel
                               </button>
@@ -354,7 +354,7 @@ export default function AdminUsersPage() {
                           ) : (
                             <button
                               onClick={() => { setConfirmToggleId(null); setConfirmDeleteId(u.id); }}
-                              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              className="p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                               title="Delete user"
                             >
                               <Trash2 className="h-4 w-4" />

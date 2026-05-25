@@ -42,18 +42,18 @@ function OLTCard({ olt }: { olt: OLT }) {
   return (
     <Link
       href={`/olts/${olt.id}`}
-      className="group block bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all p-5"
+      className="group block bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:border-blue-200 dark:hover:border-blue-700 transition-all p-5"
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-            <Server className="h-4 w-4 text-blue-600" />
+          <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+            <Server className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
               {olt.name}
             </p>
-            <p className="text-xs text-gray-500 font-mono">{olt.ip_address}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">{olt.ip_address}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5">
@@ -62,7 +62,7 @@ function OLTCard({ olt }: { olt: OLT }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-xs text-gray-500">
+      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
         <span className="flex items-center gap-1">
           <Wifi className="h-3 w-3" />
           {olt.connection_type === 'vpn' ? 'VPN' : 'Direct'}
@@ -71,7 +71,7 @@ function OLTCard({ olt }: { olt: OLT }) {
           <Activity className="h-3 w-3" />
           {olt.onu_count} ONU{olt.onu_count !== 1 ? 's' : ''}
         </span>
-        <span className="text-gray-400">{olt.snmp_version.toUpperCase()}</span>
+        <span className="text-gray-400 dark:text-gray-500">{olt.snmp_version.toUpperCase()}</span>
       </div>
     </Link>
   );
@@ -167,14 +167,14 @@ export default function AdminUserDetailPage() {
         {/* Back button */}
         <Link
           href="/admin/users"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           All users
         </Link>
 
         {/* User profile card */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
           {/* Gradient header */}
           <div className="h-24 bg-linear-to-r from-violet-600 via-purple-600 to-indigo-600" />
 
@@ -190,18 +190,18 @@ export default function AdminUserDetailPage() {
                 </div>
                 <div className="pb-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-xl font-bold text-gray-900">{userData.username}</h2>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{userData.username}</h2>
                     {(userData.is_superuser || userData.is_staff) && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 rounded-full">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 rounded-full">
                         <Crown className="h-3 w-3" />
                         {userData.is_superuser ? 'Superuser' : 'Staff'}
                       </span>
                     )}
                     {isSelf && (
-                      <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">You</span>
+                      <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded-full">You</span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-500">{displayName !== userData.username ? displayName : ''}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{displayName !== userData.username ? displayName : ''}</p>
                 </div>
               </div>
 
@@ -224,9 +224,9 @@ export default function AdminUserDetailPage() {
                         {userData.is_active ? 'Deactivate' : 'Activate'}
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2">
                         <AlertTriangle className={clsx('h-4 w-4 shrink-0', userData.is_active ? 'text-amber-500' : 'text-emerald-500')} />
-                        <span className="text-xs text-gray-700 font-medium">
+                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                           {userData.is_active ? `Deactivate ${userData.username}?` : `Activate ${userData.username}?`}
                         </span>
                         <button
@@ -243,7 +243,7 @@ export default function AdminUserDetailPage() {
                         </button>
                         <button
                           onClick={() => setConfirmToggle(false)}
-                          className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                          className="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
                           Cancel
                         </button>
@@ -259,9 +259,9 @@ export default function AdminUserDetailPage() {
                         Delete
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
                         <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-                        <span className="text-xs text-red-700 font-medium">Delete {userData.username}?</span>
+                        <span className="text-xs text-red-700 dark:text-red-400 font-medium">Delete {userData.username}?</span>
                         <button
                           onClick={handleDelete}
                           disabled={deleting}
@@ -271,7 +271,7 @@ export default function AdminUserDetailPage() {
                         </button>
                         <button
                           onClick={() => setConfirmDelete(false)}
-                          className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+                          className="px-2.5 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                         >
                           Cancel
                         </button>
@@ -283,31 +283,31 @@ export default function AdminUserDetailPage() {
             </div>
 
             {/* Info grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-100">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-3 py-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
                   <Mail className="h-4 w-4 text-gray-400" />
                 </div>
                 <div>
-                  <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Email</p>
-                  <p className="text-sm text-gray-700 font-medium truncate">{userData.email}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">Email</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 font-medium truncate">{userData.email}</p>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 py-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
                   {userData.is_active
                     ? <UserCheck className="h-4 w-4 text-emerald-500" />
                     : <UserX className="h-4 w-4 text-gray-400" />
                   }
                 </div>
                 <div>
-                  <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Status</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">Status</p>
                   <span className={clsx(
                     'inline-block px-2 py-0.5 text-xs font-semibold rounded-full mt-0.5',
                     userData.is_active
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-gray-100 text-gray-500'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                   )}>
                     {userData.is_active ? 'Active' : 'Inactive'}
                   </span>
@@ -315,12 +315,12 @@ export default function AdminUserDetailPage() {
               </div>
 
               <div className="flex items-center gap-3 py-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
                   <Calendar className="h-4 w-4 text-gray-400" />
                 </div>
                 <div>
-                  <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Joined</p>
-                  <p className="text-sm text-gray-700 font-medium">
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">Joined</p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">
                     {new Date(userData.date_joined).toLocaleDateString('en-US', {
                       month: 'long', day: 'numeric', year: 'numeric'
                     })}
@@ -334,18 +334,18 @@ export default function AdminUserDetailPage() {
         {/* OLT Devices section */}
         <div>
           <div className="flex items-center gap-2.5 mb-4">
-            <Server className="h-4 w-4 text-gray-500" />
-            <h3 className="text-base font-semibold text-gray-900">OLT Devices</h3>
-            <span className="px-2 py-0.5 text-xs font-semibold bg-gray-100 text-gray-600 rounded-full">
+            <Server className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">OLT Devices</h3>
+            <span className="px-2 py-0.5 text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
               {userData.olts.length}
             </span>
           </div>
 
           {userData.olts.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm py-12 text-center">
-              <Server className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-              <p className="text-sm text-gray-500">No OLT devices yet</p>
-              <p className="text-xs text-gray-400 mt-1">This user hasn&apos;t added any OLTs</p>
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm py-12 text-center">
+              <Server className="h-10 w-10 text-gray-200 dark:text-gray-600 mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">No OLT devices yet</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">This user hasn&apos;t added any OLTs</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

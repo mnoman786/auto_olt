@@ -129,21 +129,21 @@ function VerifyEmailForm() {
           </div>
         </div>
 
-        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-950/40 overflow-hidden">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-3xl shadow-2xl shadow-blue-950/40 overflow-hidden">
           <div className="h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
 
           <div className="p-8">
             {!success ? (
               <>
                 <div className="mb-6">
-                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
-                    <ShieldCheck className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-4">
+                    <ShieldCheck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <h1 className="text-2xl font-bold text-gray-900">Verify your email</h1>
-                  <p className="text-gray-500 text-sm mt-1.5">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Verify your email</h1>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
                     We sent an 8-character code to{' '}
                     {email ? (
-                      <strong className="text-gray-700">{email}</strong>
+                      <strong className="text-gray-700 dark:text-gray-300">{email}</strong>
                     ) : (
                       'your email address'
                     )}
@@ -154,7 +154,7 @@ function VerifyEmailForm() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* OTP boxes */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                       Verification Code
                     </label>
                     <div className="flex gap-1.5 justify-between" onPaste={handleOtpPaste}>
@@ -169,7 +169,7 @@ function VerifyEmailForm() {
                           onChange={e => handleOtpChange(i, e.target.value)}
                           onKeyDown={e => handleOtpKeyDown(i, e)}
                           disabled={loading}
-                          className="w-10 h-12 text-center text-lg font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-gray-50 text-gray-900 disabled:opacity-50 uppercase"
+                          className="w-10 h-12 text-center text-lg font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 transition-all bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white dark:border-gray-600 disabled:opacity-50 uppercase"
                           style={{ borderColor: char ? '#6366f1' : undefined }}
                         />
                       ))}
@@ -177,7 +177,7 @@ function VerifyEmailForm() {
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3">
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3">
                       {error}
                     </div>
                   )}
@@ -217,11 +217,11 @@ function VerifyEmailForm() {
             ) : (
               /* Success state */
               <div className="text-center py-4">
-                <div className="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <ShieldCheck className="h-8 w-8 text-green-500" />
+                <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <ShieldCheck className="h-8 w-8 text-green-500 dark:text-green-400" />
                 </div>
-                <h2 className="text-xl font-bold text-gray-900 mb-2">Account verified!</h2>
-                <p className="text-gray-500 text-sm mb-4">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Account verified!</h2>
+                <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
                   Your account is now active. Redirecting to your dashboard&hellip;
                 </p>
                 <div className="flex justify-center">
@@ -230,10 +230,10 @@ function VerifyEmailForm() {
               </div>
             )}
 
-            <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+            <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-700 text-center">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Back to sign in

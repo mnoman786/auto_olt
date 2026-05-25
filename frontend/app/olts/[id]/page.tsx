@@ -128,10 +128,10 @@ const [syncingVlans, setSyncingVlans] = useState(false);
   const dot = statusDot[olt.status as keyof typeof statusDot] ?? statusDot.pending;
 
   const quickLinks = [
-    { href: `/olts/${oltId}/onus`,  label: 'ONU Management',  icon: Wifi,     desc: 'View and provision ONUs', tone: 'from-blue-50 to-indigo-100 text-blue-600' },
-    { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks', icon: PlugZap,  desc: 'PON and uplink ports',     tone: 'from-purple-50 to-fuchsia-100 text-purple-600' },
-    { href: `/olts/${oltId}/vlans`, label: 'VLAN Management', icon: Layers,   desc: 'Configure VLANs',          tone: 'from-emerald-50 to-green-100 text-emerald-600' },
-    { href: `/olts/${oltId}/setup`, label: 'Setup Wizard',    icon: Settings, desc: 'Configure OLT',            tone: 'from-amber-50 to-orange-100 text-orange-600' },
+    { href: `/olts/${oltId}/onus`,  label: 'ONU Management',  icon: Wifi,     desc: 'View and provision ONUs', tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
+    { href: `/olts/${oltId}/ports`, label: 'Ports & Uplinks', icon: PlugZap,  desc: 'PON and uplink ports',     tone: 'from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400' },
+    { href: `/olts/${oltId}/vlans`, label: 'VLAN Management', icon: Layers,   desc: 'Configure VLANs',          tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
+    { href: `/olts/${oltId}/setup`, label: 'Setup Wizard',    icon: Settings, desc: 'Configure OLT',            tone: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-orange-600 dark:text-orange-400' },
   ];
 
   return (
@@ -139,12 +139,12 @@ const [syncingVlans, setSyncingVlans] = useState(false);
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
 
         <div className="relative p-6 max-w-5xl mx-auto">
           {/* Back link */}
-          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Dashboard
           </Link>
@@ -153,18 +153,18 @@ const [syncingVlans, setSyncingVlans] = useState(false);
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
             <div className="flex items-center gap-4 min-w-0">
               <div className="relative shrink-0">
-                <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm">
+                <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm">
                   <Cpu className="h-7 w-7" />
                 </div>
-                <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${dot}`} />
+                <span className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-gray-900 ${dot}`} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">OLT Device</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">OLT Device</p>
                 <div className="flex items-center gap-3 mt-1">
-                  <h1 className="text-2xl font-bold text-gray-900 truncate">{olt.name}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white truncate">{olt.name}</h1>
                   <OLTStatusBadge status={olt.status} />
                 </div>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                   {olt.ip_address}{olt.system_name ? ` • ${olt.system_name}` : ''}
                 </p>
               </div>
@@ -210,10 +210,10 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                       <item.icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 text-sm leading-tight group-hover:text-blue-600 transition-colors">{item.label}</p>
-                      <p className="text-xs text-gray-500 mt-0.5 leading-tight">{item.desc}</p>
+                      <p className="font-medium text-gray-900 dark:text-white text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.label}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{item.desc}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
                 </Card>
               </Link>
@@ -222,15 +222,15 @@ const [syncingVlans, setSyncingVlans] = useState(false);
 
           {/* VLANs on Device */}
           <Card padding="none" className="overflow-hidden mb-5">
-            <div className="px-6 py-4 border-b border-gray-100 bg-linear-to-r from-emerald-50/40 to-transparent flex items-center justify-between gap-3">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-emerald-50/40 dark:from-emerald-900/10 to-transparent flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0">
-                <Layers className="h-4 w-4 text-emerald-600 shrink-0" />
-                <h2 className="font-semibold text-gray-900">VLANs on Device</h2>
-                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                <Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <h2 className="font-semibold text-gray-900 dark:text-white">VLANs on Device</h2>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full shrink-0">
                   {vlans.length}
                 </span>
                 {vlans.some(v => v.source === 'discovered') && (
-                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 font-medium shrink-0">
+                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800 font-medium shrink-0">
                     <Cloud className="h-2.5 w-2.5" />
                     {vlans.filter(v => v.source === 'discovered').length} discovered
                   </span>
@@ -254,9 +254,9 @@ const [syncingVlans, setSyncingVlans] = useState(false);
             </div>
             {vlans.length === 0 ? (
               <div className="px-6 py-8 text-center">
-                <Layers className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No VLANs yet</p>
-                <p className="text-xs text-gray-400 mt-0.5">Click <strong>Sync</strong> to import VLANs from the OLT</p>
+                <Layers className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No VLANs yet</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Click <strong>Sync</strong> to import VLANs from the OLT</p>
               </div>
             ) : (
               <div className="px-6 py-4 flex flex-wrap gap-2">
@@ -266,8 +266,8 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                     href={`/olts/${oltId}/vlans`}
                     className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
                       v.source === 'discovered'
-                        ? 'bg-indigo-50/60 text-indigo-700 border-indigo-100 hover:bg-indigo-100'
-                        : 'bg-blue-50/60 text-blue-700 border-blue-100 hover:bg-blue-100'
+                        ? 'bg-indigo-50/60 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                        : 'bg-blue-50/60 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40'
                     }`}
                     title={v.description || v.name}
                   >
@@ -275,13 +275,13 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                       ? <Cloud className="h-3 w-3 opacity-70" />
                       : <Wrench className="h-3 w-3 opacity-70" />}
                     <span className="font-mono font-bold">{v.vlan_id}</span>
-                    <span className="text-gray-500 group-hover:text-current truncate max-w-[10ch]">{v.name}</span>
+                    <span className="text-gray-500 dark:text-gray-400 group-hover:text-current truncate max-w-[10ch]">{v.name}</span>
                   </Link>
                 ))}
                 {vlans.length > 24 && (
                   <Link
                     href={`/olts/${oltId}/vlans`}
-                    className="inline-flex items-center px-2.5 py-1 rounded-lg border border-dashed border-gray-300 text-xs text-gray-500 hover:bg-gray-50"
+                    className="inline-flex items-center px-2.5 py-1 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     +{vlans.length - 24} more
                   </Link>
@@ -292,12 +292,12 @@ const [syncingVlans, setSyncingVlans] = useState(false);
 
           {/* ONU Profiles (Huawei) */}
           <Card padding="none" className="overflow-hidden mb-5">
-            <div className="px-6 py-4 border-b border-gray-100 bg-linear-to-r from-purple-50/40 to-transparent flex items-center justify-between gap-3 flex-wrap">
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-purple-50/40 dark:from-purple-900/10 to-transparent flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-2 min-w-0">
-                <Sliders className="h-4 w-4 text-purple-600 shrink-0" />
-                <h2 className="font-semibold text-gray-900">ONU Profiles on OLT</h2>
+                <Sliders className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+                <h2 className="font-semibold text-gray-900 dark:text-white">ONU Profiles on OLT</h2>
                 {olt.profiles_last_synced && (
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     · synced {new Date(olt.profiles_last_synced).toLocaleString()}
                   </span>
                 )}
@@ -316,7 +316,7 @@ const [syncingVlans, setSyncingVlans] = useState(false);
             {(olt.line_profiles?.length || olt.srv_profiles?.length) ? (
               <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80 mb-2">
                     Line Profiles ({olt.line_profiles?.length || 0})
                   </p>
                   {olt.line_profiles?.length ? (
@@ -326,8 +326,8 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                           key={p.id}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
                             i === 0
-                              ? 'bg-purple-50 text-purple-700 border-purple-200'
-                              : 'bg-gray-50 text-gray-700 border-gray-200'
+                              ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+                              : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                           }`}
                           title={i === 0 ? 'Default used for new ONUs' : undefined}
                         >
@@ -340,11 +340,11 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">None found</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">None found</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 mb-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80 mb-2">
                     Service Profiles ({olt.srv_profiles?.length || 0})
                   </p>
                   {olt.srv_profiles?.length ? (
@@ -354,8 +354,8 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                           key={p.id}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
                             i === 0
-                              ? 'bg-purple-50 text-purple-700 border-purple-200'
-                              : 'bg-gray-50 text-gray-700 border-gray-200'
+                              ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+                              : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
                           }`}
                           title={i === 0 ? 'Default used for new ONUs' : undefined}
                         >
@@ -368,15 +368,15 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">None found</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">None found</p>
                   )}
                 </div>
               </div>
             ) : (
               <div className="px-6 py-8 text-center">
-                <Sliders className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No profiles cached yet</p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <Sliders className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No profiles cached yet</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                   Click <strong>Sync Profiles</strong> to read available IDs from the OLT
                 </p>
               </div>
@@ -386,9 +386,9 @@ const [syncingVlans, setSyncingVlans] = useState(false);
           {/* OLT Details */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <Card padding="none" className="overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-linear-to-r from-blue-50/40 to-transparent flex items-center gap-2">
-                <Server className="h-4 w-4 text-blue-600" />
-                <h2 className="font-semibold text-gray-900">OLT Configuration</h2>
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-blue-50/40 dark:from-blue-900/10 to-transparent flex items-center gap-2">
+                <Server className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <h2 className="font-semibold text-gray-900 dark:text-white">OLT Configuration</h2>
               </div>
               <div className="px-6 py-4 space-y-1 text-sm">
                 {[
@@ -399,15 +399,15 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                   ['Telnet', olt.telnet_enabled ? `Enabled (port ${olt.telnet_port})` : 'Disabled'],
                   ['OLT Admin Username', olt.olt_admin_username || 'Not set'],
                 ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between py-2 border-b border-gray-50 last:border-0">
-                    <span className="text-gray-500">{k}</span>
-                    <span className="font-medium text-gray-800 text-right">{v}</span>
+                  <div key={k} className="flex justify-between py-2 border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                    <span className="text-gray-500 dark:text-gray-400">{k}</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200 text-right">{v}</span>
                   </div>
                 ))}
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-500">OLT Admin Password</span>
+                  <span className="text-gray-500 dark:text-gray-400">OLT Admin Password</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-800 font-mono tracking-wider">
+                    <span className="font-medium text-gray-800 dark:text-gray-200 font-mono tracking-wider">
                       {olt.has_admin_password ? '••••••••' : 'Not set'}
                     </span>
                   </div>
@@ -416,9 +416,9 @@ const [syncingVlans, setSyncingVlans] = useState(false);
             </Card>
 
             <Card padding="none" className="overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-linear-to-r from-emerald-50/40 to-transparent flex items-center gap-2">
-                <Network className="h-4 w-4 text-emerald-600" />
-                <h2 className="font-semibold text-gray-900">System Information</h2>
+              <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-emerald-50/40 dark:from-emerald-900/10 to-transparent flex items-center gap-2">
+                <Network className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <h2 className="font-semibold text-gray-900 dark:text-white">System Information</h2>
               </div>
               <div className="px-6 py-4 space-y-1 text-sm">
                 {[
@@ -428,16 +428,16 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                   ['Last Polled', olt.last_polled ? new Date(olt.last_polled).toLocaleString() : 'Never'],
                   ['Added', new Date(olt.created_at).toLocaleDateString()],
                 ].map(([k, v]) => (
-                  <div key={k} className="flex justify-between py-2 border-b border-gray-50 last:border-0">
-                    <span className="text-gray-500">{k}</span>
-                    <span className="font-medium text-gray-800 text-right max-w-xs truncate">{v}</span>
+                  <div key={k} className="flex justify-between py-2 border-b border-gray-50 dark:border-gray-700/50 last:border-0">
+                    <span className="text-gray-500 dark:text-gray-400">{k}</span>
+                    <span className="font-medium text-gray-800 dark:text-gray-200 text-right max-w-xs truncate">{v}</span>
                   </div>
                 ))}
               </div>
               {olt.system_description && (
-                <div className="mx-6 mb-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-500 font-medium mb-1">System Description</p>
-                  <p className="text-xs text-gray-600 break-all">{olt.system_description}</p>
+                <div className="mx-6 mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">System Description</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-300 break-all">{olt.system_description}</p>
                 </div>
               )}
             </Card>

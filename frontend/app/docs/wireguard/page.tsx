@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/Card';
 import { useState } from 'react';
@@ -12,7 +12,7 @@ function CodeBlock({ code, label }: { code: string; label?: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="relative mt-2">
-      {label && <p className="text-xs text-gray-500 mb-1">{label}</p>}
+      {label && <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>}
       <pre className="bg-gray-900 text-green-400 text-xs rounded-lg p-4 overflow-x-auto font-mono leading-relaxed">
         {code}
       </pre>
@@ -40,11 +40,11 @@ function Section({ title, icon: Icon, color, children, defaultOpen = true }: {
           <div className={`p-2 rounded-lg ${color}`}>
             <Icon className="h-5 w-5 text-white" />
           </div>
-          <h2 className="font-semibold text-gray-900 text-left">{title}</h2>
+          <h2 className="font-semibold text-gray-900 dark:text-white text-left">{title}</h2>
         </div>
         {open ? <ChevronUp className="h-4 w-4 text-gray-400" /> : <ChevronDown className="h-4 w-4 text-gray-400" />}
       </button>
-      {open && <div className="mt-4 space-y-3 text-sm text-gray-700">{children}</div>}
+      {open && <div className="mt-4 space-y-3 text-sm text-gray-700 dark:text-gray-300">{children}</div>}
     </Card>
   );
 }
@@ -55,9 +55,9 @@ function Step({ num, title, children }: { num: number; title: string; children: 
       <div className="shrink-0 w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
         {num}
       </div>
-      <div className="flex-1 pb-4 border-b border-gray-100 last:border-0">
-        <p className="font-medium text-gray-900 mb-2">{title}</p>
-        <div className="text-gray-600 space-y-2">{children}</div>
+      <div className="flex-1 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0">
+        <p className="font-medium text-gray-900 dark:text-white mb-2">{title}</p>
+        <div className="text-gray-600 dark:text-gray-400 space-y-2">{children}</div>
       </div>
     </div>
   );
@@ -67,7 +67,7 @@ function Note({ type = 'info', children }: { type?: 'info' | 'warn'; children: R
   return (
     <div className={clsx(
       'flex items-start gap-2 p-3 rounded-lg text-sm',
-      type === 'warn' ? 'bg-yellow-50 border border-yellow-200 text-yellow-800' : 'bg-blue-50 border border-blue-200 text-blue-800'
+      type === 'warn' ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300' : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300'
     )}>
       {type === 'warn'
         ? <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -81,33 +81,33 @@ export default function WireGuardDocsPage() {
   return (
     <AppLayout>
       <div className="relative">
-        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-indigo-50/70 via-blue-50/40 to-transparent pointer-events-none" />
+        <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-indigo-50/70 dark:from-indigo-950/20 via-blue-50/40 dark:via-transparent to-transparent pointer-events-none" />
         <div className="relative p-6 max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-indigo-50 to-blue-100 flex items-center justify-center text-indigo-600 shadow-sm shrink-0">
+          <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-indigo-50 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm shrink-0">
             <ShieldCheck className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600/80">Guide</p>
-            <h1 className="text-2xl font-bold text-gray-900 mt-0.5">WireGuard VPN Setup</h1>
-            <p className="text-gray-500 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600/80 dark:text-indigo-400/80">Guide</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">WireGuard VPN Setup</h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm">
               Step-by-step guide to connect your OLT via WireGuard VPN using MikroTik.
             </p>
           </div>
         </div>
 
         {/* Architecture overview */}
-        <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">How it works</p>
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">How it works</p>
           <div className="flex items-center justify-between text-sm flex-wrap gap-2">
             {[
               { icon: Wifi, label: 'Auto OLT App', sub: 'sends to 10.100.0.5', color: 'bg-green-100 text-green-600' },
-              { label: '→', color: '' },
+              { label: 'â†’', color: '' },
               { icon: Server, label: 'Server (wg0)', sub: '10.100.0.1', color: 'bg-blue-100 text-blue-600' },
-              { label: '→ Tunnel →', color: '' },
+              { label: 'â†’ Tunnel â†’', color: '' },
               { icon: Router, label: 'MikroTik', sub: 'wg-autoolt = 10.100.0.5', color: 'bg-purple-100 text-purple-600' },
-              { label: '→ DNAT →', color: '' },
+              { label: 'â†’ DNAT â†’', color: '' },
               { icon: Monitor, label: 'OLT Device', sub: '192.168.1.1', color: 'bg-orange-100 text-orange-600' },
             ].map((item, i) => (
               item.icon ? (
@@ -123,14 +123,14 @@ export default function WireGuardDocsPage() {
               )
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
             Each customer gets a unique virtual IP from the 10.100.0.0/16 pool so multiple customers
             with the same default LAN (e.g. 192.168.1.0/24) do not collide. MikroTik's DNAT rule
             rewrites the virtual IP to the OLT's real LAN IP.
           </p>
         </div>
 
-        {/* Section 1 — Before you start */}
+        {/* Section 1 â€” Before you start */}
         <Section title="Before You Start" icon={CheckCircle2} color="bg-green-500">
           <div className="space-y-2">
             {[
@@ -148,51 +148,51 @@ export default function WireGuardDocsPage() {
           </div>
         </Section>
 
-        {/* Section 2 — MikroTik Setup */}
+        {/* Section 2 â€” MikroTik Setup */}
         <Section title="Step-by-Step: MikroTik WireGuard Setup" icon={Router} color="bg-purple-500">
           <div className="space-y-6">
             <Step num={1} title="Add WireGuard Interface">
-              <p>Go to <strong>WireGuard → + (Add)</strong></p>
-              <p>Give it a name like <code className="bg-gray-100 px-1 rounded">wg-autoolt</code></p>
+              <p>Go to <strong>WireGuard â†’ + (Add)</strong></p>
+              <p>Give it a name like <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">wg-autoolt</code></p>
               <p>MikroTik will auto-generate a private/public key pair.</p>
               <p>Click <strong>OK</strong> to save.</p>
-              <Note>Copy the <strong>Public Key</strong> shown — you will paste this in the Auto OLT Setup Wizard.</Note>
+              <Note>Copy the <strong>Public Key</strong> shown â€” you will paste this in the Auto OLT Setup Wizard.</Note>
             </Step>
 
             <Step num={2} title="Add Peer (Auto OLT Server)">
-              <p>Go to <strong>WireGuard → Peers → + (Add)</strong></p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Interface:</span><span>wg-autoolt</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Public Key:</span><span className="text-blue-600">{'<Server Public Key from app>'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Endpoint:</span><span>162.217.248.75:51820</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Allowed Address:</span><span>10.100.0.0/16</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Persistent Keepalive:</span><span>25</span></div>
+              <p>Go to <strong>WireGuard â†’ Peers â†’ + (Add)</strong></p>
+              <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Interface:</span><span>wg-autoolt</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Public Key:</span><span className="text-blue-600">{'<Server Public Key from app>'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Endpoint:</span><span>162.217.248.75:51820</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Allowed Address:</span><span>10.100.0.0/16</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Persistent Keepalive:</span><span>25</span></div>
               </div>
               <Note>The <strong>Server Public Key</strong> and <strong>Endpoint</strong> are shown in the Setup Wizard under "Give these to customer".</Note>
             </Step>
 
             <Step num={3} title="Assign IP Address to WireGuard Interface">
-              <p>Go to <strong>IP → Addresses → + (Add)</strong></p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Address:</span><span className="text-blue-600">{'<Virtual IP from app>/32'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Interface:</span><span>wg-autoolt</span></div>
+              <p>Go to <strong>IP â†’ Addresses â†’ + (Add)</strong></p>
+              <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Address:</span><span className="text-blue-600">{'<Virtual IP from app>/32'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Interface:</span><span>wg-autoolt</span></div>
               </div>
               <Note>The <strong>Virtual IP</strong> (e.g. <code>10.100.0.5/32</code>) is shown in the Setup Wizard under "Assigned Virtual IP". This is what the server uses to identify your MikroTik.</Note>
             </Step>
 
-            <Step num={4} title="Add DNAT rule — virtual IP → OLT LAN IP (CRITICAL)">
-              <Note type="warn">Without this step, the tunnel will connect but SNMP / Telnet to the OLT will fail. The server addresses the OLT via the virtual IP — MikroTik must rewrite that to the OLT's real LAN IP.</Note>
-              <p className="mt-2">In Winbox: <strong>IP → Firewall → NAT → + (Add)</strong></p>
+            <Step num={4} title="Add DNAT rule â€” virtual IP â†’ OLT LAN IP (CRITICAL)">
+              <Note type="warn">Without this step, the tunnel will connect but SNMP / Telnet to the OLT will fail. The server addresses the OLT via the virtual IP â€” MikroTik must rewrite that to the OLT's real LAN IP.</Note>
+              <p className="mt-2">In Winbox: <strong>IP â†’ Firewall â†’ NAT â†’ + (Add)</strong></p>
               <p className="font-medium mt-2">General tab:</p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Chain:</span><span>dstnat</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Dst. Address:</span><span className="text-blue-600">{'<Virtual IP from app>'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">In. Interface:</span><span>wg-autoolt</span></div>
+              <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Chain:</span><span>dstnat</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Dst. Address:</span><span className="text-blue-600">{'<Virtual IP from app>'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">In. Interface:</span><span>wg-autoolt</span></div>
               </div>
               <p className="font-medium mt-2">Action tab:</p>
-              <div className="bg-gray-50 rounded-lg p-3 space-y-1 font-mono text-xs">
-                <div className="flex justify-between"><span className="text-gray-500">Action:</span><span>dst-nat</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">To Addresses:</span><span className="text-blue-600">{'<OLT LAN IP e.g. 192.168.1.1>'}</span></div>
+              <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Action:</span><span>dst-nat</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">To Addresses:</span><span className="text-blue-600">{'<OLT LAN IP e.g. 192.168.1.1>'}</span></div>
               </div>
               <p className="mt-2 text-sm text-gray-500">Or via CLI:</p>
               <CodeBlock code={`/ip firewall nat add chain=dstnat in-interface=wg-autoolt \\\n  dst-address=<virtual_ip> action=dst-nat \\\n  to-addresses=<olt_lan_ip>`} />
@@ -210,16 +210,16 @@ export default function WireGuardDocsPage() {
           </div>
         </Section>
 
-        {/* Section 3 — App Side */}
+        {/* Section 3 â€” App Side */}
         <Section title="App Side: Setup Wizard Steps" icon={Monitor} color="bg-blue-500">
           <div className="space-y-6">
             <Step num={1} title="Add VPN OLT">
-              <p>In Auto OLT → Add OLT → select <strong>Connection Type: VPN (WireGuard)</strong></p>
-              <p>Set IP Address to the OLT's real LAN IP (e.g. <code className="bg-gray-100 px-1 rounded">192.168.1.1</code>)</p>
-              <p>System auto-assigns a Virtual IP from the <code className="bg-gray-100 px-1 rounded">10.100.0.0/16</code> pool.</p>
+              <p>In Auto OLT â†’ Add OLT â†’ select <strong>Connection Type: VPN (WireGuard)</strong></p>
+              <p>Set IP Address to the OLT's real LAN IP (e.g. <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">192.168.1.1</code>)</p>
+              <p>System auto-assigns a Virtual IP from the <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">10.100.0.0/16</code> pool.</p>
             </Step>
 
-            <Step num={2} title="Setup Wizard — Configure Peer">
+            <Step num={2} title="Setup Wizard â€” Configure Peer">
               <p>Give the customer (MikroTik admin):</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>Server Endpoint</li>
@@ -231,18 +231,18 @@ export default function WireGuardDocsPage() {
                 <li>MikroTik WireGuard Public Key</li>
                 <li>Customer LAN Subnet (e.g. 192.168.1.0/24)</li>
               </ul>
-              <p className="mt-2">Paste the public key → click <strong>Save & Configure Peer</strong></p>
+              <p className="mt-2">Paste the public key â†’ click <strong>Save & Configure Peer</strong></p>
               <Note>The app automatically runs <code>wg set wg0 peer ...</code> on the server.</Note>
             </Step>
 
             <Step num={3} title="Test & Start">
-              <p>Click <strong>Test Connection</strong> — should show green if MikroTik is connected.</p>
-              <p>Click <strong>Start Setup</strong> — SNMP and Telnet will go through the VPN tunnel to reach the OLT.</p>
+              <p>Click <strong>Test Connection</strong> â€” should show green if MikroTik is connected.</p>
+              <p>Click <strong>Start Setup</strong> â€” SNMP and Telnet will go through the VPN tunnel to reach the OLT.</p>
             </Step>
           </div>
         </Section>
 
-        {/* Section 4 — CLI Reference */}
+        {/* Section 4 â€” CLI Reference */}
         <Section title="Server CLI Reference" icon={Server} color="bg-gray-600" defaultOpen={false}>
           <CodeBlock label="Check all connected peers:" code="wg show wg0" />
           <CodeBlock label="Check peer handshakes:" code="wg show wg0 latest-handshakes" />
@@ -251,7 +251,7 @@ export default function WireGuardDocsPage() {
           <CodeBlock label="Restart WireGuard:" code="systemctl restart wg-quick@wg0" />
         </Section>
 
-        {/* Section 5 — Troubleshooting */}
+        {/* Section 5 â€” Troubleshooting */}
         <Section title="Troubleshooting" icon={AlertTriangle} color="bg-red-500" defaultOpen={false}>
           <div className="space-y-4">
             {[
@@ -268,9 +268,9 @@ export default function WireGuardDocsPage() {
               {
                 problem: 'Peer added but wg show shows no handshake',
                 solutions: [
-                  'MikroTik has not initiated a connection yet — set Persistent Keepalive to 25',
-                  'Firewall on server may be blocking UDP 51820 — check ufw/iptables',
-                  'MikroTik clock may be wrong — sync NTP',
+                  'MikroTik has not initiated a connection yet â€” set Persistent Keepalive to 25',
+                  'Firewall on server may be blocking UDP 51820 â€” check ufw/iptables',
+                  'MikroTik clock may be wrong â€” sync NTP',
                 ]
               },
               {
@@ -281,16 +281,16 @@ export default function WireGuardDocsPage() {
                   'Confirm in. interface is wg-autoolt on the DNAT rule',
                   'Check OLT is reachable from MikroTik: /ping <OLT LAN IP>',
                   'Make sure the masquerade rule (srcnat) exists so OLT replies reach the tunnel',
-                  'Test from server: ping <virtual_ip> — should reply via tunnel; then snmpget against the virtual IP',
+                  'Test from server: ping <virtual_ip> â€” should reply via tunnel; then snmpget against the virtual IP',
                 ]
               },
             ].map(({ problem, solutions }, i) => (
-              <div key={i} className="border border-gray-100 rounded-lg p-4">
-                <p className="font-medium text-red-600 mb-2">❌ {problem}</p>
+              <div key={i} className="border border-gray-100 dark:border-gray-700 rounded-lg p-4">
+                <p className="font-medium text-red-600 mb-2">âŒ {problem}</p>
                 <ul className="space-y-1">
                   {solutions.map((s, j) => (
-                    <li key={j} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-green-500 mt-0.5">→</span>
+                    <li key={j} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-green-500 mt-0.5">â†’</span>
                       <span>{s}</span>
                     </li>
                   ))}

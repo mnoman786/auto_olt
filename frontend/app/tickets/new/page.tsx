@@ -60,22 +60,22 @@ export default function NewTicketPage() {
       <div className="relative">
         <div
           aria-hidden
-          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 via-indigo-50/40 to-transparent pointer-events-none"
+          className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
         <div className="relative p-6 max-w-2xl mx-auto">
-          <Link href="/tickets" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 mb-4 transition-colors">
+          <Link href="/tickets" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Back to Support
           </Link>
 
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center text-blue-600 shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
               <LifeBuoy className="h-6 w-6" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80">Submit Request</p>
-              <h1 className="text-2xl font-bold text-gray-900 mt-0.5">New Support Ticket</h1>
-              <p className="text-gray-500 text-sm">Describe your issue and we'll get back to you</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">Submit Request</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">New Support Ticket</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Describe your issue and we'll get back to you</p>
             </div>
           </div>
 
@@ -96,11 +96,11 @@ export default function NewTicketPage() {
                   onChange={e => setForm(f => ({ ...f, olt: e.target.value }))}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     Message <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     rows={6}
                     placeholder="Describe your issue in detail..."
                     value={form.message}
