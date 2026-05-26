@@ -236,7 +236,7 @@ CELERY_RESULT_EXPIRES = 3600  # purge task results from Redis after 1 hour
 
 CELERY_BEAT_SCHEDULE = {
     'poll-bandwidth-every-5-min': {
-        'task': 'tasks.poll_bandwidth',
+        'task': 'tasks.dispatch_bandwidth_poll',
         'schedule': 300,  # seconds
     },
     'cleanup-old-logs-daily': {

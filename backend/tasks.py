@@ -11,7 +11,8 @@ Retry policy per task:
   - provision_onu_task:      no retry — function handles errors internally
   - push_vlan_to_olt_task:   1 retry / 30s — Telnet connection may be momentarily down
   - sync_vlans_from_olt_task: 1 retry / 60s
-  - poll_bandwidth_task:     1 retry / 60s — SNMP walk can be transiently busy
+  - dispatch_bandwidth_poll_task: no retry — just dispatches per-OLT tasks
+  - poll_bandwidth_olt_task: 1 retry / 60s — SNMP walk can be transiently busy
   - cleanup_old_logs_task:   no retry — runs daily, failure is non-critical
 """
 import logging
@@ -155,48 +156,71 @@ def discover_ports_task(self, olt_id: int) -> dict:
     return result
 
 
-@shared_task(bind=True, max_retries=1, default_retry_delay=60, name='tasks.poll_bandwidth')
-def poll_bandwidth_task(self) -> dict:
-    """Poll ifHCInOctets/ifHCOutOctets for all active OLTs and store BandwidthSamples."""
+@shared_task(bind=True, max_retries=0, name='tasks.dispatch_bandwidth_poll')
+def dispatch_bandwidth_poll_task(self) -> dict:
+    """
+    Fired by Beat every 5 minutes.
+    Dispatches one poll_bandwidth_olt_task per active OLT so all OLTs
+    are polled in parallel by the worker pool instead of sequentially.
+    Scales to thousands of OLTs — dispatcher finishes in milliseconds.
+    """
+    from apps.olts.models import OLT
+    olt_ids = list(OLT.objects.filter(status='active').values_list('id', flat=True))
+    for olt_id in olt_ids:
+        poll_bandwidth_olt_task.delay(olt_id)
+    return {'dispatched': len(olt_ids)}
+
+
+@shared_task(bind=True, max_retries=1, default_retry_delay=60, name='tasks.poll_bandwidth_olt')
+def poll_bandwidth_olt_task(self, olt_id: int) -> dict:
+    """
+    Poll bandwidth for a single OLT.
+    A Redis lock ensures only one poll runs per OLT at a time — if Beat fires
+    again before the previous poll finished (e.g. slow SNMP), the new task
+    exits immediately rather than queuing behind it.
+    """
+    from django.core.cache import cache
     from django.db.models import Max
     from django.utils import timezone
-    from apps.olts.models import OLT, OLTPort, BandwidthSample
+    from apps.olts.models import OLT, BandwidthSample
     from services import snmp_service
     from services.provisioning_service import _connect_ip
+
+    lock_key = f'bw_poll_lock:olt:{olt_id}'
+    # TTL slightly under 5 min so a crashed task doesn't block the next cycle
+    if not cache.add(lock_key, '1', 270):
+        logger.info(f"poll_bandwidth_olt skipped for OLT {olt_id} — previous poll still running")
+        return {'skipped': True}
 
     OID_IN  = '1.3.6.1.2.1.31.1.1.1.6'   # ifHCInOctets
     OID_OUT = '1.3.6.1.2.1.31.1.1.1.10'  # ifHCOutOctets
 
-    active_olts = OLT.objects.filter(status='active').prefetch_related('ports')
-    total_samples = 0
-
-    for olt in active_olts:
+    try:
         try:
-            host = _connect_ip(olt)
-            in_map  = snmp_service.snmp_bulk_walk(host, olt.snmp_read_community, OID_IN,  version=olt.snmp_version)
-            out_map = snmp_service.snmp_bulk_walk(host, olt.snmp_read_community, OID_OUT, version=olt.snmp_version)
-        except Exception as exc:
-            logger.warning(f"SNMP bulk walk failed for OLT {olt.id}: {exc}")
-            continue
+            olt = OLT.objects.get(id=olt_id, status='active')
+        except OLT.DoesNotExist:
+            return {'skipped': True, 'reason': 'OLT not found or inactive'}
+
+        host = _connect_ip(olt)
+        in_map  = snmp_service.snmp_bulk_walk(host, olt.snmp_read_community, OID_IN,  version=olt.snmp_version)
+        out_map = snmp_service.snmp_bulk_walk(host, olt.snmp_read_community, OID_OUT, version=olt.snmp_version)
 
         def _to_index_map(walk_result: dict) -> dict:
-            result = {}
+            out = {}
             for oid, val in walk_result.items():
                 try:
-                    idx = int(oid.rsplit('.', 1)[-1])
-                    result[idx] = int(val)
+                    out[int(oid.rsplit('.', 1)[-1])] = int(val)
                 except (ValueError, TypeError):
                     pass
-            return result
+            return out
 
         in_raw  = _to_index_map(in_map)
         out_raw = _to_index_map(out_map)
 
         ports = {p.if_index: p for p in olt.ports.all()}
         if not ports:
-            continue
+            return {'samples_created': 0}
 
-        # Fetch the most recent sample per port in one query
         latest_ids = (
             BandwidthSample.objects
             .filter(port__olt=olt)
@@ -222,7 +246,6 @@ def poll_bandwidth_task(self) -> dict:
                     continue
                 delta_in  = cur_in  - prev.in_octets_raw
                 delta_out = cur_out - prev.out_octets_raw
-                # 64-bit counter wrap
                 if delta_in  < 0: delta_in  += 2 ** 64
                 if delta_out < 0: delta_out += 2 ** 64
                 in_mbps  = delta_in  * 8 / interval / 1_000_000
@@ -241,9 +264,14 @@ def poll_bandwidth_task(self) -> dict:
 
         if new_samples:
             BandwidthSample.objects.bulk_create(new_samples)
-            total_samples += len(new_samples)
 
-    return {'samples_created': total_samples}
+        return {'samples_created': len(new_samples)}
+
+    except Exception as exc:
+        logger.warning(f"poll_bandwidth_olt failed for OLT {olt_id}, retrying: {exc}")
+        raise self.retry(exc=exc)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(bind=True, max_retries=0, name='tasks.cleanup_old_logs')
