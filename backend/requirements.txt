@@ -3,7 +3,7 @@ djangorestframework==3.15.1
 djangorestframework-simplejwt==5.3.1
 django-cors-headers==4.3.1
 python-decouple==3.8
-pysnmp-lextudio==6.3.0
+pysnmp-lextudio==5.0.21
 pyasn1>=0.4.8
 python-dotenv==1.0.1
 Pillow==10.3.0
