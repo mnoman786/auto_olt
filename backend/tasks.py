@@ -264,6 +264,9 @@ def poll_bandwidth_olt_task(self, olt_id: int) -> dict:
 
         if new_samples:
             BandwidthSample.objects.bulk_create(new_samples)
+            # Bust cached API responses for this OLT so next page load is fresh
+            for h in (1, 3, 6, 12, 24, 48, 168):
+                cache.delete(f'bw_api:{olt_id}:h{h}')
 
         return {'samples_created': len(new_samples)}
 

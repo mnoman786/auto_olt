@@ -462,6 +462,12 @@ def bandwidth(request, pk):
     """
     GET /olts/<id>/bandwidth/?hours=24&port_id=<id>
     Returns bandwidth samples grouped by port for the requested window.
+
+    Downsampling — keeps the response small regardless of window size:
+      <=6h  : every sample (~5-min resolution, max ~72 pts/port)
+      <=24h : every 3rd sample (~15-min resolution, max ~96 pts/port)
+      <=48h : every 6th sample (~30-min resolution, max ~96 pts/port)
+      >48h  : every 12th sample (~1-hour resolution, max ~168 pts/port)
     """
     from .models import BandwidthSample
     olt = get_olt_for_user(pk, request.user)
@@ -474,6 +480,16 @@ def bandwidth(request, pk):
     from django.utils import timezone
     from datetime import timedelta
     since = timezone.now() - timedelta(hours=hours)
+
+    # Pick downsample stride based on window
+    if hours <= 6:
+        stride = 1
+    elif hours <= 24:
+        stride = 3
+    elif hours <= 48:
+        stride = 6
+    else:
+        stride = 12
 
     qs = (
         BandwidthSample.objects
@@ -489,7 +505,17 @@ def bandwidth(request, pk):
         except (TypeError, ValueError):
             pass
 
+    from django.core.cache import cache
+    import json
+
+    cache_key = f'bw_api:{olt.id}:h{hours}' + (f':p{port_id_filter}' if port_id_filter else '')
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(cached)
+
     ports_data: dict = {}
+    counters: dict[int, int] = {}
+
     for sample in qs:
         pid = sample.port_id
         if pid not in ports_data:
@@ -499,17 +525,24 @@ def bandwidth(request, pk):
                 'port_type': sample.port.port_type,
                 'samples':   [],
             }
-        ports_data[pid]['samples'].append({
-            't':       sample.timestamp.isoformat(),
-            'in_mbps': sample.in_mbps,
-            'out_mbps': sample.out_mbps,
-        })
+            counters[pid] = 0
 
-    return Response({
+        if counters[pid] % stride == 0:
+            ports_data[pid]['samples'].append({
+                't':        sample.timestamp.isoformat(),
+                'in_mbps':  sample.in_mbps,
+                'out_mbps': sample.out_mbps,
+            })
+        counters[pid] += 1
+
+    payload = {
         'olt_id': olt.id,
         'hours':  hours,
         'ports':  list(ports_data.values()),
-    })
+    }
+    # Cache for 4 min — slightly under the 5-min poll interval so data stays fresh
+    cache.set(cache_key, payload, timeout=240)
+    return Response(payload)
 
 
 @api_view(['POST'])
