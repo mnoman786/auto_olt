@@ -55,11 +55,25 @@ class ONUDetailView(generics.RetrieveUpdateDestroyAPIView):
 @permission_classes([IsAuthenticated])
 def register_onu(request, olt_pk, pk):
     """Register (provision) an ONU."""
+    from apps.plans.limits import check_onu_limit
     olt = get_olt_for_user(olt_pk, request.user)
     onu = get_object_or_404(ONU, pk=pk, olt=olt)
 
     if onu.status in ('active', 'registered', 'provisioning'):
         return Response({'detail': f'ONU is already {onu.status}.'}, status=400)
+
+    allowed, current, limit = check_onu_limit(request.user)
+    if not allowed:
+        return Response(
+            {
+                'detail': f'ONU limit reached. Your plan allows {limit} registered ONU(s). '
+                          f'Upgrade to register more.',
+                'code': 'onu_limit_reached',
+                'current': current,
+                'limit': limit,
+            },
+            status=status.HTTP_402_PAYMENT_REQUIRED,
+        )
 
     serializer = ONURegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)

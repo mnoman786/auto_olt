@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'apps.vlans',
     'apps.tickets',
     'apps.alerts',
+    'apps.plans',
 ]
 
 MIDDLEWARE = [

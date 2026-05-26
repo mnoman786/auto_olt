@@ -65,6 +65,19 @@ class OLTListCreateView(generics.ListCreateAPIView):
         return olt
 
     def create(self, request, *args, **kwargs):
+        from apps.plans.limits import check_olt_limit
+        allowed, current, limit = check_olt_limit(request.user)
+        if not allowed:
+            return Response(
+                {
+                    'detail': f'OLT limit reached. Your plan allows {limit} OLT(s). '
+                              f'Upgrade to add more.',
+                    'code': 'olt_limit_reached',
+                    'current': current,
+                    'limit': limit,
+                },
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
         serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         olt = self.perform_create(serializer)
