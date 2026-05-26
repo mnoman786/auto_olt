@@ -43,6 +43,8 @@ export default function OLTDetailPage() {
   const [apSrvProfile, setApSrvProfile] = useState(1);
   const [savingAp, setSavingAp] = useState(false);
   const [apExpanded, setApExpanded] = useState(false);
+  const [vlansExpanded, setVlansExpanded] = useState(false);
+  const [profilesExpanded, setProfilesExpanded] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [syncingVlans, setSyncingVlans] = useState(false);
   const [syncingProfiles, setSyncingProfiles] = useState(false);
@@ -259,7 +261,11 @@ export default function OLTDetailPage() {
 
           {/* VLANs on Device */}
           <Card padding="none" className="overflow-hidden mb-5">
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-emerald-50/40 dark:from-emerald-900/10 to-transparent flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setVlansExpanded(v => !v)}
+              className="w-full px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-emerald-50/40 dark:from-emerald-900/10 to-transparent flex items-center justify-between gap-3 hover:bg-emerald-50/60 dark:hover:bg-emerald-900/20 transition-colors text-left"
+            >
               <div className="flex items-center gap-2 min-w-0">
                 <Layers className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                 <h2 className="font-semibold text-gray-900 dark:text-white">VLANs on Device</h2>
@@ -273,150 +279,179 @@ export default function OLTDetailPage() {
                   </span>
                 )}
               </div>
-              <div className="flex gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  icon={<RefreshCw className={`h-4 w-4 ${syncingVlans ? 'animate-spin' : ''}`} />}
-                  loading={syncingVlans}
-                  onClick={handleSyncVlans}
-                  title="Read VLAN list from OLT"
-                >
-                  Sync
-                </Button>
-                <Link href={`/olts/${oltId}/vlans`}>
-                  <Button variant="outline" size="sm">Manage</Button>
-                </Link>
-              </div>
-            </div>
-            {vlans.length === 0 ? (
-              <div className="px-6 py-8 text-center">
-                <Layers className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No VLANs yet</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Click <strong>Sync</strong> to import VLANs from the OLT</p>
-              </div>
-            ) : (
-              <div className="px-6 py-4 flex flex-wrap gap-2">
-                {vlans.slice(0, 24).map(v => (
-                  <Link
-                    key={v.id}
-                    href={`/olts/${oltId}/vlans`}
-                    className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
-                      v.source === 'discovered'
-                        ? 'bg-indigo-50/60 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
-                        : 'bg-blue-50/60 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40'
-                    }`}
-                    title={v.description || v.name}
-                  >
-                    {v.source === 'discovered'
-                      ? <Cloud className="h-3 w-3 opacity-70" />
-                      : <Wrench className="h-3 w-3 opacity-70" />}
-                    <span className="font-mono font-bold">{v.vlan_id}</span>
-                    <span className="text-gray-500 dark:text-gray-400 group-hover:text-current truncate max-w-[10ch]">{v.name}</span>
-                  </Link>
-                ))}
-                {vlans.length > 24 && (
-                  <Link
-                    href={`/olts/${oltId}/vlans`}
-                    className="inline-flex items-center px-2.5 py-1 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  >
-                    +{vlans.length - 24} more
-                  </Link>
+              <ChevronRight className={clsx(
+                'h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200',
+                vlansExpanded && 'rotate-90',
+              )} />
+            </button>
+            {vlansExpanded && (
+              <>
+                {vlans.length === 0 ? (
+                  <div className="px-6 py-8 text-center">
+                    <Layers className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No VLANs yet</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Click <strong>Sync</strong> to import VLANs from the OLT</p>
+                  </div>
+                ) : (
+                  <div className="px-6 py-4 flex flex-wrap gap-2">
+                    {vlans.slice(0, 24).map(v => (
+                      <Link
+                        key={v.id}
+                        href={`/olts/${oltId}/vlans`}
+                        className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                          v.source === 'discovered'
+                            ? 'bg-indigo-50/60 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/40'
+                            : 'bg-blue-50/60 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/40'
+                        }`}
+                        title={v.description || v.name}
+                      >
+                        {v.source === 'discovered'
+                          ? <Cloud className="h-3 w-3 opacity-70" />
+                          : <Wrench className="h-3 w-3 opacity-70" />}
+                        <span className="font-mono font-bold">{v.vlan_id}</span>
+                        <span className="text-gray-500 dark:text-gray-400 group-hover:text-current truncate max-w-[10ch]">{v.name}</span>
+                      </Link>
+                    ))}
+                    {vlans.length > 24 && (
+                      <Link
+                        href={`/olts/${oltId}/vlans`}
+                        className="inline-flex items-center px-2.5 py-1 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        +{vlans.length - 24} more
+                      </Link>
+                    )}
+                  </div>
                 )}
-              </div>
+                <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    icon={<RefreshCw className={`h-4 w-4 ${syncingVlans ? 'animate-spin' : ''}`} />}
+                    loading={syncingVlans}
+                    onClick={handleSyncVlans}
+                    title="Read VLAN list from OLT"
+                  >
+                    Sync
+                  </Button>
+                  <Link href={`/olts/${oltId}/vlans`}>
+                    <Button variant="outline" size="sm">Manage</Button>
+                  </Link>
+                </div>
+              </>
             )}
           </Card>
 
-          {/* ONU Profiles (Huawei) */}
+          {/* ONU Profiles */}
           <Card padding="none" className="overflow-hidden mb-5">
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-purple-50/40 dark:from-purple-900/10 to-transparent flex items-center justify-between gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setProfilesExpanded(v => !v)}
+              className="w-full px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-purple-50/40 dark:from-purple-900/10 to-transparent flex items-center justify-between gap-3 hover:bg-purple-50/60 dark:hover:bg-purple-900/20 transition-colors text-left"
+            >
               <div className="flex items-center gap-2 min-w-0">
                 <Sliders className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
                 <h2 className="font-semibold text-gray-900 dark:text-white">ONU Profiles on OLT</h2>
-                {olt.profiles_last_synced && (
-                  <span className="text-xs text-gray-400 dark:text-gray-500">
-                    · synced {new Date(olt.profiles_last_synced).toLocaleString()}
+                {(olt.line_profiles?.length || olt.srv_profiles?.length) ? (
+                  <span className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500 shrink-0">
+                    {olt.line_profiles?.length || 0} line · {olt.srv_profiles?.length || 0} service
                   </span>
+                ) : null}
+              </div>
+              <ChevronRight className={clsx(
+                'h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200',
+                profilesExpanded && 'rotate-90',
+              )} />
+            </button>
+            {profilesExpanded && (
+              <>
+                {(olt.line_profiles?.length || olt.srv_profiles?.length) ? (
+                  <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80 mb-2">
+                        Line Profiles ({olt.line_profiles?.length || 0})
+                      </p>
+                      {olt.line_profiles?.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {olt.line_profiles.map((p, i) => (
+                            <span
+                              key={p.id}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
+                                i === 0
+                                  ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+                                  : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                              }`}
+                              title={i === 0 ? 'Default used for new ONUs' : undefined}
+                            >
+                              <span className="font-mono font-bold">{p.id}</span>
+                              <span>{p.name}</span>
+                              {i === 0 && (
+                                <span className="text-[10px] uppercase tracking-wider opacity-70">default</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 dark:text-gray-500">None found</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80 mb-2">
+                        Service Profiles ({olt.srv_profiles?.length || 0})
+                      </p>
+                      {olt.srv_profiles?.length ? (
+                        <div className="flex flex-wrap gap-2">
+                          {olt.srv_profiles.map((p, i) => (
+                            <span
+                              key={p.id}
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
+                                i === 0
+                                  ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
+                                  : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
+                              }`}
+                              title={i === 0 ? 'Default used for new ONUs' : undefined}
+                            >
+                              <span className="font-mono font-bold">{p.id}</span>
+                              <span>{p.name}</span>
+                              {i === 0 && (
+                                <span className="text-[10px] uppercase tracking-wider opacity-70">default</span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 dark:text-gray-500">None found</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-6 py-8 text-center">
+                    <Sliders className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No profiles cached yet</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      Click <strong>Sync Profiles</strong> to read available IDs from the OLT
+                    </p>
+                  </div>
                 )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                icon={<RefreshCw className={`h-4 w-4 ${syncingProfiles ? 'animate-spin' : ''}`} />}
-                loading={syncingProfiles}
-                onClick={handleSyncProfiles}
-                title="Re-read line + service profiles from OLT"
-              >
-                Sync Profiles
-              </Button>
-            </div>
-            {(olt.line_profiles?.length || olt.srv_profiles?.length) ? (
-              <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80 mb-2">
-                    Line Profiles ({olt.line_profiles?.length || 0})
-                  </p>
-                  {olt.line_profiles?.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      {olt.line_profiles.map((p, i) => (
-                        <span
-                          key={p.id}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
-                            i === 0
-                              ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
-                              : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-                          }`}
-                          title={i === 0 ? 'Default used for new ONUs' : undefined}
-                        >
-                          <span className="font-mono font-bold">{p.id}</span>
-                          <span>{p.name}</span>
-                          {i === 0 && (
-                            <span className="text-[10px] uppercase tracking-wider opacity-70">default</span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">None found</p>
+                <div className="px-6 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                  {olt.profiles_last_synced && (
+                    <span className="text-xs text-gray-400 dark:text-gray-500">
+                      Last synced {new Date(olt.profiles_last_synced).toLocaleString()}
+                    </span>
                   )}
+                  <div className="ml-auto">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={<RefreshCw className={`h-4 w-4 ${syncingProfiles ? 'animate-spin' : ''}`} />}
+                      loading={syncingProfiles}
+                      onClick={handleSyncProfiles}
+                      title="Re-read line + service profiles from OLT"
+                    >
+                      Sync Profiles
+                    </Button>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-purple-600/80 dark:text-purple-400/80 mb-2">
-                    Service Profiles ({olt.srv_profiles?.length || 0})
-                  </p>
-                  {olt.srv_profiles?.length ? (
-                    <div className="flex flex-wrap gap-2">
-                      {olt.srv_profiles.map((p, i) => (
-                        <span
-                          key={p.id}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${
-                            i === 0
-                              ? 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800'
-                              : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600'
-                          }`}
-                          title={i === 0 ? 'Default used for new ONUs' : undefined}
-                        >
-                          <span className="font-mono font-bold">{p.id}</span>
-                          <span>{p.name}</span>
-                          {i === 0 && (
-                            <span className="text-[10px] uppercase tracking-wider opacity-70">default</span>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 dark:text-gray-500">None found</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="px-6 py-8 text-center">
-                <Sliders className="h-8 w-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No profiles cached yet</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                  Click <strong>Sync Profiles</strong> to read available IDs from the OLT
-                </p>
-              </div>
+              </>
             )}
           </Card>
 
