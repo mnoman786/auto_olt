@@ -29,6 +29,12 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
+# ── Git pull ─────────────────────────────────────────────────────────────────
+section "0 — Git pull"
+cd "$PROJECT_DIR"
+git pull
+info "Repository up to date"
+
 # ── What to deploy? ───────────────────────────────────────────────────────────
 echo -e "${YELLOW}What do you want to deploy?${NC}"
 echo "  1) All             (backend + celery + frontend)"
