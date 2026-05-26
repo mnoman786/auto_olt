@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, PanelLeftClose, PanelLeftOpen,
+  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect } from 'react';
@@ -66,10 +66,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <aside className={clsx(
         'fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300',
         'bg-linear-to-b from-gray-900 via-gray-900 to-gray-950 text-white',
-        'lg:translate-x-0 lg:static lg:flex lg:h-screen',
+        'lg:relative lg:translate-x-0 lg:flex lg:h-screen',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         collapsed ? 'w-16' : 'w-64',
       )}>
+        {/* Desktop collapse toggle — pinned to top-right edge of sidebar */}
+        <button
+          onClick={toggleCollapsed}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden lg:flex absolute -right-3 top-18 z-50 w-6 h-6 items-center justify-center rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors shadow-md"
+        >
+          {collapsed
+            ? <ChevronRight className="h-3 w-3" />
+            : <ChevronRight className="h-3 w-3 rotate-180" />
+          }
+        </button>
         {/* Logo */}
         <div className={clsx(
           'flex items-center gap-3 border-b border-white/5 transition-all duration-300',
@@ -169,23 +180,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
-        {/* Collapse toggle — desktop only */}
-        <div className={clsx(
-          'hidden lg:flex border-t border-white/5 py-2',
-          collapsed ? 'justify-center px-2' : 'px-3',
-        )}>
-          <button
-            onClick={toggleCollapsed}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-sm"
-          >
-            {collapsed
-              ? <PanelLeftOpen className="h-4 w-4 shrink-0" />
-              : <><PanelLeftClose className="h-4 w-4 shrink-0" /><span className="text-xs">Collapse</span></>
-            }
-          </button>
-        </div>
-
         {/* User section */}
         <div className={clsx(
           'border-t border-white/5 py-3',
@@ -219,9 +213,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Top bar */}
-        <header className="shrink-0 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-700/80 flex items-center px-4 gap-4 z-30">
+        <header className="shrink-0 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-700/80 flex items-center px-4 gap-2 z-30">
+          {/* Mobile open */}
           <button
-            className="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-5 w-5" />
