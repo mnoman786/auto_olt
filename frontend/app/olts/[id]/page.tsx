@@ -239,49 +239,49 @@ export default function OLTDetailPage() {
           )}
 
           {/* Quick Links */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 items-start">
             {quickLinks.map(item => (
               <Link key={item.href} href={item.href} className="group">
-                <Card className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 transition-all cursor-pointer h-full">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className={`p-2.5 rounded-xl shrink-0 bg-linear-to-br ${item.tone}`}>
                       <item.icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 dark:text-white text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.label}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-tight">{item.desc}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.label}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">{item.desc}</p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
                 </Card>
               </Link>
             ))}
 
             {/* Combined Ports card */}
-            <Card className="h-full p-0 overflow-hidden">
-              <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-                <div className="p-2 rounded-xl shrink-0 bg-linear-to-br from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400">
-                  <PlugZap className="h-5 w-5" />
+            <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 overflow-hidden shadow-sm">
+              {/* Header row */}
+              <div className="flex items-center gap-2.5 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                <div className="p-2 rounded-lg shrink-0 bg-linear-to-br from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400">
+                  <PlugZap className="h-4 w-4" />
                 </div>
-                <p className="font-medium text-gray-900 dark:text-white text-sm">Ports</p>
+                <p className="font-semibold text-sm text-gray-900 dark:text-white">Ports</p>
               </div>
-              <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                <Link href={`/olts/${oltId}/ports`} className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
-                  <div>
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Ports & Uplinks</p>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500">PON and uplink ports</p>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-all" />
-                </Link>
-                <Link href={`/olts/${oltId}/capacity`} className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
-                  <div>
-                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Port Capacity</p>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500">PON utilization planning</p>
-                  </div>
-                  <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-all" />
-                </Link>
-              </div>
-            </Card>
+              {/* Sub-links */}
+              <Link href={`/olts/${oltId}/ports`} className="group flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-tight">Ports & Uplinks</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">PON and uplink ports</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+              </Link>
+              <Link href={`/olts/${oltId}/capacity`} className="group flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-tight">Port Capacity</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">PON utilization planning</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-purple-400 group-hover:translate-x-0.5 transition-all shrink-0" />
+              </Link>
+            </div>
           </div>
 
           {/* Report download */}
