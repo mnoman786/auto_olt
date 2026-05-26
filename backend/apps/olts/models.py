@@ -78,7 +78,15 @@ class OLTPort(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='unknown')
     speed_mbps = models.IntegerField(default=0)
     onu_count = models.IntegerField(default=0)
+    # Max ONUs this port can serve: 128 for GPON, 64 for EPON, 0 = unknown
+    max_capacity = models.IntegerField(default=128)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def utilization_pct(self):
+        if not self.max_capacity:
+            return None
+        return round(self.onu_count / self.max_capacity * 100, 1)
 
     class Meta:
         db_table = 'olt_ports'

@@ -227,10 +227,13 @@ class OLTCreateSerializer(serializers.ModelSerializer):
 
 
 class OLTPortSerializer(serializers.ModelSerializer):
+    utilization_pct = serializers.FloatField(read_only=True)
+
     class Meta:
         model = OLTPort
         fields = ('id', 'if_index', 'name', 'description', 'port_type',
-                  'status', 'speed_mbps', 'onu_count', 'updated_at')
+                  'status', 'speed_mbps', 'onu_count', 'max_capacity',
+                  'utilization_pct', 'updated_at')
 
 
 class AutoProvisionConfigSerializer(serializers.ModelSerializer):

@@ -3,7 +3,7 @@ import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
   Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
-  AutoProvisionConfig,
+  AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse,
 } from './types';
 import { verifyResponseHMAC } from './hmac';
 
@@ -301,6 +301,45 @@ export const adminApi = {
 
   deleteUser: (id: number) =>
     apiClient.delete(`/auth/admin/users/${id}/`),
+};
+
+// Alerts API
+export const alertsApi = {
+  getRules: () =>
+    apiClient.get<AlertRule[]>('/alerts/rules/'),
+
+  createRule: (data: Omit<AlertRule, 'id' | 'olt_name' | 'created_at'>) =>
+    apiClient.post<AlertRule>('/alerts/rules/', data),
+
+  updateRule: (id: number, data: Partial<AlertRule>) =>
+    apiClient.patch<AlertRule>(`/alerts/rules/${id}/`, data),
+
+  deleteRule: (id: number) =>
+    apiClient.delete(`/alerts/rules/${id}/`),
+
+  getEvents: () =>
+    apiClient.get<AlertEvent[]>('/alerts/events/'),
+};
+
+// Signal history API
+export const signalApi = {
+  getHistory: (oltId: number, onuId: number, hours = 24) =>
+    apiClient.get<SignalHistoryResponse>(`/olts/${oltId}/onus/${onuId}/signal/`, { params: { hours } }),
+};
+
+// Bulk ONU API
+export const onuBulkApi = {
+  bulkReboot: (oltId: number, onuIds: number[]) =>
+    apiClient.post(`/olts/${oltId}/onus/bulk-reboot/`, { onu_ids: onuIds }),
+
+  exportCsv: (oltId: number) =>
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/olts/${oltId}/onus/export/`,
+};
+
+// Reports API
+export const reportsApi = {
+  downloadExcel: (oltId: number) =>
+    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/olts/${oltId}/report/`,
 };
 
 export default apiClient;

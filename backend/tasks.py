@@ -55,12 +55,37 @@ def poll_olt_onus_task(self, olt_id: int) -> dict:
     try:
         result = poll_olt_onus(olt_id)
         _trigger_auto_provision(olt_id)
+        _snapshot_signal_strengths(olt_id)
+        _trigger_alerts(olt_id)
         return result
     except Exception as exc:
         logger.warning(f"poll_olt_onus failed for OLT {olt_id}, retrying: {exc}")
         raise self.retry(exc=exc)
     finally:
         cache.delete(lock_key)
+
+
+def _snapshot_signal_strengths(olt_id: int) -> None:
+    """Save a SignalSample for every ONU that has a signal reading."""
+    try:
+        from django.utils import timezone
+        from apps.onus.models import ONU, SignalSample
+        now = timezone.now()
+        onus = ONU.objects.filter(olt_id=olt_id, signal_strength__isnull=False)
+        samples = [SignalSample(onu=o, timestamp=now, rx_power=o.signal_strength) for o in onus]
+        if samples:
+            SignalSample.objects.bulk_create(samples)
+    except Exception as exc:
+        logger.warning(f"_snapshot_signal_strengths failed for OLT {olt_id}: {exc}")
+
+
+def _trigger_alerts(olt_id: int) -> None:
+    """After a successful ONU poll, evaluate alert rules."""
+    try:
+        from apps.alerts.service import evaluate_after_poll
+        evaluate_after_poll(olt_id)
+    except Exception as exc:
+        logger.warning(f"_trigger_alerts failed for OLT {olt_id}: {exc}")
 
 
 def _trigger_auto_provision(olt_id: int) -> None:
@@ -82,6 +107,16 @@ def _trigger_auto_provision(olt_id: int) -> None:
             logger.info(f"Auto-provision queued for ONU {onu_id} (OLT {olt_id})")
     except Exception as exc:
         logger.warning(f"_trigger_auto_provision failed for OLT {olt_id}: {exc}")
+
+
+@shared_task(bind=True, max_retries=1, default_retry_delay=15, name='tasks.reboot_onu')
+def reboot_onu_task(self, onu_id: int) -> dict:
+    from services.provisioning_service import reboot_onu
+    try:
+        return reboot_onu(onu_id)
+    except Exception as exc:
+        logger.warning(f"reboot_onu failed for ONU {onu_id}, retrying: {exc}")
+        raise self.retry(exc=exc)
 
 
 @shared_task(bind=True, max_retries=0, name='tasks.provision_onu')
@@ -351,5 +386,15 @@ def cleanup_old_logs_task(self) -> dict:
     except Exception as exc:
         logger.warning(f"cleanup: BandwidthSample delete failed: {exc}")
         result['bandwidth_samples_error'] = str(exc)
+
+    # SignalSample: keep 30 days
+    try:
+        from apps.onus.models import SignalSample
+        cutoff = now - timedelta(days=30)
+        deleted, _ = SignalSample.objects.filter(timestamp__lt=cutoff).delete()
+        result['signal_samples_deleted'] = deleted
+    except Exception as exc:
+        logger.warning(f"cleanup: SignalSample delete failed: {exc}")
+        result['signal_samples_error'] = str(exc)
 
     return result

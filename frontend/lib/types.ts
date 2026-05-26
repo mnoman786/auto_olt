@@ -94,6 +94,8 @@ export interface OLTPort {
   status: PortStatus;
   speed_mbps: number;
   onu_count: number;
+  max_capacity: number;
+  utilization_pct: number | null;
   updated_at: string;
 }
 
@@ -247,6 +249,47 @@ export interface AutoProvisionConfig {
   updated_at: string;
 }
 
+// ── Alerts ────────────────────────────────────────────────────────────────────
+export type AlertType = 'olt_offline' | 'olt_error' | 'onu_drop' | 'signal_weak';
+
+export interface AlertRule {
+  id: number;
+  olt: number | null;
+  olt_name: string | null;
+  alert_type: AlertType;
+  channel: 'email';
+  enabled: boolean;
+  threshold: number | null;
+  cooldown_minutes: number;
+  created_at: string;
+}
+
+export interface AlertEvent {
+  id: number;
+  alert_type: AlertType;
+  olt_name: string;
+  onu_serial: string | null;
+  message: string;
+  sent: boolean;
+  triggered_at: string;
+}
+
+// ── Signal history ────────────────────────────────────────────────────────────
+export interface SignalSample {
+  t: string;
+  rx_power: number;
+}
+
+export interface SignalHistoryResponse {
+  onu_id: number;
+  serial_number: string;
+  pon_port: string;
+  current_signal: number | null;
+  hours: number;
+  samples: SignalSample[];
+}
+
+// ── Bandwidth ─────────────────────────────────────────────────────────────────
 export interface BandwidthSample {
   t: string;        // ISO timestamp
   in_mbps: number;

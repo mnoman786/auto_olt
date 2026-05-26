@@ -588,3 +588,108 @@ def sync_profiles(request, pk):
             status=400,
         )
     return Response(result)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def olt_report_excel(request, pk):
+    """Download an Excel report for a single OLT: summary + ONU list + port utilization."""
+    import io
+    from django.http import HttpResponse
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+
+    olt = get_olt_for_user(pk, request.user)
+    onus = list(olt.onus.select_related('vlan').order_by('pon_port', 'onu_index'))
+    ports = list(olt.ports.order_by('port_type', 'name'))
+
+    wb = openpyxl.Workbook()
+
+    # ── Sheet 1: Summary ──────────────────────────────────────────────────────
+    ws = wb.active
+    ws.title = 'Summary'
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(fill_type='solid', fgColor='1D4ED8')
+
+    def hdr(ws, row, col, val):
+        c = ws.cell(row=row, column=col, value=val)
+        c.font = header_font
+        c.fill = header_fill
+        c.alignment = Alignment(horizontal='center')
+
+    summary_rows = [
+        ('OLT Name', olt.name),
+        ('IP Address', olt.ip_address),
+        ('Status', olt.status.upper()),
+        ('System Name', olt.system_name or 'N/A'),
+        ('Uptime', olt.system_uptime or 'N/A'),
+        ('Last Polled', olt.last_polled.isoformat() if olt.last_polled else 'Never'),
+        ('Total ONUs', len(onus)),
+        ('Active ONUs', sum(1 for o in onus if o.status == 'active')),
+        ('Offline ONUs', sum(1 for o in onus if o.status == 'offline')),
+        ('Unregistered ONUs', sum(1 for o in onus if o.status == 'unregistered')),
+        ('PON Ports', sum(1 for p in ports if p.port_type == 'pon')),
+        ('Report Generated', __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')),
+    ]
+    hdr(ws, 1, 1, 'Field')
+    hdr(ws, 1, 2, 'Value')
+    for i, (k, v) in enumerate(summary_rows, start=2):
+        ws.cell(row=i, column=1, value=k).font = Font(bold=True)
+        ws.cell(row=i, column=2, value=v)
+    ws.column_dimensions['A'].width = 22
+    ws.column_dimensions['B'].width = 35
+
+    # ── Sheet 2: ONU List ─────────────────────────────────────────────────────
+    ws2 = wb.create_sheet('ONU List')
+    onu_headers = ['Serial Number', 'MAC Address', 'PON Port', 'ONU Index',
+                   'Status', 'Signal (dBm)', 'VLAN', 'Description', 'Last Seen', 'Registered At']
+    for col, h in enumerate(onu_headers, 1):
+        hdr(ws2, 1, col, h)
+    status_colors = {'active': 'D1FAE5', 'offline': 'FEE2E2', 'unregistered': 'FEF3C7',
+                     'provisioning': 'DBEAFE', 'registered': 'EDE9FE'}
+    for row, o in enumerate(onus, start=2):
+        vals = [o.serial_number, o.mac_address, o.pon_port, o.onu_index, o.status,
+                o.signal_strength, f'{o.vlan.vlan_id} {o.vlan.name}' if o.vlan else '',
+                o.description,
+                o.last_seen.isoformat() if o.last_seen else '',
+                o.registered_at.isoformat() if o.registered_at else '']
+        fill_color = status_colors.get(o.status, 'FFFFFF')
+        for col, v in enumerate(vals, 1):
+            c = ws2.cell(row=row, column=col, value=v)
+            if col == 5:
+                c.fill = PatternFill(fill_type='solid', fgColor=fill_color)
+    for col in range(1, len(onu_headers) + 1):
+        ws2.column_dimensions[get_column_letter(col)].width = 18
+
+    # ── Sheet 3: Port Utilization ─────────────────────────────────────────────
+    ws3 = wb.create_sheet('Port Utilization')
+    port_headers = ['Port Name', 'Type', 'Status', 'ONUs', 'Max Capacity', 'Utilization %']
+    for col, h in enumerate(port_headers, 1):
+        hdr(ws3, 1, col, h)
+    for row, p in enumerate(ports, start=2):
+        util = p.utilization_pct
+        vals = [p.name, p.port_type, p.status, p.onu_count, p.max_capacity, util]
+        for col, v in enumerate(vals, 1):
+            c = ws3.cell(row=row, column=col, value=v)
+            if col == 6 and util is not None:
+                if util >= 80:
+                    c.fill = PatternFill(fill_type='solid', fgColor='FEE2E2')
+                elif util >= 60:
+                    c.fill = PatternFill(fill_type='solid', fgColor='FEF3C7')
+                else:
+                    c.fill = PatternFill(fill_type='solid', fgColor='D1FAE5')
+    for col in range(1, len(port_headers) + 1):
+        ws3.column_dimensions[get_column_letter(col)].width = 18
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f'OLT_{olt.name}_report.xlsx'.replace(' ', '_')
+    response = HttpResponse(
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    return response

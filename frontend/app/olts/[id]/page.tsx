@@ -6,13 +6,13 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card, StatCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { OLTStatusBadge } from '@/components/ui/Badge';
-import { oltApi, vlanApi } from '@/lib/api';
+import { oltApi, vlanApi, reportsApi } from '@/lib/api';
 import type { OLT, OLTStats, VLAN, AutoProvisionConfig } from '@/lib/types';
 import { OLTDetailSkeleton } from '@/components/ui/Skeleton';
 import {
   ArrowLeft, Server, Wifi, Network,
   RefreshCw, Play, Pencil, Trash2, CheckCircle, AlertCircle,
-  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders, Zap,
+  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders, Zap, BarChart2, FileSpreadsheet,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
@@ -167,10 +167,11 @@ export default function OLTDetailPage() {
   const dot = statusDot[olt.status as keyof typeof statusDot] ?? statusDot.pending;
 
   const quickLinks = [
-    { href: `/olts/${oltId}/onus`,      label: 'ONU Management',   icon: Wifi,    desc: 'View and provision ONUs', tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
-    { href: `/olts/${oltId}/ports`,     label: 'Ports & Uplinks',  icon: PlugZap, desc: 'PON and uplink ports',    tone: 'from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400' },
-    { href: `/olts/${oltId}/vlans`,     label: 'VLAN Management',  icon: Layers,  desc: 'Configure VLANs',         tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
-    { href: `/olts/${oltId}/bandwidth`, label: 'Traffic Graphs',   icon: Cpu,     desc: 'Bandwidth monitoring',    tone: 'from-cyan-50 to-sky-100 dark:from-cyan-900/30 dark:to-sky-900/30 text-cyan-600 dark:text-cyan-400' },
+    { href: `/olts/${oltId}/onus`,      label: 'ONU Management',   icon: Wifi,         desc: 'View and provision ONUs',  tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
+    { href: `/olts/${oltId}/ports`,     label: 'Ports & Uplinks',  icon: PlugZap,      desc: 'PON and uplink ports',     tone: 'from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400' },
+    { href: `/olts/${oltId}/vlans`,     label: 'VLAN Management',  icon: Layers,       desc: 'Configure VLANs',          tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
+    { href: `/olts/${oltId}/bandwidth`, label: 'Traffic Graphs',   icon: Cpu,          desc: 'Bandwidth monitoring',     tone: 'from-cyan-50 to-sky-100 dark:from-cyan-900/30 dark:to-sky-100/30 text-cyan-600 dark:text-cyan-400' },
+    { href: `/olts/${oltId}/capacity`,  label: 'Port Capacity',    icon: BarChart2,    desc: 'PON utilization planning', tone: 'from-violet-50 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 text-violet-600 dark:text-violet-400' },
   ];
 
   return (
@@ -257,6 +258,18 @@ export default function OLTDetailPage() {
                 </Card>
               </Link>
             ))}
+          </div>
+
+          {/* Report download */}
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={<FileSpreadsheet className="h-4 w-4 text-green-600" />}
+              onClick={() => window.open(reportsApi.downloadExcel(oltId))}
+            >
+              Download Excel Report
+            </Button>
           </div>
 
           {/* VLANs on Device */}

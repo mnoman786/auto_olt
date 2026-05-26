@@ -16,4 +16,5 @@ urlpatterns = [
     path('olts/<int:pk>/profiles/sync/', views.sync_profiles, name='olt-profiles-sync'),
     path('olts/<int:pk>/bandwidth/', views.bandwidth, name='olt-bandwidth'),
     path('olts/<int:pk>/auto-provision/', views.auto_provision, name='olt-auto-provision'),
+    path('olts/<int:pk>/report/', views.olt_report_excel, name='olt-report-excel'),
 ]

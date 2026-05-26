@@ -219,3 +219,99 @@ def deregister_onu(request, olt_pk, pk):
     onu.vlan = None
     onu.save(update_fields=['status', 'registered_at', 'vlan'])
     return Response({'detail': 'ONU deregistered.', 'onu_id': onu.id})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def onu_signal_history(request, olt_pk, pk):
+    """Return Rx power samples for an ONU. ?hours=24 (default 24, max 168)."""
+    from .models import SignalSample
+    olt = get_olt_for_user(olt_pk, request.user)
+    onu = get_object_or_404(ONU, pk=pk, olt=olt)
+    hours = min(int(request.query_params.get('hours', 24)), 168)
+    from django.utils import timezone
+    from datetime import timedelta
+    since = timezone.now() - timedelta(hours=hours)
+    samples = (
+        SignalSample.objects
+        .filter(onu=onu, timestamp__gte=since)
+        .order_by('timestamp')
+        .values('timestamp', 'rx_power')
+    )
+    return Response({
+        'onu_id': onu.id,
+        'serial_number': onu.serial_number,
+        'pon_port': onu.pon_port,
+        'current_signal': onu.signal_strength,
+        'hours': hours,
+        'samples': [{'t': s['timestamp'].isoformat(), 'rx_power': s['rx_power']} for s in samples],
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bulk_reboot_onus(request, olt_pk):
+    """Reboot multiple ONUs. Body: { onu_ids: [1,2,3] }"""
+    olt = get_olt_for_user(olt_pk, request.user)
+    onu_ids = request.data.get('onu_ids', [])
+    if not onu_ids or not isinstance(onu_ids, list):
+        return Response({'detail': 'onu_ids must be a non-empty list.'}, status=400)
+
+    started, skipped = [], []
+    for onu_id in onu_ids:
+        try:
+            onu = ONU.objects.get(pk=onu_id, olt=olt)
+        except ONU.DoesNotExist:
+            skipped.append({'onu_id': onu_id, 'reason': 'not found'})
+            continue
+        if onu.status not in ('active', 'registered', 'offline'):
+            skipped.append({'onu_id': onu_id, 'serial': onu.serial_number, 'reason': f'status is {onu.status}'})
+            continue
+        from tasks import reboot_onu_task
+        reboot_onu_task.delay(onu.id)
+        started.append({'onu_id': onu_id, 'serial': onu.serial_number})
+
+    return Response({
+        'detail': f'Reboot queued for {len(started)} ONU(s).',
+        'started': started,
+        'skipped': skipped,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_onus_csv(request, olt_pk):
+    """Download all ONUs for an OLT as CSV."""
+    import csv
+    from django.http import StreamingHttpResponse
+
+    olt = get_olt_for_user(olt_pk, request.user)
+    onus = (
+        ONU.objects.filter(olt=olt)
+        .select_related('vlan')
+        .order_by('pon_port', 'onu_index')
+    )
+
+    def rows():
+        yield ['Serial Number', 'MAC Address', 'PON Port', 'ONU Index', 'Status',
+               'Signal (dBm)', 'VLAN', 'Description', 'Last Seen', 'Registered At']
+        for o in onus:
+            yield [
+                o.serial_number, o.mac_address, o.pon_port, o.onu_index,
+                o.status, o.signal_strength or '',
+                f'{o.vlan.vlan_id} {o.vlan.name}' if o.vlan else '',
+                o.description,
+                o.last_seen.isoformat() if o.last_seen else '',
+                o.registered_at.isoformat() if o.registered_at else '',
+            ]
+
+    class Echo:
+        def write(self, value): return value
+
+    writer = csv.writer(Echo())
+    response = StreamingHttpResponse(
+        (writer.writerow(r) for r in rows()),
+        content_type='text/csv',
+    )
+    response['Content-Disposition'] = f'attachment; filename="onus_{olt.name}.csv"'
+    return response

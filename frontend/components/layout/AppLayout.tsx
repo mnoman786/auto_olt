@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/olts', label: 'OLT Devices', icon: Server },
+  { href: '/alerts', label: 'Alerts', icon: Bell },
   { href: '/tickets', label: 'Support', icon: LifeBuoy },
   { href: '/docs', label: 'Documentation', icon: BookOpen },
   { href: '/plans', label: 'Plans & Pricing', icon: Gift, highlight: true },

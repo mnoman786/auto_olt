@@ -6,14 +6,14 @@ import AppLayout from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ONUStatusBadge } from '@/components/ui/Badge';
-import { oltApi, onuApi, vlanApi } from '@/lib/api';
+import { oltApi, onuApi, vlanApi, onuBulkApi } from '@/lib/api';
 import type { OLT, ONU, VLAN } from '@/lib/types';
 import { ONUPageSkeleton, ONUTableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import {
   ArrowLeft, RefreshCw, Wifi, Signal, Clock, Play,
   CheckCircle, XCircle, AlertCircle, Loader2, Search,
-  Server, CheckSquare, Square, Users, RotateCcw
+  Server, CheckSquare, Square, Users, RotateCcw, Download, Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -211,6 +211,7 @@ export default function ONUManagementPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [rebootingIds, setRebootingIds] = useState<Set<number>>(new Set());
+  const [bulkRebooting, setBulkRebooting] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
@@ -269,6 +270,21 @@ export default function ONUManagementPage() {
       toast.error(err?.response?.data?.detail || 'Reboot failed');
     } finally {
       setRebootingIds(prev => { const s = new Set(prev); s.delete(onu.id); return s; });
+    }
+  };
+
+  const handleBulkReboot = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Reboot ${selectedIds.size} ONU(s)? They will be offline for ~30 seconds.`)) return;
+    setBulkRebooting(true);
+    try {
+      await onuBulkApi.bulkReboot(oltId, [...selectedIds]);
+      toast.success(`Reboot command sent to ${selectedIds.size} ONU(s)`);
+      setSelectedIds(new Set());
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Bulk reboot failed');
+    } finally {
+      setBulkRebooting(false);
     }
   };
 
@@ -341,14 +357,32 @@ export default function ONUManagementPage() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {selectedIds.size > 0 && (
-              <Button
-                size="sm"
-                icon={<Users className="h-4 w-4" />}
-                onClick={() => setShowBulkModal(true)}
-              >
-                Register Selected ({selectedIds.size})
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  icon={<Users className="h-4 w-4" />}
+                  onClick={() => setShowBulkModal(true)}
+                >
+                  Register Selected ({selectedIds.size})
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  icon={bulkRebooting ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                  loading={bulkRebooting}
+                  onClick={handleBulkReboot}
+                >
+                  Reboot Selected ({selectedIds.size})
+                </Button>
+              </>
             )}
+            <Button
+              variant="outline" size="sm"
+              icon={<Download className="h-4 w-4" />}
+              onClick={() => window.open(onuBulkApi.exportCsv(oltId))}
+            >
+              Export CSV
+            </Button>
             <Button
               variant="outline" size="sm"
               icon={<RefreshCw className={clsx('h-4 w-4', polling && 'animate-spin')} />}
@@ -529,6 +563,9 @@ export default function ONUManagementPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Link href={`/olts/${oltId}/onus/${onu.id}/signal`}>
+                            <Button size="sm" variant="ghost" icon={<Activity className="h-3.5 w-3.5" />} />
+                          </Link>
                           <Link href={`/olts/${oltId}/onus/${onu.id}`}>
                             <Button size="sm" variant="outline">View</Button>
                           </Link>

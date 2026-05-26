@@ -40,6 +40,19 @@ class ONU(models.Model):
         return f'ONU {self.serial_number} on {self.olt.name} [{self.status}]'
 
 
+class SignalSample(models.Model):
+    """Hourly Rx power snapshot per ONU — used for signal history charts."""
+    onu = models.ForeignKey(ONU, on_delete=models.CASCADE, related_name='signal_samples')
+    timestamp = models.DateTimeField(db_index=True)
+    rx_power = models.FloatField()  # dBm
+
+    class Meta:
+        db_table = 'signal_samples'
+        indexes = [
+            models.Index(fields=['onu', 'timestamp'], name='signal_onu_time_idx'),
+        ]
+
+
 class ProvisioningLog(models.Model):
     LEVEL_CHOICES = [
         ('info', 'Info'),
