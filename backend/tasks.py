@@ -37,12 +37,25 @@ def run_olt_setup_task(self, olt_id: int) -> None:
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=60, name='tasks.poll_olt_onus')
 def poll_olt_onus_task(self, olt_id: int) -> dict:
+    from django.core.cache import cache
     from services.provisioning_service import poll_olt_onus
+
+    lock_key = f'poll_lock:olt:{olt_id}'
+    lock_ttl = 120  # seconds — longer than a normal poll but shorter than task timeout
+
+    # Acquire a Redis lock so only one poll runs per OLT at a time.
+    # cache.add() is atomic: returns True only if the key didn't exist.
+    if not cache.add(lock_key, '1', lock_ttl):
+        logger.info(f"poll_olt_onus skipped for OLT {olt_id} — another poll is already running")
+        return {'discovered': 0, 'new': 0, 'updated': 0, 'skipped': 0, 'error': 'poll_already_running'}
+
     try:
         return poll_olt_onus(olt_id)
     except Exception as exc:
         logger.warning(f"poll_olt_onus failed for OLT {olt_id}, retrying: {exc}")
         raise self.retry(exc=exc)
+    finally:
+        cache.delete(lock_key)
 
 
 @shared_task(bind=True, max_retries=0, name='tasks.provision_onu')
