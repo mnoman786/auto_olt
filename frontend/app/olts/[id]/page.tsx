@@ -12,7 +12,7 @@ import { OLTDetailSkeleton } from '@/components/ui/Skeleton';
 import {
   ArrowLeft, Server, Wifi, Network,
   RefreshCw, Play, Pencil, Trash2, CheckCircle, AlertCircle,
-  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders, Zap, BarChart2, FileSpreadsheet,
+  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders, Zap, FileSpreadsheet,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import Link from 'next/link';
@@ -167,11 +167,9 @@ export default function OLTDetailPage() {
   const dot = statusDot[olt.status as keyof typeof statusDot] ?? statusDot.pending;
 
   const quickLinks = [
-    { href: `/olts/${oltId}/onus`,      label: 'ONU Management',   icon: Wifi,         desc: 'View and provision ONUs',  tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
-    { href: `/olts/${oltId}/ports`,     label: 'Ports & Uplinks',  icon: PlugZap,      desc: 'PON and uplink ports',     tone: 'from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400' },
-    { href: `/olts/${oltId}/vlans`,     label: 'VLAN Management',  icon: Layers,       desc: 'Configure VLANs',          tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
-    { href: `/olts/${oltId}/bandwidth`, label: 'Traffic Graphs',   icon: Cpu,          desc: 'Bandwidth monitoring',     tone: 'from-cyan-50 to-sky-100 dark:from-cyan-900/30 dark:to-sky-100/30 text-cyan-600 dark:text-cyan-400' },
-    { href: `/olts/${oltId}/capacity`,  label: 'Port Capacity',    icon: BarChart2,    desc: 'PON utilization planning', tone: 'from-violet-50 to-purple-100 dark:from-violet-900/30 dark:to-purple-900/30 text-violet-600 dark:text-violet-400' },
+    { href: `/olts/${oltId}/onus`,      label: 'ONU Management',  icon: Wifi,   desc: 'View and provision ONUs', tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
+    { href: `/olts/${oltId}/vlans`,     label: 'VLAN Management', icon: Layers, desc: 'Configure VLANs',         tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
+    { href: `/olts/${oltId}/bandwidth`, label: 'Traffic Graphs',  icon: Cpu,    desc: 'Bandwidth monitoring',    tone: 'from-cyan-50 to-sky-100 dark:from-cyan-900/30 dark:to-sky-100/30 text-cyan-600 dark:text-cyan-400' },
   ];
 
   return (
@@ -241,7 +239,7 @@ export default function OLTDetailPage() {
           )}
 
           {/* Quick Links */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             {quickLinks.map(item => (
               <Link key={item.href} href={item.href} className="group">
                 <Card className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 transition-all cursor-pointer h-full">
@@ -258,6 +256,32 @@ export default function OLTDetailPage() {
                 </Card>
               </Link>
             ))}
+
+            {/* Combined Ports card */}
+            <Card className="h-full p-0 overflow-hidden">
+              <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+                <div className="p-2 rounded-xl shrink-0 bg-linear-to-br from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400">
+                  <PlugZap className="h-5 w-5" />
+                </div>
+                <p className="font-medium text-gray-900 dark:text-white text-sm">Ports</p>
+              </div>
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                <Link href={`/olts/${oltId}/ports`} className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Ports & Uplinks</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">PON and uplink ports</p>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-all" />
+                </Link>
+                <Link href={`/olts/${oltId}/capacity`} className="group flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
+                  <div>
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Port Capacity</p>
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">PON utilization planning</p>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600 group-hover:translate-x-0.5 transition-all" />
+                </Link>
+              </div>
+            </Card>
           </div>
 
           {/* Report download */}
