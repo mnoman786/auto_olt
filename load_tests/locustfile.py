@@ -55,19 +55,31 @@ class OLTUser(HttpUser):
     # ── Auth helpers ─────────────────────────────────────────────────────────
 
     def _login(self):
-        with self.client.post(
-            '/api/auth/login/',
-            json={'username': TEST_USER, 'password': TEST_PASS},
-            name='/api/auth/login/',
-            catch_response=True,
-        ) as resp:
-            if resp.status_code == 200:
-                data = resp.json()
-                self.token         = data.get('access')
-                self.refresh_token = data.get('refresh', '')
-                resp.success()
-            else:
-                resp.failure(f'Login failed: {resp.status_code} {resp.text[:120]}')
+        import time
+        for attempt in range(6):
+            with self.client.post(
+                '/api/auth/login/',
+                json={'username': TEST_USER, 'password': TEST_PASS},
+                name='/api/auth/login/',
+                catch_response=True,
+            ) as resp:
+                if resp.status_code == 200:
+                    data = resp.json()
+                    self.token         = data.get('access')
+                    self.refresh_token = data.get('refresh', '')
+                    resp.success()
+                    return
+                elif resp.status_code == 429:
+                    # Rate limited — parse retry-after and wait
+                    detail = resp.json().get('detail', '')
+                    import re
+                    match = re.search(r'(\d+)\s+second', detail)
+                    wait  = int(match.group(1)) if match else 60
+                    resp.success()  # don't count rate-limit as failure
+                    time.sleep(wait + random.uniform(0, 3))
+                else:
+                    resp.failure(f'Login failed: {resp.status_code} {resp.text[:120]}')
+                    return
 
     def _auth(self):
         return {'Authorization': f'Bearer {self.token}'} if self.token else {}
