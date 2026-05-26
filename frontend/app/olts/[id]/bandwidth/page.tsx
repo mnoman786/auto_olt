@@ -167,15 +167,17 @@ export default function BandwidthPage() {
     if (!isLoading && !isAuthenticated) router.replace('/login');
   }, [isAuthenticated, isLoading, router]);
 
+  // Fetch OLT info once — doesn't change when hours changes
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    oltApi.get(oltId).then(r => setOlt(r.data)).catch(() => {});
+  }, [isAuthenticated, oltId]);
+
   const load = useCallback(async (h: Hours, silent = false) => {
     if (!silent) setFetching(true);
     else setRefreshing(true);
     try {
-      const [oltRes, bwRes] = await Promise.all([
-        oltApi.get(oltId),
-        oltApi.getBandwidth(oltId, { hours: h }),
-      ]);
-      setOlt(oltRes.data);
+      const bwRes = await oltApi.getBandwidth(oltId, { hours: h });
       setPorts(bwRes.data.ports);
     } catch {
       toast.error('Failed to load bandwidth data');
