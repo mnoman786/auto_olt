@@ -96,7 +96,7 @@ export default function DashboardPage() {
           className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
 
-        <div className="relative p-6 max-w-7xl mx-auto">
+        <div className="relative p-6 max-w-5xl mx-auto">
           {/* Header */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
             <div>
