@@ -217,6 +217,7 @@ export default function DashboardPage() {
                             <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                               {olt.ip_address}
                               {olt.system_name ? ` • ${olt.system_name}` : ''}
+                              {olt.system_uptime ? ` • ↑ ${olt.system_uptime}` : ''}
                             </p>
                           </div>
                         </div>
@@ -244,11 +245,6 @@ export default function DashboardPage() {
                           <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </div>
-                      {olt.system_uptime && (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 ml-13 pl-1">
-                          Uptime: {olt.system_uptime}
-                        </p>
-                      )}
                     </Link>
                   );
                 })}
