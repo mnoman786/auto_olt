@@ -4,7 +4,7 @@ import { oltApi } from '@/lib/api';
 import {
   Check, Zap, Server, Wifi, Activity, Users, LifeBuoy,
   Layers, Radio, FileText, Cpu, Lock, Gift, ArrowRight,
-  ShieldCheck, BarChart2, Network,
+  ShieldCheck, BarChart2, Network, Infinity as InfinityIcon,
 } from 'lucide-react';
 
 const featureGroups = [
@@ -130,8 +130,10 @@ export default function PlansPage() {
               <div className="my-5 flex items-center justify-center gap-3 rounded-xl bg-white/10 px-4 py-3">
                 <Server className="h-4 w-4 text-white/50 shrink-0" />
                 <span className="text-sm text-white/70">OLT devices used</span>
-                <span className="ml-auto font-bold text-white tabular-nums">
-                  {oltCount === null ? '…' : oltCount} / ∞
+                <span className="ml-auto flex items-center gap-1.5 font-bold text-white">
+                  <span className="tabular-nums">{oltCount === null ? '…' : oltCount}</span>
+                  <span className="text-white/40">/</span>
+                  <InfinityIcon className="h-4 w-4 text-white/60" />
                 </span>
               </div>
 

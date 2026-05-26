@@ -22,7 +22,7 @@ export function Card({ children, className, padding = 'md' }: CardProps) {
 
 interface StatCardProps {
   label: string;
-  value: string | number;
+  value: ReactNode;
   icon?: ReactNode;
   color?: 'blue' | 'green' | 'yellow' | 'red' | 'gray';
   subtitle?: string;

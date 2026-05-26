@@ -10,7 +10,7 @@ import { OLT } from '@/lib/types';
 import { DashboardSkeleton } from '@/components/ui/Skeleton';
 import {
   Server, Wifi, AlertCircle, Plus, RefreshCw,
-  ChevronRight, Activity, Network, Cpu, User,
+  ChevronRight, Activity, Network, Cpu, User, Infinity as InfinityIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -129,10 +129,16 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               label="Total OLTs"
-              value={`${olts.length} / ∞`}
+              value={
+                <span className="flex items-center gap-1.5">
+                  <span>{olts.length}</span>
+                  <span className="text-lg text-gray-400 dark:text-gray-500">/</span>
+                  <InfinityIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                </span>
+              }
               icon={<Server className="h-5 w-5" />}
               color="blue"
-              subtitle={olts.length ? `${activeOlts} online · unlimited plan` : 'No devices yet'}
+              subtitle={olts.length ? `${activeOlts} online · unlimited` : 'No devices yet'}
             />
             <StatCard
               label="Network Health"
