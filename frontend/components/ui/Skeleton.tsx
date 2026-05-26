@@ -192,6 +192,68 @@ export function OLTDetailSkeleton() {
 }
 
 // ─────────────────────────────────────────────
+// Bandwidth page skeleton
+// Matches: back link + header + time-window buttons + 4 stat cards + 3 chart cards
+// ─────────────────────────────────────────────
+export function BandwidthSkeleton() {
+  return (
+    <div className="relative p-6 max-w-6xl mx-auto">
+      {/* Back link */}
+      <Sk className="h-4 w-24 mb-4" />
+
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Sk className="w-12 h-12 rounded-2xl shrink-0" />
+          <div className="space-y-2">
+            <Sk className="h-3 w-20" />
+            <Sk className="h-7 w-44" />
+            <Sk className="h-3.5 w-36" />
+          </div>
+        </div>
+        {/* Time window selector + refresh button */}
+        <div className="flex items-center gap-2">
+          <Sk className="h-9 w-56 rounded-lg" />
+          <Sk className="h-9 w-24 rounded-lg" />
+        </div>
+      </div>
+
+      {/* 4 stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm space-y-2">
+            <Sk className="h-3 w-24" />
+            <Sk className="h-6 w-28" />
+          </div>
+        ))}
+      </div>
+
+      {/* Chart cards */}
+      {[0, 1, 2].map(i => (
+        <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden mb-4">
+          {/* Card header */}
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sk className="h-4 w-4 rounded" />
+              <Sk className="h-4 w-28" />
+              <Sk className="h-5 w-14 rounded-md" />
+            </div>
+            <div className="flex items-center gap-4">
+              <Sk className="h-3 w-20" />
+              <Sk className="h-3 w-20" />
+            </div>
+          </div>
+          {/* Chart area */}
+          <div className="p-4">
+            <Sk className="h-50 w-full rounded-lg" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // ONU table skeleton (used inside the table card while fetching)
 // Matches: 8-column table header + rows
 // ─────────────────────────────────────────────

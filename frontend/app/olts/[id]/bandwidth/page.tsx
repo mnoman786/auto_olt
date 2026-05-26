@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/Card';
+import { BandwidthSkeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { oltApi } from '@/lib/api';
 import type { OLT, BandwidthPort } from '@/lib/types';
@@ -197,9 +198,7 @@ export default function BandwidthPage() {
   if (isLoading || fetching) {
     return (
       <AppLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <BandwidthSkeleton />
       </AppLayout>
     );
   }
