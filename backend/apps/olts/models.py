@@ -89,6 +89,26 @@ class OLTPort(models.Model):
         return f'{self.olt.name} — {self.name} ({self.port_type})'
 
 
+class BandwidthSample(models.Model):
+    """5-minute SNMP bandwidth snapshot per OLT port."""
+    port = models.ForeignKey(OLTPort, on_delete=models.CASCADE, related_name='bandwidth_samples')
+    timestamp = models.DateTimeField(db_index=True)
+    in_mbps = models.FloatField(default=0.0)
+    out_mbps = models.FloatField(default=0.0)
+    in_octets_raw = models.BigIntegerField(default=0)
+    out_octets_raw = models.BigIntegerField(default=0)
+
+    class Meta:
+        db_table = 'bandwidth_samples'
+        ordering = ['timestamp']
+        indexes = [
+            models.Index(fields=['port', 'timestamp'], name='bw_port_time_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.port.name} @ {self.timestamp} in={self.in_mbps} out={self.out_mbps}'
+
+
 class SetupLog(models.Model):
     LEVEL_CHOICES = [
         ('info', 'Info'),

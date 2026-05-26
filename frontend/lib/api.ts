@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
-  Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail,
+  Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
 } from './types';
 import { verifyResponseHMAC } from './hmac';
 
@@ -202,6 +202,9 @@ export const oltApi = {
       line_profiles: { id: number; name: string }[];
       srv_profiles: { id: number; name: string }[];
     }>(`/olts/${id}/profiles/sync/`),
+
+  getBandwidth: (id: number, params?: { hours?: number; port_id?: number }) =>
+    apiClient.get<BandwidthResponse>(`/olts/${id}/bandwidth/`, { params }),
 };
 
 // ONU API

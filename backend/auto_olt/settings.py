@@ -233,6 +233,17 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_RESULT_EXPIRES = 3600  # purge task results from Redis after 1 hour
+
+CELERY_BEAT_SCHEDULE = {
+    'poll-bandwidth-every-5-min': {
+        'task': 'tasks.poll_bandwidth',
+        'schedule': 300,  # seconds
+    },
+    'cleanup-old-logs-daily': {
+        'task': 'tasks.cleanup_old_logs',
+        'schedule': 86400,  # seconds
+    },
+}
 # Hard kill a task after 10 minutes; soft limit warns at 8 minutes
 CELERY_TASK_TIME_LIMIT = 600
 CELERY_TASK_SOFT_TIME_LIMIT = 480

@@ -14,4 +14,5 @@ urlpatterns = [
     path('olts/<int:pk>/test-snmp/', views.test_snmp, name='olt-test-snmp'),
     path('olts/<int:pk>/wireguard/', views.wg_info, name='olt-wg-info'),
     path('olts/<int:pk>/profiles/sync/', views.sync_profiles, name='olt-profiles-sync'),
+    path('olts/<int:pk>/bandwidth/', views.bandwidth, name='olt-bandwidth'),
 ]

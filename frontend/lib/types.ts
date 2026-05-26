@@ -235,3 +235,22 @@ export interface TicketListItem {
   created_at: string;
   updated_at: string;
 }
+
+export interface BandwidthSample {
+  t: string;        // ISO timestamp
+  in_mbps: number;
+  out_mbps: number;
+}
+
+export interface BandwidthPort {
+  port_id: number;
+  port_name: string;
+  port_type: string;
+  samples: BandwidthSample[];
+}
+
+export interface BandwidthResponse {
+  olt_id: number;
+  hours: number;
+  ports: BandwidthPort[];
+}

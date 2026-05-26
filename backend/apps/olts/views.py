@@ -456,6 +456,62 @@ def wg_info(request, pk):
     return Response(info)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def bandwidth(request, pk):
+    """
+    GET /olts/<id>/bandwidth/?hours=24&port_id=<id>
+    Returns bandwidth samples grouped by port for the requested window.
+    """
+    from .models import BandwidthSample
+    olt = get_olt_for_user(pk, request.user)
+
+    try:
+        hours = max(1, min(int(request.query_params.get('hours', 24)), 168))
+    except (TypeError, ValueError):
+        hours = 24
+
+    from django.utils import timezone
+    from datetime import timedelta
+    since = timezone.now() - timedelta(hours=hours)
+
+    qs = (
+        BandwidthSample.objects
+        .filter(port__olt=olt, timestamp__gte=since)
+        .select_related('port')
+        .order_by('port_id', 'timestamp')
+    )
+
+    port_id_filter = request.query_params.get('port_id')
+    if port_id_filter:
+        try:
+            qs = qs.filter(port_id=int(port_id_filter))
+        except (TypeError, ValueError):
+            pass
+
+    ports_data: dict = {}
+    for sample in qs:
+        pid = sample.port_id
+        if pid not in ports_data:
+            ports_data[pid] = {
+                'port_id':   pid,
+                'port_name': sample.port.name,
+                'port_type': sample.port.port_type,
+                'samples':   [],
+            }
+        ports_data[pid]['samples'].append({
+            't':       sample.timestamp.isoformat(),
+            'in_mbps': sample.in_mbps,
+            'out_mbps': sample.out_mbps,
+        })
+
+    return Response({
+        'olt_id': olt.id,
+        'hours':  hours,
+        'ports':  list(ports_data.values()),
+    })
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def sync_profiles(request, pk):
