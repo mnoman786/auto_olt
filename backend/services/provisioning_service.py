@@ -319,6 +319,26 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
         olt.save(update_fields=['last_polled', 'status'])
         return result
 
+    # Bulk-fetch signal strength and admin state for ALL ONUs in 2 SNMP walks
+    # instead of 2 individual GETs per ONU (avoids N*2 round trips).
+    OID_RX_POWER   = '1.3.6.1.4.1.2011.6.128.1.1.2.51.1.4'
+    OID_ADMIN_STATE= '1.3.6.1.4.1.2011.6.128.1.1.2.43.1.15'
+
+    def _index_walk(oid):
+        rows = snmp_service.snmp_bulk_walk(
+            connect_ip, olt.snmp_read_community, oid,
+            version=olt.snmp_version, max_rows=2000,
+        )
+        result_map = {}
+        for oid_str, val in rows:
+            idx = oid_str.split('.')[-1]
+            if idx.isdigit():
+                result_map[int(idx)] = val
+        return result_map
+
+    signal_map = _index_walk(OID_RX_POWER)    # {onu_index: raw_value}
+    admin_map  = _index_walk(OID_ADMIN_STATE)  # {onu_index: '0'/'1'}
+
     # Load all existing ONUs for this OLT in a single query
     existing_map = {
         onu.serial_number: onu
@@ -336,19 +356,13 @@ def poll_olt_onus(olt_id: int) -> Dict[str, Any]:
 
         onu_index = onu_data.get('onu_index', 0)
 
-        signal = snmp_service.get_onu_signal_strength(
-            host=connect_ip,
-            community=olt.snmp_read_community,
-            onu_index=onu_index,
-            version=olt.snmp_version,
-        )
+        raw_signal = signal_map.get(onu_index)
+        try:
+            signal = int(raw_signal) / 100.0 if raw_signal not in (None, 'None', '') else None
+        except (ValueError, TypeError):
+            signal = None
 
-        already_registered = snmp_service.get_onu_admin_state(
-            host=connect_ip,
-            community=olt.snmp_read_community,
-            onu_index=onu_index,
-            version=olt.snmp_version,
-        )
+        already_registered = admin_map.get(onu_index) == '1'
         initial_status = 'registered' if already_registered else 'unregistered'
 
         # Snapshot used to detect changes between polls
