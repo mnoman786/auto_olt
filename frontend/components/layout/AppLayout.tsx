@@ -134,32 +134,37 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
             const isHighlight = (item as any).highlight;
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                title={collapsed ? item.label : undefined}
-                className={clsx(
-                  'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
-                  collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
-                  active
-                    ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
-                    : isHighlight
-                      ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
-                )}
-              >
-                <Icon className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
-                {!collapsed && (
-                  <>
+              <div key={item.href} className="relative group/tip">
+                <Link
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={clsx(
+                    'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
+                    collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
+                    active
+                      ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
+                      : isHighlight
+                        ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
+                  )}
+                >
+                  <Icon className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
+                  {!collapsed && (
+                    <>
+                      {item.label}
+                      {isHighlight && !active && (
+                        <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded uppercase tracking-wide">Free</span>
+                      )}
+                      {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                    </>
+                  )}
+                </Link>
+                {collapsed && (
+                  <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap z-50 opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 bg-gray-900 text-white dark:bg-gray-700 dark:text-gray-100 shadow-lg">
                     {item.label}
-                    {isHighlight && !active && (
-                      <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded uppercase tracking-wide">Free</span>
-                    )}
-                    {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
-                  </>
+                  </span>
                 )}
-              </Link>
+              </div>
             );
           })}
 
@@ -173,26 +178,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               {(() => {
                 const active = pathname.startsWith('/admin');
                 return (
-                  <Link
-                    href="/admin/users"
-                    onClick={() => setSidebarOpen(false)}
-                    title={collapsed ? 'User Management' : undefined}
-                    className={clsx(
-                      'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
-                      collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
-                      active
-                        ? 'bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-md shadow-purple-500/20'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
-                    )}
-                  >
-                    <ShieldCheck className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
-                    {!collapsed && (
-                      <>
+                  <div className="relative group/tip">
+                    <Link
+                      href="/admin/users"
+                      onClick={() => setSidebarOpen(false)}
+                      className={clsx(
+                        'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
+                        collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
+                        active
+                          ? 'bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-md shadow-purple-500/20'
+                          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
+                      )}
+                    >
+                      <ShieldCheck className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
+                      {!collapsed && (
+                        <>
+                          User Management
+                          {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                        </>
+                      )}
+                    </Link>
+                    {collapsed && (
+                      <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap z-50 opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 bg-gray-900 text-white dark:bg-gray-700 dark:text-gray-100 shadow-lg">
                         User Management
-                        {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
-                      </>
+                      </span>
                     )}
-                  </Link>
+                  </div>
                 );
               })()}
             </>
