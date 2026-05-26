@@ -80,7 +80,7 @@ export default function WireGuardDocsPage() {
   return (
       <div className="relative">
         <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-indigo-50/70 dark:from-indigo-950/20 via-blue-50/40 dark:via-transparent to-transparent pointer-events-none" />
-        <div className="relative p-6 max-w-4xl mx-auto">
+        <div className="relative p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-indigo-50 to-blue-100 dark:from-indigo-900/30 dark:to-blue-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm shrink-0">
