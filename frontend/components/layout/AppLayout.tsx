@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon,
+  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect } from 'react';
@@ -27,6 +27,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar_collapsed') === 'true';
+    }
+    return false;
+  });
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +46,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  const toggleCollapsed = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('sidebar_collapsed', String(next));
+  };
+
   const handleLogout = async () => {
     await logout();
     toast.success('Logged out');
@@ -52,22 +64,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <div className="h-screen bg-gray-50 dark:bg-gray-950 flex overflow-hidden">
       {/* Sidebar */}
       <aside className={clsx(
-        'fixed inset-y-0 left-0 z-50 w-64 flex flex-col transition-transform duration-300',
+        'fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300',
         'bg-linear-to-b from-gray-900 via-gray-900 to-gray-950 text-white',
         'lg:translate-x-0 lg:static lg:flex lg:h-screen',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+        collapsed ? 'w-16' : 'w-64',
       )}>
         {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/5">
-          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+        <div className={clsx(
+          'flex items-center gap-3 border-b border-white/5 transition-all duration-300',
+          collapsed ? 'px-3 py-5 justify-center' : 'px-5 py-5',
+        )}>
+          <div className="w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
             <Network className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <h1 className="text-sm font-bold text-white tracking-tight">Auto OLT</h1>
-            <p className="text-[11px] text-gray-400">ISP Management</p>
-          </div>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <h1 className="text-sm font-bold text-white tracking-tight">Auto OLT</h1>
+              <p className="text-[11px] text-gray-400">ISP Management</p>
+            </div>
+          )}
           <button
-            className="ml-auto lg:hidden text-gray-400 hover:text-white"
+            className="lg:hidden text-gray-400 hover:text-white ml-auto"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -75,10 +93,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 min-h-0 overflow-y-auto px-3 py-5 space-y-1">
-          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-            Workspace
-          </p>
+        <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-0.5">
+          {!collapsed && (
+            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              Workspace
+            </p>
+          )}
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -88,8 +108,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
+                title={collapsed ? item.label : undefined}
                 className={clsx(
-                  'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                  'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
+                  collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
                   active
                     ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/30'
                     : isHighlight
@@ -98,36 +120,48 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
-                {item.label}
-                {isHighlight && !active && (
-                  <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500/20 text-emerald-400 rounded uppercase tracking-wide">Free</span>
+                {!collapsed && (
+                  <>
+                    {item.label}
+                    {isHighlight && !active && (
+                      <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500/20 text-emerald-400 rounded uppercase tracking-wide">Free</span>
+                    )}
+                    {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                  </>
                 )}
-                {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
               </Link>
             );
           })}
 
           {isAdmin && (
             <>
-              <p className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                Administration
-              </p>
+              {!collapsed && (
+                <p className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                  Administration
+                </p>
+              )}
               {(() => {
                 const active = pathname.startsWith('/admin');
                 return (
                   <Link
                     href="/admin/users"
                     onClick={() => setSidebarOpen(false)}
+                    title={collapsed ? 'User Management' : undefined}
                     className={clsx(
-                      'group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all',
+                      'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
+                      collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
                       active
                         ? 'bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-purple-900/30'
                         : 'text-gray-300 hover:bg-white/5 hover:text-white'
                     )}
                   >
                     <ShieldCheck className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
-                    User Management
-                    {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                    {!collapsed && (
+                      <>
+                        User Management
+                        {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
+                      </>
+                    )}
                   </Link>
                 );
               })()}
@@ -135,16 +169,41 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         </nav>
 
+        {/* Collapse toggle — desktop only */}
+        <div className={clsx(
+          'hidden lg:flex border-t border-white/5 py-2',
+          collapsed ? 'justify-center px-2' : 'px-3',
+        )}>
+          <button
+            onClick={toggleCollapsed}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors text-sm"
+          >
+            {collapsed
+              ? <PanelLeftOpen className="h-4 w-4 shrink-0" />
+              : <><PanelLeftClose className="h-4 w-4 shrink-0" /><span className="text-xs">Collapse</span></>
+            }
+          </button>
+        </div>
+
         {/* User section */}
-        <div className="px-3 py-4 border-t border-white/5">
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-md">
+        <div className={clsx(
+          'border-t border-white/5 py-3',
+          collapsed ? 'px-2' : 'px-3',
+        )}>
+          <div className={clsx(
+            'flex items-center gap-3',
+            collapsed ? 'justify-center' : 'px-2 py-1',
+          )}>
+            <div className="w-8 h-8 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shadow-md shrink-0">
               {initials}
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user?.username}</p>
-              <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
-            </div>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{user?.username}</p>
+                <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -206,7 +265,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             {profileOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-gray-200/80 dark:shadow-gray-900/80 border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
-                {/* User info header */}
                 <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
@@ -218,7 +276,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                     </div>
                   </div>
                 </div>
-                {/* Actions */}
                 <div className="py-1">
                   <Link
                     href="/profile"
