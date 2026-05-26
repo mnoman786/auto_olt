@@ -53,7 +53,7 @@ class OLTListCreateView(generics.ListCreateAPIView):
                 filter=Q(vlans__source='discovered'),
                 distinct=True,
             ),
-        )
+        ).order_by('-created_at')
 
     def perform_create(self, serializer):
         olt = serializer.save(user=self.request.user)
