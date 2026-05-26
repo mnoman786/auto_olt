@@ -15,7 +15,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard',     icon: LayoutDashboard },
   { href: '/olts',      label: 'OLT Devices',   icon: Server },
   { href: '/alerts',    label: 'Alerts',         icon: Bell },
-  { href: '/noc',       label: 'NOC View',       icon: MonitorPlay },
+  { href: '/noc',       label: 'NOC View',       icon: MonitorPlay, newTab: true },
   { href: '/tickets',   label: 'Support',        icon: LifeBuoy },
   { href: '/docs',      label: 'Documentation',  icon: BookOpen },
   { href: '/plans',     label: 'Plans & Pricing',icon: Gift, highlight: true },
@@ -139,12 +139,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = pathname === item.href || pathname.startsWith(item.href + '/');
+            const isNewTab = (item as any).newTab;
+            const active = !isNewTab && (pathname === item.href || pathname.startsWith(item.href + '/'));
             const isHighlight = (item as any).highlight;
             return (
               <div key={item.href} className="relative group/tip">
                 <Link
                   href={item.href}
+                  target={isNewTab ? '_blank' : undefined}
+                  rel={isNewTab ? 'noopener noreferrer' : undefined}
                   onClick={() => setSidebarOpen(false)}
                   className={clsx(
                     'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
