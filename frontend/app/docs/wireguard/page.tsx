@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import AppLayout from '@/components/layout/AppLayout';
 import { Card } from '@/components/ui/Card';
 import { useState } from 'react';
@@ -103,11 +103,11 @@ export default function WireGuardDocsPage() {
           <div className="flex items-center justify-between text-sm flex-wrap gap-2">
             {[
               { icon: Wifi, label: 'Auto OLT App', sub: 'sends to 10.100.0.5', color: 'bg-green-100 text-green-600' },
-              { label: 'â†’', color: '' },
+              { label: '→', color: '' },
               { icon: Server, label: 'Server (wg0)', sub: '10.100.0.1', color: 'bg-blue-100 text-blue-600' },
-              { label: 'â†’ Tunnel â†’', color: '' },
+              { label: '→ Tunnel →', color: '' },
               { icon: Router, label: 'MikroTik', sub: 'wg-autoolt = 10.100.0.5', color: 'bg-purple-100 text-purple-600' },
-              { label: 'â†’ DNAT â†’', color: '' },
+              { label: '→ DNAT →', color: '' },
               { icon: Monitor, label: 'OLT Device', sub: '192.168.1.1', color: 'bg-orange-100 text-orange-600' },
             ].map((item, i) => (
               item.icon ? (
@@ -125,12 +125,12 @@ export default function WireGuardDocsPage() {
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
             Each customer gets a unique virtual IP from the 10.100.0.0/16 pool so multiple customers
-            with the same default LAN (e.g. 192.168.1.0/24) do not collide. MikroTik's DNAT rule
-            rewrites the virtual IP to the OLT's real LAN IP.
+            with the same default LAN (e.g. 192.168.1.0/24) do not collide. MikroTik&apos;s DNAT rule
+            rewrites the virtual IP to the OLT&apos;s real LAN IP.
           </p>
         </div>
 
-        {/* Section 1 â€” Before you start */}
+        {/* Section 1 - Before you start */}
         <Section title="Before You Start" icon={CheckCircle2} color="bg-green-500">
           <div className="space-y-2">
             {[
@@ -148,19 +148,19 @@ export default function WireGuardDocsPage() {
           </div>
         </Section>
 
-        {/* Section 2 â€” MikroTik Setup */}
+        {/* Section 2 - MikroTik Setup */}
         <Section title="Step-by-Step: MikroTik WireGuard Setup" icon={Router} color="bg-purple-500">
           <div className="space-y-6">
             <Step num={1} title="Add WireGuard Interface">
-              <p>Go to <strong>WireGuard â†’ + (Add)</strong></p>
+              <p>Go to <strong>WireGuard &rarr; + (Add)</strong></p>
               <p>Give it a name like <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">wg-autoolt</code></p>
               <p>MikroTik will auto-generate a private/public key pair.</p>
               <p>Click <strong>OK</strong> to save.</p>
-              <Note>Copy the <strong>Public Key</strong> shown â€” you will paste this in the Auto OLT Setup Wizard.</Note>
+              <Note>Copy the <strong>Public Key</strong> shown &mdash; you will paste this in the Auto OLT Setup Wizard.</Note>
             </Step>
 
             <Step num={2} title="Add Peer (Auto OLT Server)">
-              <p>Go to <strong>WireGuard â†’ Peers â†’ + (Add)</strong></p>
+              <p>Go to <strong>WireGuard &rarr; Peers &rarr; + (Add)</strong></p>
               <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Interface:</span><span>wg-autoolt</span></div>
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Public Key:</span><span className="text-blue-600">{'<Server Public Key from app>'}</span></div>
@@ -168,21 +168,21 @@ export default function WireGuardDocsPage() {
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Allowed Address:</span><span>10.100.0.0/16</span></div>
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Persistent Keepalive:</span><span>25</span></div>
               </div>
-              <Note>The <strong>Server Public Key</strong> and <strong>Endpoint</strong> are shown in the Setup Wizard under "Give these to customer".</Note>
+              <Note>The <strong>Server Public Key</strong> and <strong>Endpoint</strong> are shown in the Setup Wizard under &quot;Give these to customer&quot;.</Note>
             </Step>
 
             <Step num={3} title="Assign IP Address to WireGuard Interface">
-              <p>Go to <strong>IP â†’ Addresses â†’ + (Add)</strong></p>
+              <p>Go to <strong>IP &rarr; Addresses &rarr; + (Add)</strong></p>
               <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Address:</span><span className="text-blue-600">{'<Virtual IP from app>/32'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Interface:</span><span>wg-autoolt</span></div>
               </div>
-              <Note>The <strong>Virtual IP</strong> (e.g. <code>10.100.0.5/32</code>) is shown in the Setup Wizard under "Assigned Virtual IP". This is what the server uses to identify your MikroTik.</Note>
+              <Note>The <strong>Virtual IP</strong> (e.g. <code>10.100.0.5/32</code>) is shown in the Setup Wizard under &quot;Assigned Virtual IP&quot;. This is what the server uses to identify your MikroTik.</Note>
             </Step>
 
-            <Step num={4} title="Add DNAT rule â€” virtual IP â†’ OLT LAN IP (CRITICAL)">
-              <Note type="warn">Without this step, the tunnel will connect but SNMP / Telnet to the OLT will fail. The server addresses the OLT via the virtual IP â€” MikroTik must rewrite that to the OLT's real LAN IP.</Note>
-              <p className="mt-2">In Winbox: <strong>IP â†’ Firewall â†’ NAT â†’ + (Add)</strong></p>
+            <Step num={4} title="Add DNAT rule — virtual IP → OLT LAN IP (CRITICAL)">
+              <Note type="warn">Without this step, the tunnel will connect but SNMP / Telnet to the OLT will fail. The server addresses the OLT via the virtual IP &mdash; MikroTik must rewrite that to the OLT&apos;s real LAN IP.</Note>
+              <p className="mt-2">In Winbox: <strong>IP &rarr; Firewall &rarr; NAT &rarr; + (Add)</strong></p>
               <p className="font-medium mt-2">General tab:</p>
               <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Chain:</span><span>dstnat</span></div>
@@ -201,7 +201,7 @@ export default function WireGuardDocsPage() {
             </Step>
 
             <Step num={5} title="Verify Connection">
-              <p>From MikroTik terminal, check the tunnel is up by pinging the server's WireGuard interface IP (it's the lowest IP in the pool, usually <code>10.100.0.1</code>):</p>
+              <p>From MikroTik terminal, check the tunnel is up by pinging the server&apos;s WireGuard interface IP (it&apos;s the lowest IP in the pool, usually <code>10.100.0.1</code>):</p>
               <CodeBlock code="/ping 10.100.0.1" />
               <p>Then verify the OLT is reachable from MikroTik LAN-side:</p>
               <CodeBlock code="/ping <OLT LAN IP>" />
@@ -210,16 +210,16 @@ export default function WireGuardDocsPage() {
           </div>
         </Section>
 
-        {/* Section 3 â€” App Side */}
+        {/* Section 3 - App Side */}
         <Section title="App Side: Setup Wizard Steps" icon={Monitor} color="bg-blue-500">
           <div className="space-y-6">
             <Step num={1} title="Add VPN OLT">
-              <p>In Auto OLT â†’ Add OLT â†’ select <strong>Connection Type: VPN (WireGuard)</strong></p>
-              <p>Set IP Address to the OLT's real LAN IP (e.g. <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">192.168.1.1</code>)</p>
+              <p>In Auto OLT &rarr; Add OLT &rarr; select <strong>Connection Type: VPN (WireGuard)</strong></p>
+              <p>Set IP Address to the OLT&apos;s real LAN IP (e.g. <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">192.168.1.1</code>)</p>
               <p>System auto-assigns a Virtual IP from the <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">10.100.0.0/16</code> pool.</p>
             </Step>
 
-            <Step num={2} title="Setup Wizard â€” Configure Peer">
+            <Step num={2} title="Setup Wizard — Configure Peer">
               <p>Give the customer (MikroTik admin):</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>Server Endpoint</li>
@@ -231,18 +231,18 @@ export default function WireGuardDocsPage() {
                 <li>MikroTik WireGuard Public Key</li>
                 <li>Customer LAN Subnet (e.g. 192.168.1.0/24)</li>
               </ul>
-              <p className="mt-2">Paste the public key â†’ click <strong>Save & Configure Peer</strong></p>
+              <p className="mt-2">Paste the public key &rarr; click <strong>Save &amp; Configure Peer</strong></p>
               <Note>The app automatically runs <code>wg set wg0 peer ...</code> on the server.</Note>
             </Step>
 
-            <Step num={3} title="Test & Start">
-              <p>Click <strong>Test Connection</strong> â€” should show green if MikroTik is connected.</p>
-              <p>Click <strong>Start Setup</strong> â€” SNMP and Telnet will go through the VPN tunnel to reach the OLT.</p>
+            <Step num={3} title="Test &amp; Start">
+              <p>Click <strong>Test Connection</strong> &mdash; should show green if MikroTik is connected.</p>
+              <p>Click <strong>Start Setup</strong> &mdash; SNMP and Telnet will go through the VPN tunnel to reach the OLT.</p>
             </Step>
           </div>
         </Section>
 
-        {/* Section 4 â€” CLI Reference */}
+        {/* Section 4 - CLI Reference */}
         <Section title="Server CLI Reference" icon={Server} color="bg-gray-600" defaultOpen={false}>
           <CodeBlock label="Check all connected peers:" code="wg show wg0" />
           <CodeBlock label="Check peer handshakes:" code="wg show wg0 latest-handshakes" />
@@ -251,7 +251,7 @@ export default function WireGuardDocsPage() {
           <CodeBlock label="Restart WireGuard:" code="systemctl restart wg-quick@wg0" />
         </Section>
 
-        {/* Section 5 â€” Troubleshooting */}
+        {/* Section 5 - Troubleshooting */}
         <Section title="Troubleshooting" icon={AlertTriangle} color="bg-red-500" defaultOpen={false}>
           <div className="space-y-4">
             {[
@@ -268,9 +268,9 @@ export default function WireGuardDocsPage() {
               {
                 problem: 'Peer added but wg show shows no handshake',
                 solutions: [
-                  'MikroTik has not initiated a connection yet â€” set Persistent Keepalive to 25',
-                  'Firewall on server may be blocking UDP 51820 â€” check ufw/iptables',
-                  'MikroTik clock may be wrong â€” sync NTP',
+                  'MikroTik has not initiated a connection yet — set Persistent Keepalive to 25',
+                  'Firewall on server may be blocking UDP 51820 — check ufw/iptables',
+                  'MikroTik clock may be wrong — sync NTP',
                 ]
               },
               {
@@ -281,16 +281,16 @@ export default function WireGuardDocsPage() {
                   'Confirm in. interface is wg-autoolt on the DNAT rule',
                   'Check OLT is reachable from MikroTik: /ping <OLT LAN IP>',
                   'Make sure the masquerade rule (srcnat) exists so OLT replies reach the tunnel',
-                  'Test from server: ping <virtual_ip> â€” should reply via tunnel; then snmpget against the virtual IP',
+                  'Test from server: ping <virtual_ip> — should reply via tunnel; then snmpget against the virtual IP',
                 ]
               },
             ].map(({ problem, solutions }, i) => (
               <div key={i} className="border border-gray-100 dark:border-gray-700 rounded-lg p-4">
-                <p className="font-medium text-red-600 mb-2">âŒ {problem}</p>
+                <p className="font-medium text-red-600 mb-2">&#10060; {problem}</p>
                 <ul className="space-y-1">
                   {solutions.map((s, j) => (
                     <li key={j} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <span className="text-green-500 mt-0.5">â†’</span>
+                      <span className="text-green-500 mt-0.5">&rarr;</span>
                       <span>{s}</span>
                     </li>
                   ))}
