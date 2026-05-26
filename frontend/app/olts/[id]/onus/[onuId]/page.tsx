@@ -194,7 +194,7 @@ export default function ONUDetailPage() {
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">ONU Device</p>
               <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                <h1 className="text-2xl font-bold text-gray-900 font-mono truncate">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-mono break-all">
                   {onu?.serial_number}
                 </h1>
                 {onu && <ONUStatusBadge status={onu.status} />}
