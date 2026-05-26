@@ -241,7 +241,7 @@ export default function OLTDetailPage() {
           )}
 
           {/* Quick Links */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mb-6">
             {quickLinks.map(item => (
               <Link key={item.href} href={item.href} className="group">
                 <Card className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 transition-all cursor-pointer h-full">
