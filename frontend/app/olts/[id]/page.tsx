@@ -265,7 +265,7 @@ export default function OLTDetailPage() {
               variant="outline"
               size="sm"
               icon={<FileSpreadsheet className="h-4 w-4 text-green-600" />}
-              onClick={() => reportsApi.downloadExcel(oltId)}
+              onClick={() => reportsApi.downloadExcel(oltId, olt?.name)}
             >
               Download Excel Report
             </Button>

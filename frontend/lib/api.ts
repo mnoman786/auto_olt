@@ -352,8 +352,10 @@ export const onuBulkApi = {
 
 // Reports API
 export const reportsApi = {
-  downloadExcel: (oltId: number) =>
-    downloadWithAuth(`/olts/${oltId}/report/`, `olt${oltId}_report.xlsx`),
+  downloadExcel: (oltId: number, oltName?: string) => {
+    const safeName = (oltName ?? `olt${oltId}`).replace(/[^a-zA-Z0-9_\-]/g, '_');
+    return downloadWithAuth(`/olts/${oltId}/report/`, `${safeName}_report.xlsx`);
+  },
 };
 
 export default apiClient;
