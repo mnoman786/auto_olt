@@ -129,10 +129,10 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <StatCard
               label="Total OLTs"
-              value={olts.length}
+              value={`${olts.length} / ∞`}
               icon={<Server className="h-5 w-5" />}
               color="blue"
-              subtitle={olts.length ? `${activeOlts} online` : 'No devices yet'}
+              subtitle={olts.length ? `${activeOlts} online · unlimited plan` : 'No devices yet'}
             />
             <StatCard
               label="Network Health"

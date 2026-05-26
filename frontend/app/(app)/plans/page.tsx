@@ -1,4 +1,6 @@
 'use client';
+import { useEffect, useState } from 'react';
+import { oltApi } from '@/lib/api';
 import {
   Check, Zap, Server, Wifi, Activity, Users, LifeBuoy,
   Layers, Radio, FileText, Cpu, Lock, Gift, ArrowRight,
@@ -67,6 +69,12 @@ const included = [
 ];
 
 export default function PlansPage() {
+  const [oltCount, setOltCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    oltApi.list().then(r => setOltCount(r.data.count ?? r.data.results?.length ?? 0)).catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
 
@@ -116,7 +124,16 @@ export default function PlansPage() {
                 <span className="text-8xl font-black text-white leading-none">$0</span>
                 <span className="mb-3 text-xl text-white/40">/mo</span>
               </div>
-              <p className="mb-6 text-sm text-white/50">No credit card · No commitment · Cancel anytime</p>
+              <p className="text-sm text-white/50">No credit card · No commitment · Cancel anytime</p>
+
+              {/* Live OLT quota */}
+              <div className="my-5 flex items-center justify-center gap-3 rounded-xl bg-white/10 px-4 py-3">
+                <Server className="h-4 w-4 text-white/50 shrink-0" />
+                <span className="text-sm text-white/70">OLT devices used</span>
+                <span className="ml-auto font-bold text-white tabular-nums">
+                  {oltCount === null ? '…' : oltCount} / ∞
+                </span>
+              </div>
 
               <ul className="mb-8 space-y-3 text-left">
                 {included.map(item => (
