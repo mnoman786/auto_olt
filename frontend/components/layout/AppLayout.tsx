@@ -27,12 +27,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sidebar_collapsed') === 'true';
-    }
-    return false;
-  });
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Read persisted state after mount (avoids SSR mismatch)
+  useEffect(() => {
+    if (localStorage.getItem('sidebar_collapsed') === 'true') setCollapsed(true);
+  }, []);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +49,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const toggleCollapsed = () => {
     const next = !collapsed;
     setCollapsed(next);
-    localStorage.setItem('sidebar_collapsed', String(next));
+    if (next) {
+      localStorage.setItem('sidebar_collapsed', 'true');
+    } else {
+      localStorage.removeItem('sidebar_collapsed');
+    }
   };
 
   const handleLogout = async () => {
