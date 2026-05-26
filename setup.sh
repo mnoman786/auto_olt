@@ -245,7 +245,7 @@ Type=simple
 User=$SERVICE_USER
 WorkingDirectory=$BACKEND_DIR
 EnvironmentFile=$ENV_FILE
-ExecStart=$VENV_DIR/bin/celery -A auto_olt worker --loglevel=info --concurrency=4
+ExecStart=$VENV_DIR/bin/celery -A auto_olt worker --loglevel=info --pool=gevent --concurrency=200
 Restart=always
 RestartSec=10
 StandardOutput=journal
