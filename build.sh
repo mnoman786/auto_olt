@@ -37,11 +37,11 @@ info "Repository up to date"
 
 # ── What to deploy? ───────────────────────────────────────────────────────────
 echo -e "${YELLOW}What do you want to deploy?${NC}"
-echo "  1) All             (backend + celery + frontend)"
-echo "  2) Backend only    (deps, migrate, restart backend)"
-echo "  3) Celery only     (deps, restart celery)"
-echo "  4) Frontend only   (npm build, restart frontend)"
-echo "  5) Backend + Celery"
+echo "  1) All                  (backend + celery worker + beat + frontend)"
+echo "  2) Backend only         (deps, migrate, restart backend)"
+echo "  3) Celery only          (deps, restart worker + beat)"
+echo "  4) Frontend only        (npm build, restart frontend)"
+echo "  5) Backend + Celery     (deps, migrate, restart backend + worker + beat)"
 echo "  6) Backend + Frontend"
 read -rp "Choice [1-6] (default 1): " DEPLOY_CHOICE
 DEPLOY_CHOICE="${DEPLOY_CHOICE:-1}"
@@ -99,7 +99,7 @@ systemctl daemon-reload
 
 SVCS=()
 $DO_BACKEND  && SVCS+=(auto-olt-backend.service)
-$DO_CELERY   && SVCS+=(auto-olt-celery.service)
+$DO_CELERY   && SVCS+=(auto-olt-celery.service auto-olt-celery-beat.service)
 $DO_FRONTEND && SVCS+=(auto-olt-frontend.service)
 
 systemctl restart "${SVCS[@]}"

@@ -238,7 +238,7 @@ section "10 — systemctl service: auto-olt-celery (worker)"
 cat > /etc/systemd/system/auto-olt-celery.service <<EOF
 [Unit]
 Description=Auto OLT Celery Worker
-After=network.target redis-server.service auto-olt-backend.service
+After=network.target redis-server.service
 
 [Service]
 Type=simple
@@ -256,18 +256,45 @@ WantedBy=multi-user.target
 EOF
 info "Celery worker service file written"
 
+# ── systemctl — Celery Beat ───────────────────────────────────────────────────
+section "10b — systemctl service: auto-olt-celery-beat (scheduler)"
+# Beat writes a schedule file — keep it inside the backend dir
+BEAT_SCHEDULE_FILE="$BACKEND_DIR/celerybeat-schedule"
+cat > /etc/systemd/system/auto-olt-celery-beat.service <<EOF
+[Unit]
+Description=Auto OLT Celery Beat Scheduler
+After=network.target redis-server.service auto-olt-celery.service
+
+[Service]
+Type=simple
+User=$SERVICE_USER
+WorkingDirectory=$BACKEND_DIR
+EnvironmentFile=$ENV_FILE
+ExecStart=$VENV_DIR/bin/celery -A auto_olt beat --loglevel=info --scheduler celery.beat.PersistentScheduler --schedule=$BEAT_SCHEDULE_FILE
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+info "Celery Beat service file written"
+
 # ── Enable & start ────────────────────────────────────────────────────────────
 section "11 — Enable & start services"
 systemctl daemon-reload
-systemctl enable auto-olt-backend auto-olt-frontend auto-olt-celery
+systemctl enable auto-olt-backend auto-olt-frontend auto-olt-celery auto-olt-celery-beat
 systemctl restart auto-olt-backend
 systemctl restart auto-olt-celery
+systemctl restart auto-olt-celery-beat
 systemctl restart auto-olt-frontend
 
 sleep 3
 BE_STATUS=$(systemctl is-active auto-olt-backend)
 FE_STATUS=$(systemctl is-active auto-olt-frontend)
 CELERY_STATUS=$(systemctl is-active auto-olt-celery)
+BEAT_STATUS=$(systemctl is-active auto-olt-celery-beat)
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
@@ -277,18 +304,22 @@ echo -e "${GREEN}║${NC}  Backend  : http://$SERVER_IP:$BE_PORT   ${GREEN}║${
 echo -e "${GREEN}║${NC}  Frontend : http://$SERVER_IP:$FE_PORT   ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Login    : admin / admin123             ${GREEN}║${NC}"
 echo -e "${GREEN}╠══════════════════════════════════════════╣${NC}"
-echo -e "${GREEN}║${NC}  BE     service : $BE_STATUS                    ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}  FE     service : $FE_STATUS                    ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}  Celery service : $CELERY_STATUS                ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Backend    service : $BE_STATUS                  ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Frontend   service : $FE_STATUS                  ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Worker     service : $CELERY_STATUS              ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Beat       service : $BEAT_STATUS                ${GREEN}║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
 echo "  Useful commands:"
 echo "  sudo systemctl status  auto-olt-backend"
 echo "  sudo systemctl status  auto-olt-frontend"
 echo "  sudo systemctl status  auto-olt-celery"
-echo "  sudo journalctl -u auto-olt-backend  -f"
-echo "  sudo journalctl -u auto-olt-frontend -f"
-echo "  sudo journalctl -u auto-olt-celery   -f"
+echo "  sudo systemctl status  auto-olt-celery-beat"
+echo "  sudo journalctl -u auto-olt-backend      -f"
+echo "  sudo journalctl -u auto-olt-frontend     -f"
+echo "  sudo journalctl -u auto-olt-celery       -f"
+echo "  sudo journalctl -u auto-olt-celery-beat  -f"
 echo "  sudo systemctl restart auto-olt-backend"
 echo "  sudo systemctl restart auto-olt-frontend"
 echo "  sudo systemctl restart auto-olt-celery"
+echo "  sudo systemctl restart auto-olt-celery-beat"
