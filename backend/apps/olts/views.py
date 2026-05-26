@@ -8,8 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from django.shortcuts import get_object_or_404
-from .models import OLT, SetupLog, OLTPort
-from .serializers import OLTSerializer, OLTListSerializer, OLTCreateSerializer, SetupLogSerializer, OLTPortSerializer
+from .models import OLT, SetupLog, OLTPort, AutoProvisionConfig
+from .serializers import OLTSerializer, OLTListSerializer, OLTCreateSerializer, SetupLogSerializer, OLTPortSerializer, AutoProvisionConfigSerializer
 from services import provisioning_service
 
 
@@ -543,6 +543,33 @@ def bandwidth(request, pk):
     # Cache for 4 min — slightly under the 5-min poll interval so data stays fresh
     cache.set(cache_key, payload, timeout=240)
     return Response(payload)
+
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def auto_provision(request, pk):
+    """
+    GET  /olts/<id>/auto-provision/  — return current config
+    PUT  /olts/<id>/auto-provision/  — update config
+         Body: { enabled, default_vlan (id or null), line_profile_id, srv_profile_id }
+    """
+    olt = get_olt_for_user(pk, request.user)
+    config, _ = AutoProvisionConfig.objects.get_or_create(olt=olt)
+
+    if request.method == 'GET':
+        return Response(AutoProvisionConfigSerializer(config).data)
+
+    # Validate that the VLAN belongs to this OLT
+    vlan_id = request.data.get('default_vlan')
+    if vlan_id:
+        from apps.vlans.models import VLAN
+        if not VLAN.objects.filter(id=vlan_id, olt=olt).exists():
+            return Response({'default_vlan': 'VLAN does not belong to this OLT.'}, status=400)
+
+    serializer = AutoProvisionConfigSerializer(config, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(AutoProvisionConfigSerializer(config).data)
 
 
 @api_view(['POST'])

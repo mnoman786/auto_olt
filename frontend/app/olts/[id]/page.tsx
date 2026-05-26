@@ -7,13 +7,14 @@ import { Card, StatCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { OLTStatusBadge } from '@/components/ui/Badge';
 import { oltApi, vlanApi } from '@/lib/api';
-import type { OLT, OLTStats, VLAN } from '@/lib/types';
+import type { OLT, OLTStats, VLAN, AutoProvisionConfig } from '@/lib/types';
 import { OLTDetailSkeleton } from '@/components/ui/Skeleton';
 import {
   ArrowLeft, Server, Wifi, Network,
   RefreshCw, Play, Pencil, Trash2, CheckCircle, AlertCircle,
-  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders,
+  Layers, PlugZap, Cpu, ChevronRight, Cloud, Wrench, Sliders, Zap,
 } from 'lucide-react';
+import { clsx } from 'clsx';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 
@@ -35,8 +36,15 @@ export default function OLTDetailPage() {
   const [olt, setOlt] = useState<OLT | null>(null);
   const [stats, setStats] = useState<OLTStats | null>(null);
   const [vlans, setVlans] = useState<VLAN[]>([]);
+  const [autoProvision, setAutoProvision] = useState<AutoProvisionConfig | null>(null);
+  const [apEnabled, setApEnabled] = useState(false);
+  const [apVlan, setApVlan] = useState<number | null>(null);
+  const [apLineProfile, setApLineProfile] = useState(1);
+  const [apSrvProfile, setApSrvProfile] = useState(1);
+  const [savingAp, setSavingAp] = useState(false);
+  const [apExpanded, setApExpanded] = useState(false);
   const [fetching, setFetching] = useState(true);
-const [syncingVlans, setSyncingVlans] = useState(false);
+  const [syncingVlans, setSyncingVlans] = useState(false);
   const [syncingProfiles, setSyncingProfiles] = useState(false);
 
   useEffect(() => {
@@ -45,20 +53,49 @@ const [syncingVlans, setSyncingVlans] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [oltRes, statsRes, vlansRes] = await Promise.all([
+      const [oltRes, statsRes, vlansRes, apRes] = await Promise.all([
         oltApi.get(oltId),
         oltApi.stats(oltId),
         vlanApi.list(oltId),
+        oltApi.getAutoProvision(oltId),
       ]);
       setOlt(oltRes.data);
       setStats(statsRes.data);
       setVlans(vlansRes.data.results || (vlansRes.data as any));
+      const ap = apRes.data;
+      setAutoProvision(ap);
+      setApEnabled(ap.enabled);
+      setApVlan(ap.default_vlan_id);
+      setApLineProfile(ap.line_profile_id);
+      setApSrvProfile(ap.srv_profile_id);
     } catch {
       toast.error('Failed to load OLT data');
     } finally {
       setFetching(false);
     }
   }, [oltId]);
+
+  const handleSaveAutoProvision = async () => {
+    if (apEnabled && apVlan === null) {
+      toast.error('Please select a default VLAN before enabling auto-provisioning');
+      return;
+    }
+    setSavingAp(true);
+    try {
+      const res = await oltApi.saveAutoProvision(oltId, {
+        enabled: apEnabled,
+        default_vlan: apVlan,
+        line_profile_id: apLineProfile,
+        srv_profile_id: apSrvProfile,
+      });
+      setAutoProvision(res.data);
+      toast.success(apEnabled ? 'Auto-provisioning enabled' : 'Auto-provisioning disabled');
+    } catch {
+      toast.error('Failed to save auto-provisioning config');
+    } finally {
+      setSavingAp(false);
+    }
+  };
 
   const handleSyncProfiles = async () => {
     setSyncingProfiles(true);
@@ -379,6 +416,138 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                   Click <strong>Sync Profiles</strong> to read available IDs from the OLT
                 </p>
+              </div>
+            )}
+          </Card>
+
+          {/* Auto-Provisioning */}
+          <Card padding="none" className="overflow-hidden mb-5">
+            {/* Header — click anywhere to expand/collapse */}
+            <button
+              type="button"
+              onClick={() => setApExpanded(v => !v)}
+              className="w-full px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-linear-to-r from-amber-50/40 dark:from-amber-900/10 to-transparent flex items-center justify-between gap-3 hover:bg-amber-50/60 dark:hover:bg-amber-900/20 transition-colors text-left"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <Zap className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <h2 className="font-semibold text-gray-900 dark:text-white truncate">Auto-Provisioning</h2>
+                <span className={clsx(
+                  'hidden sm:inline text-xs font-medium px-2 py-0.5 rounded-full border shrink-0',
+                  apEnabled
+                    ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600',
+                )}>
+                  {apEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+              <ChevronRight className={clsx(
+                'h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200',
+                apExpanded && 'rotate-90',
+              )} />
+            </button>
+
+            {/* Expandable form — toggle + all settings + single Save */}
+            {apExpanded && (
+              <div className="px-6 py-5 space-y-5">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  When enabled, newly discovered ONUs are automatically registered using the settings below — no manual action required.
+                </p>
+
+                {/* Enable / Disable toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-200">Enable zero-touch provisioning</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Runs automatically after each ONU poll</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={apEnabled}
+                    onClick={() => setApEnabled(v => !v)}
+                    className={clsx(
+                      'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500',
+                      apEnabled ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600',
+                    )}
+                  >
+                    <span className={clsx(
+                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-sm transform transition-transform duration-200',
+                      apEnabled ? 'translate-x-5' : 'translate-x-0',
+                    )} />
+                  </button>
+                </div>
+
+                {/* Default VLAN */}
+                <div className="space-y-1.5">
+                  <label className={clsx(
+                    'text-xs font-medium uppercase tracking-wider',
+                    apEnabled && apVlan === null
+                      ? 'text-red-500 dark:text-red-400'
+                      : 'text-gray-600 dark:text-gray-400',
+                  )}>
+                    Default VLAN{apEnabled && apVlan === null && ' — required when enabled'}
+                  </label>
+                  <select
+                    value={apVlan ?? ''}
+                    onChange={e => setApVlan(e.target.value ? Number(e.target.value) : null)}
+                    className={clsx(
+                      'w-full text-sm rounded-lg border bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2',
+                      apEnabled && apVlan === null
+                        ? 'border-red-400 dark:border-red-500 focus:ring-red-400'
+                        : 'border-gray-200 dark:border-gray-600 focus:ring-amber-500',
+                    )}
+                  >
+                    <option value="">No VLAN (untagged)</option>
+                    {vlans.map(v => (
+                      <option key={v.id} value={v.id}>
+                        VLAN {v.vlan_id} — {v.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Profile selectors */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                      Line Profile
+                    </label>
+                    <select
+                      value={apLineProfile}
+                      onChange={e => setApLineProfile(Number(e.target.value))}
+                      className="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      {(olt?.line_profiles?.length
+                        ? olt.line_profiles
+                        : [{ id: apLineProfile, name: `Profile ${apLineProfile}` }]
+                      ).map(p => (
+                        <option key={p.id} value={p.id}>{p.id} — {p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                      Service Profile
+                    </label>
+                    <select
+                      value={apSrvProfile}
+                      onChange={e => setApSrvProfile(Number(e.target.value))}
+                      className="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    >
+                      {(olt?.srv_profiles?.length
+                        ? olt.srv_profiles
+                        : [{ id: apSrvProfile, name: `Profile ${apSrvProfile}` }]
+                      ).map(p => (
+                        <option key={p.id} value={p.id}>{p.id} — {p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="pt-1 flex justify-end">
+                  <Button onClick={handleSaveAutoProvision} disabled={savingAp} size="sm">
+                    {savingAp ? 'Saving…' : 'Save Configuration'}
+                  </Button>
+                </div>
               </div>
             )}
           </Card>

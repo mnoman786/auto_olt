@@ -3,6 +3,7 @@ import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
   Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
+  AutoProvisionConfig,
 } from './types';
 import { verifyResponseHMAC } from './hmac';
 
@@ -205,6 +206,16 @@ export const oltApi = {
 
   getBandwidth: (id: number, params?: { hours?: number; port_id?: number }) =>
     apiClient.get<BandwidthResponse>(`/olts/${id}/bandwidth/`, { params }),
+
+  getAutoProvision: (id: number) =>
+    apiClient.get<AutoProvisionConfig>(`/olts/${id}/auto-provision/`),
+
+  saveAutoProvision: (id: number, data: {
+    enabled: boolean;
+    default_vlan: number | null;
+    line_profile_id: number;
+    srv_profile_id: number;
+  }) => apiClient.put<AutoProvisionConfig>(`/olts/${id}/auto-provision/`, data),
 };
 
 // ONU API

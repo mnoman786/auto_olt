@@ -109,6 +109,26 @@ class BandwidthSample(models.Model):
         return f'{self.port.name} @ {self.timestamp} in={self.in_mbps} out={self.out_mbps}'
 
 
+class AutoProvisionConfig(models.Model):
+    """Zero-touch provisioning config per OLT.
+    When enabled, every newly discovered unregistered ONU is automatically
+    provisioned using the configured VLAN and ONU profiles.
+    """
+    olt             = models.OneToOneField(OLT, on_delete=models.CASCADE, related_name='auto_provision_config')
+    enabled         = models.BooleanField(default=False)
+    default_vlan    = models.ForeignKey('vlans.VLAN', null=True, blank=True, on_delete=models.SET_NULL, related_name='+')
+    line_profile_id = models.IntegerField(default=1)
+    srv_profile_id  = models.IntegerField(default=1)
+    updated_at      = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'auto_provision_configs'
+
+    def __str__(self):
+        state = 'ON' if self.enabled else 'OFF'
+        return f'AutoProvision [{state}] — {self.olt.name}'
+
+
 class SetupLog(models.Model):
     LEVEL_CHOICES = [
         ('info', 'Info'),

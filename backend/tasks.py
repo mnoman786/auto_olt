@@ -53,12 +53,35 @@ def poll_olt_onus_task(self, olt_id: int) -> dict:
         return {'discovered': 0, 'new': 0, 'updated': 0, 'skipped': 0, 'error': 'poll_already_running'}
 
     try:
-        return poll_olt_onus(olt_id)
+        result = poll_olt_onus(olt_id)
+        _trigger_auto_provision(olt_id)
+        return result
     except Exception as exc:
         logger.warning(f"poll_olt_onus failed for OLT {olt_id}, retrying: {exc}")
         raise self.retry(exc=exc)
     finally:
         cache.delete(lock_key)
+
+
+def _trigger_auto_provision(olt_id: int) -> None:
+    """After a successful ONU poll, auto-register any unregistered ONUs if enabled."""
+    try:
+        from apps.olts.models import AutoProvisionConfig
+        from apps.onus.models import ONU
+        config = AutoProvisionConfig.objects.filter(olt_id=olt_id, enabled=True).select_related('default_vlan').first()
+        if not config:
+            return
+        unregistered = ONU.objects.filter(olt_id=olt_id, status='unregistered').values_list('id', flat=True)
+        for onu_id in unregistered:
+            provision_onu_task.delay(
+                onu_id,
+                vlan_id=config.default_vlan_id,
+                line_profile_id=config.line_profile_id,
+                srv_profile_id=config.srv_profile_id,
+            )
+            logger.info(f"Auto-provision queued for ONU {onu_id} (OLT {olt_id})")
+    except Exception as exc:
+        logger.warning(f"_trigger_auto_provision failed for OLT {olt_id}: {exc}")
 
 
 @shared_task(bind=True, max_retries=0, name='tasks.provision_onu')

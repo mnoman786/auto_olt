@@ -2,7 +2,7 @@ import base64
 import ipaddress
 import re
 from rest_framework import serializers
-from .models import OLT, SetupLog, OLTPort
+from .models import OLT, SetupLog, OLTPort, AutoProvisionConfig
 
 VPN_POOL = ipaddress.IPv4Network('10.100.0.0/16')
 
@@ -231,3 +231,19 @@ class OLTPortSerializer(serializers.ModelSerializer):
         model = OLTPort
         fields = ('id', 'if_index', 'name', 'description', 'port_type',
                   'status', 'speed_mbps', 'onu_count', 'updated_at')
+
+
+class AutoProvisionConfigSerializer(serializers.ModelSerializer):
+    default_vlan_id   = serializers.IntegerField(source='default_vlan.id',   allow_null=True, read_only=True)
+    default_vlan_name = serializers.CharField(source='default_vlan.name',    allow_null=True, read_only=True)
+    default_vlan_vid  = serializers.IntegerField(source='default_vlan.vlan_id', allow_null=True, read_only=True)
+
+    class Meta:
+        model  = AutoProvisionConfig
+        fields = (
+            'enabled',
+            'default_vlan', 'default_vlan_id', 'default_vlan_name', 'default_vlan_vid',
+            'line_profile_id', 'srv_profile_id',
+            'updated_at',
+        )
+        extra_kwargs = {'default_vlan': {'write_only': True, 'allow_null': True, 'required': False}}

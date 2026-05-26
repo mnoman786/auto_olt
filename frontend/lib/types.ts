@@ -236,6 +236,17 @@ export interface TicketListItem {
   updated_at: string;
 }
 
+export interface AutoProvisionConfig {
+  enabled: boolean;
+  default_vlan: number | null;
+  default_vlan_id: number | null;
+  default_vlan_name: string | null;
+  default_vlan_vid: number | null;
+  line_profile_id: number;
+  srv_profile_id: number;
+  updated_at: string;
+}
+
 export interface BandwidthSample {
   t: string;        // ISO timestamp
   in_mbps: number;

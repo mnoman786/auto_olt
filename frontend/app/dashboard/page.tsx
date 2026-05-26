@@ -221,24 +221,26 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-4 shrink-0">
-                          <div className="hidden lg:flex items-center gap-4 text-xs text-gray-500">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="hidden lg:flex items-center gap-3 text-xs text-gray-500">
                             {isStaff && (
-                              <span className="inline-flex items-center gap-1 text-gray-400">
-                                <User className="h-3 w-3" />
-                                <span className="font-medium text-gray-600 dark:text-gray-300">{olt.username}</span>
+                              <span className="inline-flex items-center gap-1 w-24 text-gray-400 truncate">
+                                <User className="h-3 w-3 shrink-0" />
+                                <span className="font-medium text-gray-600 dark:text-gray-300 truncate">{olt.username}</span>
                               </span>
                             )}
-                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 font-medium dark:text-gray-300">
+                            <span className="inline-flex items-center justify-center w-12 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 font-medium dark:text-gray-300 text-center">
                               {olt.snmp_version.toUpperCase()}
                             </span>
-                            <span className="inline-flex items-center gap-1.5">
-                              <Wifi className="h-3.5 w-3.5 text-gray-400" />
-                              <span className="text-gray-700 dark:text-gray-300 font-medium">{olt.onu_count}</span>
-                              <span className="text-gray-400 dark:text-gray-500">/ {olt.registered_onu_count} reg</span>
+                            <span className="inline-flex items-center gap-1 w-28">
+                              <Wifi className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                              <span className="text-gray-700 dark:text-gray-300 font-medium tabular-nums">{olt.onu_count}</span>
+                              <span className="text-gray-400 dark:text-gray-500 tabular-nums">/ {olt.registered_onu_count} reg</span>
                             </span>
                           </div>
-                          <OLTStatusBadge status={olt.status} />
+                          <span className="w-20 flex justify-center">
+                            <OLTStatusBadge status={olt.status} />
+                          </span>
                           <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 group-hover:translate-x-0.5 transition-all" />
                         </div>
                       </div>
