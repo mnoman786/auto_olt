@@ -3,7 +3,7 @@ import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
   Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
-  AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse,
+  AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse, Announcement,
 } from './types';
 import { verifyResponseHMAC } from './hmac';
 
@@ -356,6 +356,19 @@ export const reportsApi = {
     const safeName = (oltName ?? `olt${oltId}`).replace(/[^a-zA-Z0-9_\-]/g, '_');
     return downloadWithAuth(`/olts/${oltId}/report/`, `${safeName}_report.xlsx`);
   },
+};
+
+// Announcements API
+export const announcementsApi = {
+  list: () => apiClient.get<Announcement[]>('/announcements/'),
+
+  create: (data: Pick<Announcement, 'title' | 'message' | 'type' | 'is_active' | 'is_dismissible' | 'expires_at'>) =>
+    apiClient.post<Announcement>('/announcements/', data),
+
+  update: (id: number, data: Partial<Pick<Announcement, 'title' | 'message' | 'type' | 'is_active' | 'is_dismissible' | 'expires_at'>>) =>
+    apiClient.patch<Announcement>(`/announcements/${id}/`, data),
+
+  delete: (id: number) => apiClient.delete(`/announcements/${id}/`),
 };
 
 export default apiClient;

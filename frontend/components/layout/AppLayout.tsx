@@ -5,11 +5,12 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay,
+  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay, Megaphone,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import toast from 'react-hot-toast';
+import AnnouncementBanner from '@/components/ui/AnnouncementBanner';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard',     icon: LayoutDashboard },
@@ -186,12 +187,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   Administration
                 </p>
               )}
-              {(() => {
-                const active = pathname.startsWith('/admin');
+              {[
+                { href: '/admin/users', label: 'User Management', icon: ShieldCheck },
+                { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+              ].map(({ href, label, icon: Icon }) => {
+                const active = pathname === href || pathname.startsWith(href + '/');
                 return (
-                  <div className="relative group/tip">
+                  <div key={href} className="relative group/tip">
                     <Link
-                      href="/admin/users"
+                      href={href}
                       onClick={() => setSidebarOpen(false)}
                       className={clsx(
                         'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
@@ -201,22 +205,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
                       )}
                     >
-                      <ShieldCheck className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
+                      <Icon className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
                       {!collapsed && (
                         <>
-                          User Management
+                          {label}
                           {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
                         </>
                       )}
                     </Link>
                     {collapsed && (
                       <span className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap z-50 opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 bg-gray-900 text-white dark:bg-gray-700 dark:text-gray-100 shadow-lg">
-                        User Management
+                        {label}
                       </span>
                     )}
                   </div>
                 );
-              })()}
+              })}
             </>
           )}
         </nav>
@@ -303,6 +307,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
+        <AnnouncementBanner />
         <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-950">
           {children}
         </main>

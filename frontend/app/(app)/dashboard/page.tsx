@@ -16,6 +16,7 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Pagination } from '@/components/ui/Pagination';
 
+
 const statusDot = {
   active: 'bg-green-500 shadow-[0_0_0_3px_rgba(34,197,94,0.18)]',
   error: 'bg-red-500 shadow-[0_0_0_3px_rgba(239,68,68,0.18)]',
@@ -261,6 +262,7 @@ export default function DashboardPage() {
               onPageChange={setPage}
             />
           </Card>
+
         </div>
       </div>
   );

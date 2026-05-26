@@ -308,3 +308,19 @@ export interface BandwidthResponse {
   hours: number;
   ports: BandwidthPort[];
 }
+
+// ── Announcements ─────────────────────────────────────────────────────────────
+export type AnnouncementType = 'info' | 'success' | 'warning' | 'critical';
+
+export interface Announcement {
+  id: number;
+  title: string;
+  message: string;
+  type: AnnouncementType;
+  is_active: boolean;
+  is_dismissible: boolean;
+  expires_at: string | null;
+  created_by_username: string | null;
+  created_at: string;
+  updated_at: string;
+}
