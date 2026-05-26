@@ -11,9 +11,9 @@ import type { OLT, ONU, VLAN } from '@/lib/types';
 import { ONUPageSkeleton, ONUTableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import {
-  ArrowLeft, RefreshCw, Wifi, Signal, Clock, Play,
-  CheckCircle, XCircle, AlertCircle, Loader2, Search,
-  Server, CheckSquare, Square, Users, RotateCcw, Download, Activity
+  ArrowLeft, RefreshCw, Wifi, Play,
+  CheckCircle, AlertCircle, Loader2, Search,
+  CheckSquare, Square, Users, RotateCcw, Download, Activity
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -379,7 +379,7 @@ export default function ONUManagementPage() {
             <Button
               variant="outline" size="sm"
               icon={<Download className="h-4 w-4" />}
-              onClick={() => window.open(onuBulkApi.exportCsv(oltId))}
+              onClick={() => onuBulkApi.exportCsv(oltId)}
             >
               Export CSV
             </Button>

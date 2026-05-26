@@ -327,19 +327,33 @@ export const signalApi = {
     apiClient.get<SignalHistoryResponse>(`/olts/${oltId}/onus/${onuId}/signal/`, { params: { hours } }),
 };
 
+// Helper: fetch a binary file with auth and trigger browser download
+export async function downloadWithAuth(url: string, filename: string) {
+  const response = await apiClient.get(url, { responseType: 'blob' });
+  const blob = new Blob([response.data], { type: String(response.headers['content-type'] ?? 'application/octet-stream') });
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(href);
+}
+
 // Bulk ONU API
 export const onuBulkApi = {
   bulkReboot: (oltId: number, onuIds: number[]) =>
     apiClient.post(`/olts/${oltId}/onus/bulk-reboot/`, { onu_ids: onuIds }),
 
   exportCsv: (oltId: number) =>
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/olts/${oltId}/onus/export/`,
+    downloadWithAuth(`/olts/${oltId}/onus/export/`, `onus_olt${oltId}.csv`),
 };
 
 // Reports API
 export const reportsApi = {
   downloadExcel: (oltId: number) =>
-    `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/olts/${oltId}/report/`,
+    downloadWithAuth(`/olts/${oltId}/report/`, `olt${oltId}_report.xlsx`),
 };
 
 export default apiClient;
