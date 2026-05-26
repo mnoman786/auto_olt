@@ -180,10 +180,10 @@ const [syncingVlans, setSyncingVlans] = useState(false);
                 <Button variant="outline" size="sm" icon={<Play className="h-4 w-4" />}>Setup Wizard</Button>
               </Link>
               <Button
-                variant="ghost" size="sm"
-                icon={<Trash2 className="h-4 w-4 text-red-500" />}
+                variant="outline" size="sm"
+                icon={<Trash2 className="h-4 w-4" />}
                 onClick={handleDelete}
-                className="text-red-500 hover:bg-red-50"
+                className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 dark:border-red-900/50 dark:hover:bg-red-900/20 dark:hover:border-red-700"
               >
                 Delete
               </Button>
