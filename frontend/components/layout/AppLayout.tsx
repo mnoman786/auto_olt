@@ -8,7 +8,7 @@ import {
   Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import toast from 'react-hot-toast';
 
 const navItems = [
@@ -28,11 +28,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [sidebarReady, setSidebarReady] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (localStorage.getItem('sidebar_collapsed') === 'true') setCollapsed(true);
+    setSidebarReady(true);
   }, []);
 
   useEffect(() => {
@@ -80,7 +82,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* ── Sidebar ── */}
       <aside className={clsx(
-        'fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300',
+        'fixed inset-y-0 left-0 z-50 flex flex-col',
+        sidebarReady && 'transition-all duration-300',
         'bg-white border-r border-gray-200',
         'dark:bg-gray-900 dark:border-gray-700/60',
         'lg:relative lg:translate-x-0 lg:flex lg:h-screen',
