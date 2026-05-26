@@ -5,19 +5,20 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon,
+  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import toast from 'react-hot-toast';
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/olts',      label: 'OLT Devices', icon: Server },
-  { href: '/alerts',    label: 'Alerts', icon: Bell },
-  { href: '/tickets',   label: 'Support', icon: LifeBuoy },
-  { href: '/docs',      label: 'Documentation', icon: BookOpen },
-  { href: '/plans',     label: 'Plans & Pricing', icon: Gift, highlight: true },
+  { href: '/dashboard', label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/olts',      label: 'OLT Devices',   icon: Server },
+  { href: '/alerts',    label: 'Alerts',         icon: Bell },
+  { href: '/noc',       label: 'NOC View',       icon: MonitorPlay },
+  { href: '/tickets',   label: 'Support',        icon: LifeBuoy },
+  { href: '/docs',      label: 'Documentation',  icon: BookOpen },
+  { href: '/plans',     label: 'Plans & Pricing',icon: Gift, highlight: true },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
