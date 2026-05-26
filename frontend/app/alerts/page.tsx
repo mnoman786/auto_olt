@@ -80,7 +80,6 @@ export default function AlertsPage() {
     try {
       await alertsApi.createRule({
         olt: formOlt === '' ? null : Number(formOlt),
-        olt_name: null,
         alert_type: formType,
         channel: 'email',
         enabled: true,

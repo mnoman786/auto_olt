@@ -185,7 +185,7 @@ export default function SignalHistoryPage() {
                     width={44}
                   />
                   <Tooltip
-                    formatter={(v: number) => [`${v.toFixed(2)} dBm`, 'Rx Power']}
+                    formatter={(v) => [typeof v === 'number' ? `${v.toFixed(2)} dBm` : '—', 'Rx Power']}
                     contentStyle={{ background: '#1f2937', border: 'none', borderRadius: 8, fontSize: 12 }}
                     labelStyle={{ color: '#9ca3af' }}
                     itemStyle={{ color: '#e5e7eb' }}
