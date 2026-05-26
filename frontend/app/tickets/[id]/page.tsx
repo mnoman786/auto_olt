@@ -193,49 +193,54 @@ export default function TicketDetailPage() {
           </Card>
 
           {/* Thread */}
-          <div className="space-y-3 mb-4">
-            {/* Original message */}
-            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">
+          <div className="space-y-4 mb-4">
+
+            {/* Original message — user, right side */}
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-1.5 mr-1">
+                <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(ticket.created_at)}</span>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{ticket.username}</span>
+                <div className="w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
                   {ticket.username.slice(0, 2).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{ticket.username}</span>
-                <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(ticket.created_at)}</span>
               </div>
-              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
+              <div className="max-w-[80%] bg-blue-600 dark:bg-blue-700 text-white rounded-2xl rounded-tr-sm px-4 py-2.5">
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
+              </div>
             </div>
 
             {/* Replies */}
             {ticket.replies.map(r => (
-              <div
-                key={r.id}
-                className={clsx(
-                  'border rounded-xl p-4',
-                  r.is_staff
-                    ? 'bg-indigo-50/60 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-800 ml-4'
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                )}
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={clsx(
-                    'w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white',
-                    r.is_staff
-                      ? 'bg-linear-to-br from-indigo-500 to-purple-600'
-                      : 'bg-linear-to-br from-blue-500 to-indigo-600'
-                  )}>
-                    {r.is_staff ? <Shield className="h-3.5 w-3.5" /> : r.author_username.slice(0, 2).toUpperCase()}
+              r.is_staff ? (
+                /* Staff / admin — LEFT */
+                <div key={r.id} className="flex flex-col items-start gap-1">
+                  <div className="flex items-center gap-1.5 ml-1">
+                    <div className="w-6 h-6 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
+                      <Shield className="h-3 w-3 text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{r.author_username}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 px-1.5 py-0.5 rounded-full">Staff</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(r.created_at)}</span>
                   </div>
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{r.author_username}</span>
-                  {r.is_staff && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 px-1.5 py-0.5 rounded-full">
-                      Staff
-                    </span>
-                  )}
-                  <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(r.created_at)}</span>
+                  <div className="max-w-[80%] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{r.message}</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{r.message}</p>
-              </div>
+              ) : (
+                /* User — RIGHT */
+                <div key={r.id} className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-1.5 mr-1">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(r.created_at)}</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{r.author_username}</span>
+                    <div className="w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                      {r.author_username.slice(0, 2).toUpperCase()}
+                    </div>
+                  </div>
+                  <div className="max-w-[80%] bg-blue-600 dark:bg-blue-700 text-white rounded-2xl rounded-tr-sm px-4 py-2.5">
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{r.message}</p>
+                  </div>
+                </div>
+              )
             ))}
             <div ref={bottomRef} />
           </div>
