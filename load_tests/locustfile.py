@@ -26,8 +26,15 @@ from locust import HttpUser, task, between, events
 
 logger = logging.getLogger(__name__)
 
+# Single account mode (default) — all virtual users share one account.
+# Each real user has their own rate-limit bucket in production, so
+# for a more accurate test create separate accounts and list them here:
+#   TEST_ACCOUNTS = [('user1','pass1'), ('user2','pass2'), ...]
 TEST_USER = os.getenv('LOAD_TEST_USER', 'admin')
 TEST_PASS = os.getenv('LOAD_TEST_PASS', 'admin123')
+TEST_ACCOUNTS = [
+    (os.getenv('LOAD_TEST_USER', 'admin'), os.getenv('LOAD_TEST_PASS', 'admin123')),
+]
 
 
 class OLTUser(HttpUser):
@@ -41,7 +48,9 @@ class OLTUser(HttpUser):
         """Login once per virtual user and store the JWT token."""
         self.token = None
         self.olt_ids = []
-        self._login()
+        # Pick a random account from the pool so rate limits are spread
+        creds = random.choice(TEST_ACCOUNTS)
+        self._login(username=creds[0], password=creds[1])
 
     def on_stop(self):
         if self.token:
@@ -54,12 +63,12 @@ class OLTUser(HttpUser):
 
     # ── Auth helpers ─────────────────────────────────────────────────────────
 
-    def _login(self):
+    def _login(self, username=TEST_USER, password=TEST_PASS):
         import time
         for attempt in range(6):
             with self.client.post(
                 '/api/auth/login/',
-                json={'username': TEST_USER, 'password': TEST_PASS},
+                json={'username': username, 'password': password},
                 name='/api/auth/login/',
                 catch_response=True,
             ) as resp:
