@@ -89,9 +89,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Logo */}
         <div className={clsx(
-          'flex items-center gap-3 transition-all duration-300',
+          'flex items-center gap-3 h-14 shrink-0 transition-all duration-300',
           'border-b border-gray-200 dark:border-gray-700/60',
-          collapsed ? 'px-3 py-5 justify-center' : 'px-5 py-5',
+          collapsed ? 'px-3 justify-center' : 'px-5',
         )}>
           <div className="w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
             <Network className="h-5 w-5 text-white" />
