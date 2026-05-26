@@ -167,10 +167,10 @@ export default function OLTDetailPage() {
   const dot = statusDot[olt.status as keyof typeof statusDot] ?? statusDot.pending;
 
   const quickLinks = [
-    { href: `/olts/${oltId}/onus`,      label: 'ONU Management',   icon: Wifi,    desc: 'View and provision ONUs',      tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
-    { href: `/olts/${oltId}/ports`,     label: 'Ports & Capacity', icon: PlugZap, desc: 'Ports, uplinks & utilization', tone: 'from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400' },
-    { href: `/olts/${oltId}/vlans`,     label: 'VLAN Management',  icon: Layers,  desc: 'Configure VLANs',              tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
-    { href: `/olts/${oltId}/bandwidth`, label: 'Traffic Graphs',   icon: Cpu,     desc: 'Bandwidth monitoring',         tone: 'from-cyan-50 to-sky-100 dark:from-cyan-900/30 dark:to-sky-100/30 text-cyan-600 dark:text-cyan-400' },
+    { href: `/olts/${oltId}/onus`,      label: 'ONU Management',   icon: Wifi,    desc: 'Provision & manage ONUs',  tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
+    { href: `/olts/${oltId}/ports`,     label: 'Ports & Capacity', icon: PlugZap, desc: 'Ports, uplinks & capacity', tone: 'from-purple-50 to-fuchsia-100 dark:from-purple-900/30 dark:to-fuchsia-900/30 text-purple-600 dark:text-purple-400' },
+    { href: `/olts/${oltId}/vlans`,     label: 'VLAN Management',  icon: Layers,  desc: 'Configure VLANs',          tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
+    { href: `/olts/${oltId}/bandwidth`, label: 'Traffic Graphs',   icon: Cpu,     desc: 'Bandwidth monitoring',     tone: 'from-cyan-50 to-sky-100 dark:from-cyan-900/30 dark:to-sky-100/30 text-cyan-600 dark:text-cyan-400' },
   ];
 
   return (
@@ -240,17 +240,17 @@ export default function OLTDetailPage() {
           )}
 
           {/* Quick Links */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 items-stretch">
             {quickLinks.map(item => (
-              <Link key={item.href} href={item.href} className="group">
-                <Card className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer">
-                  <div className="flex items-center gap-3">
+              <Link key={item.href} href={item.href} className="group h-full">
+                <Card className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer h-full">
+                  <div className="flex items-center gap-3 h-full">
                     <div className={`p-2.5 rounded-xl shrink-0 bg-linear-to-br ${item.tone}`}>
                       <item.icon className="h-5 w-5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-gray-900 dark:text-white text-sm leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.label}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-tight">{item.desc}</p>
+                      <p className="font-semibold text-gray-900 dark:text-white text-sm leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{item.label}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 leading-snug">{item.desc}</p>
                     </div>
                     <ChevronRight className="h-4 w-4 text-gray-300 dark:text-gray-600 group-hover:text-blue-400 group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
