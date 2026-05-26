@@ -45,6 +45,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault();
+        toggleCollapsed();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [collapsed]);
+
   const toggleCollapsed = () => {
     const next = !collapsed;
     setCollapsed(next);
