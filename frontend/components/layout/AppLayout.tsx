@@ -13,11 +13,11 @@ import toast from 'react-hot-toast';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/olts', label: 'OLT Devices', icon: Server },
-  { href: '/alerts', label: 'Alerts', icon: Bell },
-  { href: '/tickets', label: 'Support', icon: LifeBuoy },
-  { href: '/docs', label: 'Documentation', icon: BookOpen },
-  { href: '/plans', label: 'Plans & Pricing', icon: Gift, highlight: true },
+  { href: '/olts',      label: 'OLT Devices', icon: Server },
+  { href: '/alerts',    label: 'Alerts', icon: Bell },
+  { href: '/tickets',   label: 'Support', icon: LifeBuoy },
+  { href: '/docs',      label: 'Documentation', icon: BookOpen },
+  { href: '/plans',     label: 'Plans & Pricing', icon: Gift, highlight: true },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -62,28 +62,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-950 flex overflow-hidden">
-      {/* Sidebar */}
+
+      {/* ── Sidebar ── */}
       <aside className={clsx(
         'fixed inset-y-0 left-0 z-50 flex flex-col transition-all duration-300',
-        'bg-linear-to-b from-gray-900 via-gray-900 to-gray-950 text-white',
+        /* light */ 'bg-white border-r border-gray-200',
+        /* dark  */ 'dark:bg-gray-900 dark:border-gray-700/60',
         'lg:relative lg:translate-x-0 lg:flex lg:h-screen',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full',
         collapsed ? 'w-16' : 'w-64',
       )}>
-        {/* Desktop collapse toggle — pinned to top-right edge of sidebar */}
+
+        {/* Collapse toggle — right edge, desktop only */}
         <button
           onClick={toggleCollapsed}
           title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden lg:flex absolute -right-3 top-18 z-50 w-6 h-6 items-center justify-center rounded-full bg-gray-800 border border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors shadow-md"
+          className={clsx(
+            'hidden lg:flex absolute -right-3 top-18 z-50 w-6 h-6',
+            'items-center justify-center rounded-full shadow-md transition-colors',
+            'bg-white border border-gray-300 text-gray-500 hover:bg-gray-100 hover:text-gray-700',
+            'dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white',
+          )}
         >
-          {collapsed
-            ? <ChevronRight className="h-3 w-3" />
-            : <ChevronRight className="h-3 w-3 rotate-180" />
-          }
+          <ChevronRight className={clsx('h-3 w-3 transition-transform', !collapsed && 'rotate-180')} />
         </button>
+
         {/* Logo */}
         <div className={clsx(
-          'flex items-center gap-3 border-b border-white/5 transition-all duration-300',
+          'flex items-center gap-3 transition-all duration-300',
+          'border-b border-gray-200 dark:border-gray-700/60',
           collapsed ? 'px-3 py-5 justify-center' : 'px-5 py-5',
         )}>
           <div className="w-9 h-9 rounded-xl bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
@@ -91,12 +98,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold text-white tracking-tight">Auto OLT</h1>
-              <p className="text-[11px] text-gray-400">ISP Management</p>
+              <h1 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Auto OLT</h1>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400">ISP Management</p>
             </div>
           )}
           <button
-            className="lg:hidden text-gray-400 hover:text-white ml-auto"
+            className="lg:hidden text-gray-400 hover:text-gray-700 dark:hover:text-white ml-auto"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -106,10 +113,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Navigation */}
         <nav className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-0.5">
           {!collapsed && (
-            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
               Workspace
             </p>
           )}
+
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.href || pathname.startsWith(item.href + '/');
@@ -124,10 +132,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
                   collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
                   active
-                    ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/30'
+                    ? 'bg-linear-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20'
                     : isHighlight
-                      ? 'text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300 border border-emerald-500/20'
-                      : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                      ? 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20'
+                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
                 )}
               >
                 <Icon className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
@@ -135,7 +143,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   <>
                     {item.label}
                     {isHighlight && !active && (
-                      <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-500/20 text-emerald-400 rounded uppercase tracking-wide">Free</span>
+                      <span className="ml-auto px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded uppercase tracking-wide">Free</span>
                     )}
                     {active && <ChevronRight className="ml-auto h-3.5 w-3.5" />}
                   </>
@@ -147,7 +155,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {isAdmin && (
             <>
               {!collapsed && (
-                <p className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                <p className="px-3 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                   Administration
                 </p>
               )}
@@ -162,8 +170,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       'group flex items-center gap-3 rounded-lg text-sm font-medium transition-all',
                       collapsed ? 'px-0 py-2.5 justify-center' : 'px-3 py-2.5',
                       active
-                        ? 'bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-purple-900/30'
-                        : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                        ? 'bg-linear-to-r from-violet-600 to-purple-600 text-white shadow-md shadow-purple-500/20'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white',
                     )}
                   >
                     <ShieldCheck className={clsx('h-4 w-4 shrink-0 transition-transform', !active && 'group-hover:scale-110')} />
@@ -182,7 +190,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* User section */}
         <div className={clsx(
-          'border-t border-white/5 py-3',
+          'border-t border-gray-200 dark:border-gray-700/60 py-3',
           collapsed ? 'px-2' : 'px-3',
         )}>
           <div className={clsx(
@@ -194,8 +202,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{user?.username}</p>
-                <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.username}</p>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>
             )}
           </div>
@@ -210,7 +218,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      {/* Main content */}
+      {/* ── Main content ── */}
       <div className="flex-1 flex flex-col min-w-0 h-screen">
         {/* Top bar */}
         <header className="shrink-0 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-700/80 flex items-center px-4 gap-2 z-30">
