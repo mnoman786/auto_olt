@@ -158,7 +158,7 @@ export default function AdminUserDetailPage() {
   const displayName = [userData.first_name, userData.last_name].filter(Boolean).join(' ') || userData.username;
 
   return (
-      <div className="p-6 max-w-5xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
 
         {/* Back button */}
         <Link

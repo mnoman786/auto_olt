@@ -163,7 +163,7 @@ export default function OLTPortsPage() {
   return (
       <div className="relative">
         <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-purple-50/70 dark:from-purple-950/20 via-fuchsia-50/40 dark:via-transparent to-transparent pointer-events-none" />
-        <div className="relative p-6 max-w-6xl mx-auto">
+        <div className="relative p-4 sm:p-6 max-w-6xl mx-auto">
           <Link href={`/olts/${oltId}`} className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to OLT
           </Link>

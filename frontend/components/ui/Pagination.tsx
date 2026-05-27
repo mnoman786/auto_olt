@@ -27,7 +27,7 @@ export function Pagination({ count, pageSize, page, onPageChange, className = ''
   }
 
   return (
-    <div className={`flex items-center justify-between px-4 py-3 border-t border-gray-100 dark:border-gray-700 ${className}`}>
+    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-t border-gray-100 dark:border-gray-700 ${className}`}>
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Showing <span className="font-medium text-gray-700 dark:text-gray-300">{from}–{to}</span> of{' '}
         <span className="font-medium text-gray-700 dark:text-gray-300">{count}</span>

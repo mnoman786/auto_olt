@@ -95,7 +95,7 @@ export default function ProfilePage() {
   return (
       <div className="relative">
         <div aria-hidden className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none" />
-        <div className="relative p-6 max-w-2xl mx-auto">
+        <div className="relative p-4 sm:p-6 max-w-2xl mx-auto">
 
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
@@ -133,7 +133,7 @@ export default function ProfilePage() {
               <Field label="Username">
                 <Input value={user?.username || ''} disabled />
               </Field>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="First Name">
                   <Input
                     value={profile.first_name}

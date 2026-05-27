@@ -27,7 +27,7 @@ const statusDot = {
 
 function OltRowSkeleton() {
   return (
-    <div className="px-6 py-4 animate-pulse">
+    <div className="px-4 sm:px-6 py-4 animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-700" />
@@ -97,14 +97,14 @@ export default function DashboardPage() {
           className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
 
-        <div className="relative p-6 max-w-5xl mx-auto">
+        <div className="relative p-4 sm:p-6 max-w-5xl mx-auto">
           {/* Header */}
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">
                 Dashboard
               </p>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1">
                 {greeting}{displayName ? `, ${displayName}` : ''}
               </h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
@@ -166,7 +166,7 @@ export default function DashboardPage() {
 
           {/* OLT List */}
           <Card padding="none" className="overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-linear-to-r from-gray-50/60 dark:from-gray-800/60 to-transparent">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-linear-to-r from-gray-50/60 dark:from-gray-800/60 to-transparent">
               <div className="flex items-center gap-2">
                 <Network className="h-4 w-4 text-gray-400" />
                 <h2 className="font-semibold text-gray-900 dark:text-white">{isStaff ? 'All OLT Devices' : 'Your OLT Devices'}</h2>
@@ -203,7 +203,7 @@ export default function DashboardPage() {
                     <Link
                       key={olt.id}
                       href={`/olts/${olt.id}`}
-                      className="group block px-6 py-4 hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors"
+                      className="group block px-4 sm:px-6 py-4 hover:bg-gray-50/70 dark:hover:bg-gray-800/50 transition-colors"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3 min-w-0">

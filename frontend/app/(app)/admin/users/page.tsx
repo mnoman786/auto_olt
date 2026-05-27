@@ -132,10 +132,10 @@ export default function AdminUsersPage() {
   if (isLoading) return <div className="p-8"><Loader2 className="h-6 w-6 animate-spin text-blue-500" /></div>;
 
   return (
-      <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <div className="p-4 sm:p-6 max-w-6xl mx-auto space-y-6">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
               <ShieldCheck className="h-5 w-5 text-violet-600 dark:text-violet-400" />
@@ -234,7 +234,7 @@ export default function AdminUsersPage() {
                 const isConfirmingDelete = confirmDeleteId === u.id;
 
                 return (
-                  <li key={u.id} className="px-6 py-4 hover:bg-gray-50/60 dark:hover:bg-gray-700/40 transition-colors">
+                  <li key={u.id} className="px-4 sm:px-6 py-4 hover:bg-gray-50/60 dark:hover:bg-gray-700/40 transition-colors">
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
                       <div className={clsx(

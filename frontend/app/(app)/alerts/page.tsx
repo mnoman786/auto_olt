@@ -129,7 +129,7 @@ export default function AlertsPage() {
   return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
               <Bell className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -221,7 +221,7 @@ export default function AlertsPage() {
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {rules.map(rule => (
-                <div key={rule.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                <div key={rule.id} className="px-4 sm:px-6 py-4 flex items-center justify-between gap-3 sm:gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     {ALERT_ICONS[rule.alert_type]}
                     <div className="min-w-0">

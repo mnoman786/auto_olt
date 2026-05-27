@@ -243,6 +243,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>
             )}
+            {!collapsed && (
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -276,10 +285,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <button onClick={toggle} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle theme" type="button">
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
-          <div ref={profileRef} className="relative hidden sm:block pl-3 ml-1 border-l border-gray-200 dark:border-gray-700">
+          <div ref={profileRef} className="relative pl-3 ml-1 border-l border-gray-200 dark:border-gray-700">
             <button onClick={() => setProfileOpen(v => !v)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-7 h-7 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">{initials}</div>
-              <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{user?.username}</span>
+              <span className="hidden sm:block text-sm text-gray-700 dark:text-gray-300 font-medium">{user?.username}</span>
             </button>
             {profileOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-gray-200/80 dark:shadow-gray-900/80 border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">

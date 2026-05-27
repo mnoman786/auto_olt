@@ -96,7 +96,7 @@ export default function AnnouncementsAdminPage() {
         aria-hidden
         className="absolute inset-x-0 top-0 h-48 bg-linear-to-b from-violet-50/60 dark:from-violet-950/20 to-transparent pointer-events-none"
       />
-      <div className="relative p-6 max-w-5xl mx-auto">
+      <div className="relative p-4 sm:p-6 max-w-5xl mx-auto">
 
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
@@ -104,7 +104,7 @@ export default function AnnouncementsAdminPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-violet-600/80 dark:text-violet-400/80">
               Administration
             </p>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mt-1 flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mt-1 flex items-center gap-3">
               <Megaphone className="h-7 w-7 text-violet-500" />
               Announcements
             </h1>

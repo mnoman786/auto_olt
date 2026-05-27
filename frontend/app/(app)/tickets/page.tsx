@@ -72,9 +72,9 @@ export default function TicketsPage() {
           aria-hidden
           className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
-        <div className="relative p-6 max-w-5xl mx-auto">
+        <div className="relative p-4 sm:p-6 max-w-5xl mx-auto">
           {/* Header */}
-          <div className="flex items-center justify-between gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
                 <LifeBuoy className="h-6 w-6" />
@@ -155,7 +155,7 @@ export default function TicketsPage() {
                         <p className="font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">
                           #{ticket.id} — {ticket.subject}
                         </p>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        <div className="flex items-center flex-wrap gap-2 mt-0.5 text-xs text-gray-400 dark:text-gray-500">
                           {isStaff && (
                             <span className="font-medium text-gray-500 dark:text-gray-400">{ticket.username}</span>
                           )}
