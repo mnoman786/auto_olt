@@ -204,15 +204,19 @@ export default function OLTDetailPage() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1.5 sm:gap-2">
               <Button variant="outline" size="sm" icon={<RefreshCw className="h-4 w-4" />} onClick={handlePoll}>
-                Poll
+                <span className="hidden sm:inline">Poll</span>
               </Button>
               <Link href={`/olts/${oltId}/edit`}>
-                <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />}>Edit</Button>
+                <Button variant="outline" size="sm" icon={<Pencil className="h-4 w-4" />}>
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
               </Link>
               <Link href={`/olts/${oltId}/setup`}>
-                <Button variant="outline" size="sm" icon={<Play className="h-4 w-4" />}>Setup Wizard</Button>
+                <Button variant="outline" size="sm" icon={<Play className="h-4 w-4" />}>
+                  <span className="hidden sm:inline">Setup</span>
+                </Button>
               </Link>
               <Button
                 variant="outline" size="sm"
@@ -220,7 +224,7 @@ export default function OLTDetailPage() {
                 onClick={handleDelete}
                 className="text-red-500 border-red-200 hover:bg-red-50 hover:border-red-300 dark:border-red-900/50 dark:hover:bg-red-900/20 dark:hover:border-red-700"
               >
-                Delete
+                <span className="hidden sm:inline">Delete</span>
               </Button>
             </div>
           </div>
@@ -236,7 +240,7 @@ export default function OLTDetailPage() {
           )}
 
           {/* Quick Links */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-6 items-stretch">
             {quickLinks.map(item => (
               <Link key={item.href} href={item.href} className="group h-full">
                 <Card className="hover:shadow-md hover:-translate-y-0.5 hover:border-blue-200 dark:hover:border-blue-700 transition-all cursor-pointer h-full">
