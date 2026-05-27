@@ -1,5 +1,6 @@
 ﻿'use client';
 import { useCallback, useEffect, useState } from 'react';
+import { useCountUp } from '@/lib/useCountUp';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { Card, StatCard } from '@/components/ui/Card';
@@ -74,14 +75,24 @@ export default function DashboardPage() {
 
   useEffect(() => { if (isAuthenticated) fetchOlts(); }, [isAuthenticated, fetchOlts]);
 
-  if (isLoading) return <DashboardSkeleton />;
-
   const activeOlts = olts.filter(o => o.status === 'active').length;
   const errorOlts = olts.filter(o => o.status === 'error').length;
   const totalOnus = olts.reduce((s, o) => s + o.onu_count, 0);
   const registeredOnus = olts.reduce((s, o) => s + o.registered_onu_count, 0);
   const healthPct = olts.length ? Math.round((activeOlts / olts.length) * 100) : 0;
   const regPct = totalOnus ? Math.round((registeredOnus / totalOnus) * 100) : 0;
+
+  // All hooks must be called before any early return
+  const animOlts = useCountUp(olts.length);
+  const animActiveOlts = useCountUp(activeOlts);
+  const animTotalOnus = useCountUp(totalOnus);
+  const animRegisteredOnus = useCountUp(registeredOnus);
+  const animHealthPct = useCountUp(healthPct);
+  const animErrorOlts = useCountUp(errorOlts);
+  const animRegPct = useCountUp(regPct);
+
+  if (isLoading) return <DashboardSkeleton />;
+
   const greeting = (() => {
     const h = new Date().getHours();
     if (h < 12) return 'Good morning';
@@ -132,32 +143,32 @@ export default function DashboardPage() {
               label="Total OLTs"
               value={
                 <span className="flex items-center gap-1.5">
-                  <span>{olts.length}</span>
+                  <span>{animOlts}</span>
                   <span className="text-lg text-gray-400 dark:text-gray-500">/</span>
                   <InfinityIcon className="h-5 w-5 text-gray-400 dark:text-gray-500" />
                 </span>
               }
               icon={<Server className="h-5 w-5" />}
               color="blue"
-              subtitle={olts.length ? `${activeOlts} online · unlimited` : 'No devices yet'}
+              subtitle={olts.length ? `${animActiveOlts} online · unlimited` : 'No devices yet'}
             />
             <StatCard
               label="Network Health"
-              value={`${healthPct}%`}
+              value={`${animHealthPct}%`}
               icon={<Activity className="h-5 w-5" />}
               color={healthPct >= 80 ? 'green' : healthPct >= 50 ? 'yellow' : 'red'}
-              subtitle={`${activeOlts} of ${olts.length || 0} active`}
+              subtitle={`${animActiveOlts} of ${animOlts} active`}
             />
             <StatCard
               label="Total ONUs"
-              value={totalOnus}
+              value={animTotalOnus}
               icon={<Wifi className="h-5 w-5" />}
               color="blue"
-              subtitle={`${registeredOnus} registered • ${regPct}%`}
+              subtitle={`${animRegisteredOnus} registered • ${animRegPct}%`}
             />
             <StatCard
               label="Issues"
-              value={errorOlts}
+              value={animErrorOlts}
               icon={<AlertCircle className="h-5 w-5" />}
               color={errorOlts > 0 ? 'red' : 'gray'}
               subtitle={errorOlts > 0 ? 'Needs attention' : 'All clear'}
