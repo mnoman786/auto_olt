@@ -9,7 +9,8 @@ REFRESH_COOKIE_PATH = '/api/auth/token/refresh/'
 
 
 def _set_token_cookies(response: Response, access_token: str, refresh_token: str = None) -> None:
-    secure = not settings.DEBUG
+    # Use Secure flag only when SSL redirect is active; avoids dropping cookies on plain HTTP
+    secure = getattr(settings, 'SECURE_SSL_REDIRECT', False)
     common = dict(httponly=True, samesite='Lax', secure=secure)
     response.set_cookie(
         ACCESS_COOKIE,
@@ -29,8 +30,8 @@ def _set_token_cookies(response: Response, access_token: str, refresh_token: str
 
 
 def _clear_token_cookies(response: Response) -> None:
-    response.delete_cookie(ACCESS_COOKIE, path='/')
-    response.delete_cookie(REFRESH_COOKIE, path=REFRESH_COOKIE_PATH)
+    response.delete_cookie(ACCESS_COOKIE, path='/', samesite='Lax')
+    response.delete_cookie(REFRESH_COOKIE, path=REFRESH_COOKIE_PATH, samesite='Lax')
 
 
 class JWTCookieAuthentication(JWTAuthentication):
