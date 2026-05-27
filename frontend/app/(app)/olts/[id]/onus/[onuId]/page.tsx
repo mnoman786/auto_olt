@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { Card, StatCard } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ONUStatusBadge, LogLevelBadge } from '@/components/ui/Badge';
 import { oltApi, onuApi, vlanApi } from '@/lib/api';
@@ -23,9 +23,9 @@ function SignalStrength({ value }: { value: number | null }) {
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
-      <span className="text-sm text-gray-500 dark:text-gray-400 w-40 shrink-0">{label}</span>
-      <span className="text-sm text-gray-900 dark:text-gray-100 font-medium break-all">{value ?? '—'}</span>
+    <div className="flex items-start gap-2 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0">
+      <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 w-28 sm:w-40 shrink-0">{label}</span>
+      <span className="text-xs sm:text-sm text-gray-900 dark:text-gray-100 font-medium break-all min-w-0">{value ?? '—'}</span>
     </div>
   );
 }
@@ -191,7 +191,7 @@ export default function ONUDetailPage() {
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">ONU Device</p>
               <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white font-mono break-all">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white font-mono break-all">
                   {onu?.serial_number}
                 </h1>
                 {onu && <ONUStatusBadge status={onu.status} />}
@@ -229,27 +229,25 @@ export default function ONUDetailPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            label="Signal Strength"
-            value={signalLabel}
-            icon={<Signal className="h-5 w-5" style={{ color: signalColor }} />}
-          />
-          <StatCard
-            label="Status"
-            value={onu?.status ? onu.status.charAt(0).toUpperCase() + onu.status.slice(1) : '—'}
-            icon={<Activity className="h-5 w-5 text-blue-500" />}
-          />
-          <StatCard
-            label="VLAN"
-            value={onu?.vlan_id_num ? `VLAN ${onu.vlan_id_num}` : 'Unassigned'}
-            icon={<Tag className="h-5 w-5 text-purple-500" />}
-          />
-          <StatCard
-            label="Service Profile"
-            value={onu?.service_profile || 'Default'}
-            icon={<Server className="h-5 w-5 text-gray-500" />}
-          />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {[
+            { label: 'Signal Strength', value: signalLabel, icon: <Signal className="h-4 w-4" style={{ color: signalColor }} />, bg: 'bg-gray-50 dark:bg-gray-700' },
+            { label: 'Status', value: onu?.status ? onu.status.charAt(0).toUpperCase() + onu.status.slice(1) : '—', icon: <Activity className="h-4 w-4 text-blue-500" />, bg: 'bg-blue-50 dark:bg-blue-900/30' },
+            { label: 'VLAN', value: onu?.vlan_id_num ? `VLAN ${onu.vlan_id_num}` : 'Unassigned', icon: <Tag className="h-4 w-4 text-purple-500" />, bg: 'bg-purple-50 dark:bg-purple-900/30' },
+            { label: 'Service Profile', value: onu?.service_profile || 'Default', icon: <Server className="h-4 w-4 text-gray-500" />, bg: 'bg-gray-50 dark:bg-gray-700' },
+          ].map(({ label, value, icon, bg }) => (
+            <div key={label} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-3 sm:p-5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 leading-tight">{label}</p>
+                  <p className="text-sm sm:text-xl font-bold text-gray-900 dark:text-white mt-1 break-words leading-snug">{value}</p>
+                </div>
+                <div className={`p-1.5 rounded-lg shrink-0 ${bg}`}>
+                  {icon}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Details */}
