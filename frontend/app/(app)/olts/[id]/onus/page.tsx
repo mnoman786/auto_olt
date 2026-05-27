@@ -398,34 +398,25 @@ export default function ONUManagementPage() {
         </div>
 
         {/* Stat summary chips */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 shadow-sm">
-            <div className="p-2 rounded-lg bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400">
-              <Wifi className="h-4 w-4" />
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+          {[
+            { label: 'Total', value: counts.all, icon: <Wifi className="h-4 w-4" />, tone: 'from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 text-blue-600 dark:text-blue-400' },
+            { label: 'Registered', value: counts.registered, icon: <CheckCircle className="h-4 w-4" />, tone: 'from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400' },
+            { label: 'Unreg.', labelFull: 'Unregistered', value: counts.unregistered, icon: <AlertCircle className="h-4 w-4" />, tone: 'from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-orange-600 dark:text-orange-400' },
+          ].map(({ label, labelFull, value, icon, tone }) => (
+            <div key={label} className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2.5 sm:p-3 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 shadow-sm">
+              <div className={`hidden sm:flex p-2 rounded-lg bg-linear-to-br shrink-0 ${tone}`}>
+                {icon}
+              </div>
+              <div>
+                <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                  <span className="sm:hidden">{label}</span>
+                  <span className="hidden sm:inline">{labelFull ?? label}</span>
+                </p>
+                <p className="text-base sm:text-lg font-bold text-gray-900 dark:text-white leading-none">{value}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">{counts.all}</p>
-            </div>
-          </div>
-          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 shadow-sm">
-            <div className="p-2 rounded-lg bg-linear-to-br from-emerald-50 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 text-emerald-600 dark:text-emerald-400">
-              <CheckCircle className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Registered</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">{counts.registered}</p>
-            </div>
-          </div>
-          <div className="rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 flex items-center gap-3 shadow-sm">
-            <div className="p-2 rounded-lg bg-linear-to-br from-amber-50 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 text-orange-600 dark:text-orange-400">
-              <AlertCircle className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Unregistered</p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white leading-none">{counts.unregistered}</p>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Sub-nav */}
@@ -506,13 +497,13 @@ export default function ONUManagementPage() {
                         </button>
                       )}
                     </th>
-                    <th className="px-4 py-3">Serial Number</th>
-                    <th className="px-4 py-3 hidden sm:table-cell">PON Port</th>
-                    <th className="px-4 py-3 hidden md:table-cell">Signal</th>
-                    <th className="px-4 py-3 hidden md:table-cell">VLAN</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 hidden lg:table-cell">Last Seen</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Serial Number</th>
+                    <th className="px-4 py-3 hidden sm:table-cell whitespace-nowrap">PON Port</th>
+                    <th className="px-4 py-3 hidden md:table-cell whitespace-nowrap">Signal</th>
+                    <th className="px-4 py-3 hidden md:table-cell whitespace-nowrap">VLAN</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Status</th>
+                    <th className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">Last Seen</th>
+                    <th className="px-4 py-3 text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
