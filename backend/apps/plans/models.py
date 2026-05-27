@@ -58,7 +58,7 @@ class UserSubscription(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        indexes = [models.Index(fields=['user', 'is_active'])]
+        indexes = [models.Index(fields=['user', 'is_active'], name='plans_users_user_id_idx')]
 
     def __str__(self):
         return f'{self.user.username} → {self.plan.name}'
