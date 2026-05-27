@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { auth, setTokens, clearTokens } from './api';
+import { auth, clearTokens } from './api';
 import type { User, AuthResponse } from './types';
 
 interface AuthContextType {
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string) => {
     const resp = await auth.login({ username, password });
     const data: AuthResponse = resp.data;
-    setTokens(data.access, data.refresh);
+    // Tokens are now in HttpOnly cookies — only persist user info
     localStorage.setItem('user', JSON.stringify(data.user));
     setUser(data.user);
   };
@@ -38,9 +38,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (username: string, email: string, password: string, password2: string) => {
     const resp = await auth.register({ username, email, password, password2 });
     const data = resp.data as any;
-    if (data.access) {
-      // First user — activated immediately
-      setTokens(data.access, data.refresh);
+    if (data.user) {
+      // First user — activated immediately, cookies set by backend
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
       return { email: data.user.email as string, activated: true };
@@ -50,10 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    const refresh = localStorage.getItem('refresh_token') || '';
-    try { await auth.logout(refresh); } catch {}
+    // Backend reads refresh token from cookie and blacklists it
+    try { await auth.logout(''); } catch {}
     clearTokens();
-    localStorage.removeItem('user');
     setUser(null);
   };
 

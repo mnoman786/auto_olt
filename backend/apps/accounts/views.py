@@ -11,8 +11,33 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenRefreshView
 from .models import PasswordResetOTP, EmailVerificationOTP
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, validate_password_strength
+from .cookie_auth import _set_token_cookies, _clear_token_cookies, REFRESH_COOKIE
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Reads refresh token from HttpOnly cookie, issues new access + refresh cookies."""
+
+    def post(self, request, *args, **kwargs):
+        refresh_token = request.COOKIES.get(REFRESH_COOKIE)
+        if not refresh_token:
+            return Response({'detail': 'Refresh token not found.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = self.get_serializer(data={'refresh': refresh_token})
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception:
+            return Response({'detail': 'Token is invalid or expired.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        response = Response({'detail': 'Token refreshed.'})
+        _set_token_cookies(
+            response,
+            serializer.validated_data['access'],
+            serializer.validated_data.get('refresh'),
+        )
+        return response
 
 
 _OTP_ALPHABET = string.ascii_uppercase + string.digits
@@ -105,11 +130,9 @@ def register_view(request):
         user.is_active = True
         user.save(update_fields=['is_active'])
         refresh = RefreshToken.for_user(user)
-        return Response({
-            'user': UserSerializer(user).data,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-        }, status=status.HTTP_201_CREATED)
+        response = Response({'user': UserSerializer(user).data}, status=status.HTTP_201_CREATED)
+        _set_token_cookies(response, str(refresh.access_token), str(refresh))
+        return response
 
     otp = _generate_otp()
     EmailVerificationOTP.objects.create(user=user, otp=otp)
@@ -173,11 +196,9 @@ def verify_email_view(request):
     user.save(update_fields=['is_active'])
 
     refresh = RefreshToken.for_user(user)
-    return Response({
-        'user': UserSerializer(user).data,
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
-    })
+    response = Response({'user': UserSerializer(user).data})
+    _set_token_cookies(response, str(refresh.access_token), str(refresh))
+    return response
 
 
 @api_view(['POST'])
@@ -220,24 +241,24 @@ def login_view(request):
     serializer.is_valid(raise_exception=True)
     user = serializer.validated_data['user']
     refresh = RefreshToken.for_user(user)
-    return Response({
-        'user': UserSerializer(user).data,
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
-    })
+    response = Response({'user': UserSerializer(user).data})
+    _set_token_cookies(response, str(refresh.access_token), str(refresh))
+    return response
 
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     try:
-        refresh_token = request.data.get('refresh')
+        refresh_token = request.COOKIES.get('refresh_token') or request.data.get('refresh')
         if refresh_token:
             token = RefreshToken(refresh_token)
             token.blacklist()
     except Exception:
         pass
-    return Response({'detail': 'Logged out.'})
+    response = Response({'detail': 'Logged out.'})
+    _clear_token_cookies(response)
+    return response
 
 
 @api_view(['GET'])

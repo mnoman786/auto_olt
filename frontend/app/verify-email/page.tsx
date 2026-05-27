@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { auth, setTokens } from '@/lib/api';
+import { auth } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Network, ShieldCheck, ArrowLeft, Loader2, RotateCcw } from 'lucide-react';
 import type { AuthResponse } from '@/lib/types';
@@ -78,7 +78,6 @@ function VerifyEmailForm() {
     try {
       const resp = await auth.verifyEmail({ email, otp: otpValue });
       const data: AuthResponse = resp.data;
-      setTokens(data.access, data.refresh);
       localStorage.setItem('user', JSON.stringify(data.user));
       setUser(data.user);
       setSuccess(true);

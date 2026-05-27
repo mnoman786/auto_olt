@@ -11,6 +11,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
   // Capture raw response body before axios parses JSON, for HMAC verification
   transformResponse: [(rawData: string) => {
@@ -30,32 +31,14 @@ const apiClient: AxiosInstance = axios.create({
   }],
 });
 
-// Token management
-export const getAccessToken = () =>
-  typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-
-export const getRefreshToken = () =>
-  typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
-
-export const setTokens = (access: string, refresh: string) => {
-  localStorage.setItem('access_token', access);
-  localStorage.setItem('refresh_token', refresh);
-};
-
+// Tokens are now stored in HttpOnly cookies — not accessible from JS.
+// These stubs are kept so imports don't break; clearTokens clears user info only.
+export const getAccessToken = () => null;
+export const getRefreshToken = () => null;
+export const setTokens = (_access: string, _refresh: string) => {};
 export const clearTokens = () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-  localStorage.removeItem('user');
+  if (typeof window !== 'undefined') localStorage.removeItem('user');
 };
-
-// Request interceptor to add Authorization header
-apiClient.interceptors.request.use((config) => {
-  const token = getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 // HMAC verification interceptor — runs before token refresh logic
 apiClient.interceptors.response.use(
@@ -97,19 +80,11 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      const refresh = getRefreshToken();
-      if (refresh) {
-        try {
-          const resp = await axios.post(`${API_URL}/auth/token/refresh/`, { refresh });
-          const newAccess = resp.data.access;
-          localStorage.setItem('access_token', newAccess);
-          originalRequest.headers.Authorization = `Bearer ${newAccess}`;
-          return apiClient(originalRequest);
-        } catch {
-          clearTokens();
-          window.location.href = '/login';
-        }
-      } else {
+      try {
+        // Refresh cookie is sent automatically via withCredentials
+        await axios.post(`${API_URL}/auth/token/refresh/`, {}, { withCredentials: true });
+        return apiClient(originalRequest);
+      } catch {
         clearTokens();
         if (typeof window !== 'undefined') window.location.href = '/login';
       }
@@ -126,8 +101,8 @@ export const auth = {
   login: (data: { username: string; password: string }) =>
     apiClient.post<AuthResponse>('/auth/login/', data),
 
-  logout: (refresh: string) =>
-    apiClient.post('/auth/logout/', { refresh }),
+  logout: (_refresh?: string) =>
+    apiClient.post('/auth/logout/', {}),
 
   me: () => apiClient.get('/auth/me/'),
 

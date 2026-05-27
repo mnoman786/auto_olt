@@ -106,7 +106,7 @@ CORS_ALLOW_ALL_ORIGINS=False
 CORS_ALLOWED_ORIGINS=http://$SERVER_IP:$FE_PORT,http://localhost:$FE_PORT
 
 # ── JWT ──────────────────────────────────────────────────────
-JWT_ACCESS_TOKEN_LIFETIME_MINUTES=60
+JWT_ACCESS_TOKEN_LIFETIME_MINUTES=15
 JWT_REFRESH_TOKEN_LIFETIME_DAYS=7
 
 # ── Encryption (OLT passwords at rest) ───────────────────────
@@ -159,6 +159,8 @@ WG_ENDPOINT=$SERVER_IP:51820
 WG_SERVER_PUBLIC_KEY=REPLACE_WITH_WG_SERVER_PUBLIC_KEY
 
 # ── Celery / Redis ────────────────────────────────────────────
+# Allow sync ORM calls inside gevent-pooled Celery workers
+DJANGO_ALLOW_ASYNC_UNSAFE=1
 CELERY_BROKER_URL=redis://127.0.0.1:6379/0
 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
 REDIS_CACHE_URL=redis://127.0.0.1:6379/1

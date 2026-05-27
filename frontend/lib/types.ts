@@ -16,8 +16,6 @@ export interface AuthTokens {
 
 export interface AuthResponse {
   user: User;
-  access: string;
-  refresh: string;
 }
 
 export type OLTStatus = 'pending' | 'configuring' | 'active' | 'error' | 'offline';

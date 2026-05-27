@@ -16,7 +16,12 @@ Retry policy per task:
   - cleanup_old_logs_task:   no retry — runs daily, failure is non-critical
 """
 import logging
+import os
 from celery import shared_task
+
+# Gevent pool patches the event loop; Django mistakenly detects an async context
+# and blocks synchronous ORM calls. This flag disables that guard for Celery workers.
+os.environ.setdefault('DJANGO_ALLOW_ASYNC_UNSAFE', '1')
 
 logger = logging.getLogger(__name__)
 
@@ -263,9 +268,10 @@ def poll_bandwidth_olt_task(self, olt_id: int) -> dict:
         in_map  = snmp_service.snmp_bulk_walk(host, olt.snmp_read_community, OID_IN,  version=olt.snmp_version)
         out_map = snmp_service.snmp_bulk_walk(host, olt.snmp_read_community, OID_OUT, version=olt.snmp_version)
 
-        def _to_index_map(walk_result: dict) -> dict:
+        def _to_index_map(walk_result) -> dict:
+            # walk_result is a list of (oid_str, value_str) tuples
             out = {}
-            for oid, val in walk_result.items():
+            for oid, val in walk_result:
                 try:
                     out[int(oid.rsplit('.', 1)[-1])] = int(val)
                 except (ValueError, TypeError):

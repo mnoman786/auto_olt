@@ -12,7 +12,7 @@ import { clsx } from 'clsx';
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import AnnouncementBanner from '@/components/ui/AnnouncementBanner';
-import { notificationsApi, getAccessToken } from '@/lib/api';
+import { notificationsApi } from '@/lib/api';
 import type { Notification } from '@/lib/types';
 
 const WS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api')
@@ -91,9 +91,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     let destroyed = false;
 
     function connect() {
-      const token = getAccessToken();
-      if (!token || destroyed) return;
-      ws = new WebSocket(`${WS_BASE}/ws/notifications/?token=${token}`);
+      if (destroyed) return;
+      // Access token cookie is sent automatically on the WS upgrade request
+      ws = new WebSocket(`${WS_BASE}/ws/notifications/`);
 
       ws.onopen = () => { reconnectDelay = 1000; };
 
