@@ -170,7 +170,7 @@ export default function OLTsPage() {
               <div className="w-16 h-16 mx-auto rounded-2xl bg-linear-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 flex items-center justify-center mb-4">
                 <Server className="h-7 w-7 text-blue-500 dark:text-blue-400" />
               </div>
-              {debouncedSearch ? (
+              {search ? (
                 <>
                   <p className="text-gray-900 dark:text-white font-semibold">No results for "{search}"</p>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Try a different name or IP address.</p>
