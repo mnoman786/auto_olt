@@ -350,11 +350,11 @@ export default function ONUManagementPage() {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wider text-blue-600/80 dark:text-blue-400/80">Subscribers</p>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">ONU Management</h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">{olt?.name} — {olt?.ip_address}</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mt-0.5">ONU Management</h1>
+              <p className="text-gray-500 dark:text-gray-400 text-sm truncate">{olt?.name} — {olt?.ip_address}</p>
             </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 sm:gap-2 flex-wrap">
             {selectedIds.size > 0 && (
               <>
                 <Button
@@ -362,7 +362,8 @@ export default function ONUManagementPage() {
                   icon={<Users className="h-4 w-4" />}
                   onClick={() => setShowBulkModal(true)}
                 >
-                  Register Selected ({selectedIds.size})
+                  <span className="hidden sm:inline">Register Selected ({selectedIds.size})</span>
+                  <span className="sm:hidden">{selectedIds.size}</span>
                 </Button>
                 <Button
                   size="sm"
@@ -371,7 +372,7 @@ export default function ONUManagementPage() {
                   loading={bulkRebooting}
                   onClick={handleBulkReboot}
                 >
-                  Reboot Selected ({selectedIds.size})
+                  <span className="hidden sm:inline">Reboot Selected ({selectedIds.size})</span>
                 </Button>
               </>
             )}
@@ -380,7 +381,7 @@ export default function ONUManagementPage() {
               icon={<Download className="h-4 w-4" />}
               onClick={() => onuBulkApi.exportCsv(oltId)}
             >
-              Export CSV
+              <span className="hidden sm:inline">Export CSV</span>
             </Button>
             <Button
               variant="outline" size="sm"
@@ -388,10 +389,10 @@ export default function ONUManagementPage() {
               onClick={handlePoll}
               loading={polling}
             >
-              Poll ONUs
+              <span className="hidden sm:inline">Poll ONUs</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={fetchOnus}>
-              Refresh
+            <Button variant="outline" size="sm" icon={<RefreshCw className="h-4 w-4" />} onClick={fetchOnus}>
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </div>
@@ -428,28 +429,29 @@ export default function ONUManagementPage() {
         </div>
 
         {/* Sub-nav */}
-        <div className="flex items-center gap-1 mb-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center mb-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
           {(['unregistered', 'registered', 'all'] as TabType[]).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={clsx(
-                'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
+                'shrink-0 px-3 sm:px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
                 activeTab === tab
                   ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               )}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)} ONUs
+              <span className="hidden sm:inline">{tab.charAt(0).toUpperCase() + tab.slice(1)} ONUs</span>
+              <span className="sm:hidden">{tab === 'all' ? 'All' : tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
               <span className={clsx(
-                'ml-2 px-1.5 py-0.5 text-xs rounded-full',
+                'ml-1.5 px-1.5 py-0.5 text-xs rounded-full',
                 activeTab === tab ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
               )}>
                 {counts[tab]}
               </span>
             </button>
           ))}
-          <div className="ml-auto flex gap-2 pb-1">
+          <div className="ml-auto shrink-0 flex gap-1 pb-1 pl-2">
             <Link href={`/olts/${oltId}/vlans`}>
               <Button variant="ghost" size="sm">VLANs</Button>
             </Link>
@@ -505,11 +507,11 @@ export default function ONUManagementPage() {
                       )}
                     </th>
                     <th className="px-4 py-3">Serial Number</th>
-                    <th className="px-4 py-3">PON Port</th>
-                    <th className="px-4 py-3">Signal</th>
-                    <th className="px-4 py-3">VLAN</th>
+                    <th className="px-4 py-3 hidden sm:table-cell">PON Port</th>
+                    <th className="px-4 py-3 hidden md:table-cell">Signal</th>
+                    <th className="px-4 py-3 hidden md:table-cell">VLAN</th>
                     <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Last Seen</th>
+                    <th className="px-4 py-3 hidden lg:table-cell">Last Seen</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -539,13 +541,13 @@ export default function ONUManagementPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400 font-mono text-xs">
+                      <td className="px-4 py-3 hidden sm:table-cell text-gray-600 dark:text-gray-400 font-mono text-xs">
                         {onu.pon_port || '—'}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden md:table-cell">
                         <SignalBar strength={onu.signal_strength} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden md:table-cell">
                         {onu.vlan_id_num ? (
                           <span className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full">
                             VLAN {onu.vlan_id_num}
@@ -555,13 +557,13 @@ export default function ONUManagementPage() {
                       <td className="px-4 py-3">
                         <ONUStatusBadge status={onu.status} />
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+                      <td className="px-4 py-3 hidden lg:table-cell text-xs text-gray-500 dark:text-gray-400">
                         {onu.last_seen
                           ? new Date(onu.last_seen).toLocaleString()
                           : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Link href={`/olts/${oltId}/onus/${onu.id}/signal`}>
                             <Button size="sm" variant="ghost" icon={<Activity className="h-3.5 w-3.5" />} />
                           </Link>
@@ -574,13 +576,13 @@ export default function ONUManagementPage() {
                               icon={<Play className="h-3.5 w-3.5" />}
                               onClick={() => setRegisterTarget(onu)}
                             >
-                              Register
+                              <span className="hidden sm:inline">Register</span>
                             </Button>
                           )}
                           {onu.status === 'provisioning' && (
                             <span className="text-xs text-blue-600 flex items-center gap-1">
                               <Loader2 className="h-3 w-3 animate-spin" />
-                              Provisioning...
+                              <span className="hidden sm:inline">Provisioning...</span>
                             </span>
                           )}
                           {['active', 'registered', 'offline'].includes(onu.status) && (
@@ -593,13 +595,14 @@ export default function ONUManagementPage() {
                               loading={rebootingIds.has(onu.id)}
                               onClick={() => handleReboot(onu)}
                             >
-                              Reboot
+                              <span className="hidden sm:inline">Reboot</span>
                             </Button>
                           )}
                           {['active', 'registered'].includes(onu.status) && (
                             <Button
                               size="sm"
                               variant="ghost"
+                              className="hidden sm:inline-flex"
                               onClick={async () => {
                                 await onuApi.deregister(oltId, onu.id);
                                 toast.success('ONU deregistered');
