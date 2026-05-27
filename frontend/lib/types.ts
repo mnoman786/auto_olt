@@ -324,3 +324,12 @@ export interface Announcement {
   created_at: string;
   updated_at: string;
 }
+
+export interface Notification {
+  id: number;
+  ticket_id: number;
+  ticket_subject: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}

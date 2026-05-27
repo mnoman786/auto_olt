@@ -161,6 +161,8 @@ WG_SERVER_PUBLIC_KEY=REPLACE_WITH_WG_SERVER_PUBLIC_KEY
 # ── Celery / Redis ────────────────────────────────────────────
 CELERY_BROKER_URL=redis://127.0.0.1:6379/0
 CELERY_RESULT_BACKEND=redis://127.0.0.1:6379/0
+REDIS_CACHE_URL=redis://127.0.0.1:6379/1
+REDIS_CHANNEL_URL=redis://127.0.0.1:6379/2
 EOF
 info ".env written at $ENV_FILE"
 
@@ -190,15 +192,15 @@ info "Frontend built"
 section "8 — systemctl service: auto-olt-backend (port $BE_PORT)"
 cat > /etc/systemd/system/auto-olt-backend.service <<EOF
 [Unit]
-Description=Auto OLT Backend (Django / Gunicorn)
-After=network.target
+Description=Auto OLT Backend (Django / Daphne ASGI)
+After=network.target redis-server.service
 
 [Service]
 Type=simple
 User=$SERVICE_USER
 WorkingDirectory=$BACKEND_DIR
 EnvironmentFile=$ENV_FILE
-ExecStart=$VENV_DIR/bin/gunicorn auto_olt.wsgi:application --bind 0.0.0.0:$BE_PORT --workers 4 --worker-class gthread --threads 2 --timeout 60
+ExecStart=$VENV_DIR/bin/daphne -b 0.0.0.0 -p $BE_PORT auto_olt.asgi:application
 Restart=always
 RestartSec=5
 StandardOutput=journal

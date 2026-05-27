@@ -122,9 +122,9 @@ export default function AddOLTPage() {
           className="absolute inset-x-0 top-0 h-56 bg-linear-to-b from-blue-50/70 dark:from-blue-950/20 via-indigo-50/40 dark:via-transparent to-transparent pointer-events-none"
         />
         <div className="relative p-4 sm:p-6 max-w-3xl mx-auto">
-          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
+          <Link href="/olts" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Back to OLT Devices
           </Link>
 
           <div className="flex items-center gap-4 mb-8">

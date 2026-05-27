@@ -40,6 +40,16 @@ class OLTListCreateView(generics.ListCreateAPIView):
         qs = OLT.objects.select_related('user')
         if not (user.is_staff or user.is_superuser):
             qs = qs.filter(user=user)
+        q = self.request.query_params.get('search', '').strip()
+        if q:
+            from django.db.models.functions import Cast
+            from django.db.models import CharField
+            qs = qs.annotate(_ip_text=Cast('ip_address', output_field=CharField()))
+            qs = qs.filter(
+                Q(name__icontains=q) |
+                Q(_ip_text__icontains=q) |
+                Q(system_name__icontains=q)
+            )
         return qs.annotate(
             _onu_count=Count('onus', distinct=True),
             _registered_onu_count=Count(

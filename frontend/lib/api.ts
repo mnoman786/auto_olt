@@ -3,7 +3,7 @@ import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
   Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
-  AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse, Announcement,
+  AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse, Announcement, Notification,
 } from './types';
 import { verifyResponseHMAC } from './hmac';
 
@@ -152,7 +152,9 @@ export const auth = {
 
 // OLT API
 export const oltApi = {
-  list: (page?: number) => apiClient.get<PaginatedResponse<OLT>>('/olts/', { params: page && page > 1 ? { page } : undefined }),
+  list: (page?: number, search?: string) => apiClient.get<PaginatedResponse<OLT>>('/olts/', {
+    params: { ...(page && page > 1 ? { page } : {}), ...(search ? { search } : {}) },
+  }),
 
   create: (data: OLTCreatePayload) => apiClient.post<OLT>('/olts/', data),
 
@@ -369,6 +371,13 @@ export const announcementsApi = {
     apiClient.patch<Announcement>(`/announcements/${id}/`, data),
 
   delete: (id: number) => apiClient.delete(`/announcements/${id}/`),
+};
+
+// Notifications API
+export const notificationsApi = {
+  list: () => apiClient.get<Notification[]>('/notifications/'),
+  markRead: (id: number) => apiClient.post(`/notifications/${id}/read/`),
+  markAllRead: () => apiClient.post('/notifications/mark-all-read/'),
 };
 
 export default apiClient;

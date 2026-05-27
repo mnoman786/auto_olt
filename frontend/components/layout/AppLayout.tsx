@@ -5,12 +5,20 @@ import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
-  Bell, Search, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay, Megaphone,
+  Bell, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay, Megaphone,
+  CheckCheck,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import AnnouncementBanner from '@/components/ui/AnnouncementBanner';
+import { notificationsApi, getAccessToken } from '@/lib/api';
+import type { Notification } from '@/lib/types';
+
+const WS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api')
+  .replace(/^https/, 'wss')
+  .replace(/^http/, 'ws')
+  .replace(/\/api\/?$/, '');
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard',     icon: LayoutDashboard },
@@ -33,6 +41,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarReady, setSidebarReady] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const [bellOpen, setBellOpen] = useState(false);
+  const bellRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const seenIdsRef = useRef<Set<number>>(new Set());;
 
   useLayoutEffect(() => {
     if (localStorage.getItem('sidebar_collapsed') === 'true') setCollapsed(true);
@@ -48,10 +60,94 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setProfileOpen(false);
       }
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setBellOpen(false);
+      }
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
+
+  // Load existing notifications on mount
+  const fetchNotifications = useCallback(() => {
+    if (!user) return;
+    notificationsApi.list()
+      .then(r => {
+        const list: Notification[] = (r.data as any).results ?? r.data;
+        list.forEach(n => seenIdsRef.current.add(n.id));
+        setNotifications(list);
+      })
+      .catch(() => {});
+  }, [user]);
+
+  useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
+
+  // WebSocket for real-time push
+  useEffect(() => {
+    if (!user) return;
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let reconnectDelay = 1000;
+    let destroyed = false;
+
+    function connect() {
+      const token = getAccessToken();
+      if (!token || destroyed) return;
+      ws = new WebSocket(`${WS_BASE}/ws/notifications/?token=${token}`);
+
+      ws.onopen = () => { reconnectDelay = 1000; };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'notification') {
+            const n: Notification = data;
+            if (!seenIdsRef.current.has(n.id)) {
+              seenIdsRef.current.add(n.id);
+              setNotifications(prev => [n, ...prev]);
+              toast(n.message, { icon: '🔔' });
+            }
+          }
+
+          if (data.type === 'ticket_status_changed' || data.type === 'ticket_reply_added') {
+            window.dispatchEvent(new CustomEvent('ticket-notification', { detail: { ticketId: data.ticket_id } }));
+          }
+        } catch {}
+      };
+
+      ws.onclose = () => {
+        if (destroyed) return;
+        reconnectTimer = setTimeout(() => {
+          reconnectDelay = Math.min(reconnectDelay * 2, 30_000);
+          connect();
+        }, reconnectDelay);
+      };
+    }
+
+    connect();
+    return () => {
+      destroyed = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      ws?.close();
+    };
+  }, [user]);
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+  async function handleNotificationClick(n: Notification) {
+    setBellOpen(false);
+    if (!n.is_read) {
+      setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, is_read: true } : x));
+      await notificationsApi.markRead(n.id).catch(() => {});
+    }
+    router.push(`/tickets/${n.ticket_id}`);
+  }
+
+  async function handleMarkAllRead() {
+    setNotifications(prev => prev.map(x => ({ ...x, is_read: true })));
+    await notificationsApi.markAllRead().catch(() => {});
+  }
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -275,13 +371,66 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
-          <button className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Search" type="button">
-            <Search className="h-4 w-4" />
-          </button>
-          <button className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative" aria-label="Notifications" type="button">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
-          </button>
+          <div ref={bellRef} className="relative">
+            <button
+              onClick={() => setBellOpen(v => !v)}
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+              aria-label="Notifications"
+              type="button"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-4 h-4 px-0.5 flex items-center justify-center rounded-full bg-blue-500 text-[9px] font-bold text-white leading-none">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+            {bellOpen && (
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-gray-200/80 dark:shadow-gray-900/80 border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</span>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={handleMarkAllRead}
+                      className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                      <Bell className="h-8 w-8 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="text-sm text-gray-500 dark:text-gray-400">No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.map(n => (
+                      <button
+                        key={n.id}
+                        onClick={() => handleNotificationClick(n)}
+                        className={clsx(
+                          'w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors',
+                          !n.is_read && 'bg-blue-50/60 dark:bg-blue-900/10',
+                        )}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          {!n.is_read && <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />}
+                          <div className={clsx('flex-1 min-w-0', n.is_read && 'pl-4')}>
+                            <p className="text-xs font-medium text-gray-900 dark:text-white line-clamp-2">{n.message}</p>
+                            <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                              {new Date(n.created_at).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <button onClick={toggle} className="p-2 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle theme" type="button">
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>

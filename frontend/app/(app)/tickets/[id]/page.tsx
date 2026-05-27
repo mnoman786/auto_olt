@@ -69,6 +69,17 @@ export default function TicketDetailPage() {
   }, [isAuthenticated]);
 
   useEffect(() => {
+    function onTicketNotification(e: Event) {
+      const { ticketId: notifTicketId } = (e as CustomEvent).detail;
+      if (notifTicketId === ticketId) load();
+    }
+    window.addEventListener('ticket-notification', onTicketNotification);
+    return () => window.removeEventListener('ticket-notification', onTicketNotification);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketId]);
+
+
+  useEffect(() => {
     if (ticket) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ticket?.replies?.length]);
 
@@ -191,24 +202,54 @@ export default function TicketDetailPage() {
           {/* Thread */}
           <div className="space-y-4 mb-4">
 
-            {/* Original message — user, right side */}
-            <div className="flex flex-col items-end gap-1">
-              <div className="flex items-center gap-1.5 mr-1">
-                <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(ticket.created_at)}</span>
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{ticket.username}</span>
-                <div className="w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-                  {ticket.username.slice(0, 2).toUpperCase()}
+            {/* Original message — LEFT for admin, RIGHT for user */}
+            {isStaff ? (
+              <div className="flex flex-col items-start gap-1">
+                <div className="flex items-center gap-1.5 ml-1">
+                  <div className="w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                    {ticket.username.slice(0, 2).toUpperCase()}
+                  </div>
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{ticket.username}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(ticket.created_at)}</span>
+                </div>
+                <div className="max-w-[80%] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
                 </div>
               </div>
-              <div className="max-w-[80%] bg-blue-600 dark:bg-blue-700 text-white rounded-2xl rounded-tr-sm px-4 py-2.5">
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
+            ) : (
+              <div className="flex flex-col items-end gap-1">
+                <div className="flex items-center gap-1.5 mr-1">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(ticket.created_at)}</span>
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{ticket.username}</span>
+                  <div className="w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                    {ticket.username.slice(0, 2).toUpperCase()}
+                  </div>
+                </div>
+                <div className="max-w-[80%] bg-blue-600 dark:bg-blue-700 text-white rounded-2xl rounded-tr-sm px-4 py-2.5">
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{ticket.message}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Replies */}
             {ticket.replies.map(r => (
               r.is_staff ? (
-                /* Staff / admin — LEFT */
+                /* Staff reply — RIGHT for admin, LEFT for user */
+                isStaff ? (
+                <div key={r.id} className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-1.5 mr-1">
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(r.created_at)}</span>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-800 px-1.5 py-0.5 rounded-full">Staff</span>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{r.author_username}</span>
+                    <div className="w-6 h-6 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
+                      <Shield className="h-3 w-3 text-white" />
+                    </div>
+                  </div>
+                  <div className="max-w-[80%] bg-indigo-600 dark:bg-indigo-700 text-white rounded-2xl rounded-tr-sm px-4 py-2.5">
+                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{r.message}</p>
+                  </div>
+                </div>
+                ) : (
                 <div key={r.id} className="flex flex-col items-start gap-1">
                   <div className="flex items-center gap-1.5 ml-1">
                     <div className="w-6 h-6 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
@@ -222,8 +263,23 @@ export default function TicketDetailPage() {
                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{r.message}</p>
                   </div>
                 </div>
+                )
               ) : (
-                /* User — RIGHT */
+                /* User reply — LEFT for admin, RIGHT for user */
+                isStaff ? (
+                <div key={r.id} className="flex flex-col items-start gap-1">
+                  <div className="flex items-center gap-1.5 ml-1">
+                    <div className="w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                      {r.author_username.slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{r.author_username}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(r.created_at)}</span>
+                  </div>
+                  <div className="max-w-[80%] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">{r.message}</p>
+                  </div>
+                </div>
+                ) : (
                 <div key={r.id} className="flex flex-col items-end gap-1">
                   <div className="flex items-center gap-1.5 mr-1">
                     <span className="text-xs text-gray-400 dark:text-gray-500">{fmt(r.created_at)}</span>
@@ -236,6 +292,7 @@ export default function TicketDetailPage() {
                     <p className="text-sm whitespace-pre-wrap leading-relaxed">{r.message}</p>
                   </div>
                 </div>
+                )
               )
             ))}
             <div ref={bottomRef} />

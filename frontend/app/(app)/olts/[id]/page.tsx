@@ -179,9 +179,9 @@ export default function OLTDetailPage() {
 
         <div className="relative p-4 sm:p-6 max-w-5xl mx-auto">
           {/* Back link */}
-          <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
+          <Link href="/olts" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4 transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
+            Back to OLT Devices
           </Link>
 
           {/* Header */}
