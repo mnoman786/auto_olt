@@ -9,7 +9,7 @@ import { oltApi, onuApi, vlanApi } from '@/lib/api';
 import type { OLT, ONU, VLAN, ProvisioningLog } from '@/lib/types';
 import {
   ArrowLeft, RefreshCw, Signal, Wifi, Clock, Play,
-  Loader2, Server, Tag, Activity, Info, List,
+  Loader2, Server, Tag, Activity, Info, List, User, Phone, MapPin, ExternalLink,
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -327,6 +327,52 @@ export default function ONUDetailPage() {
             )}
           </Card>
         </div>
+
+        {/* Customer */}
+        <Card className="mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-gray-400" />
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">Subscriber</h2>
+            </div>
+            {onu?.customer_id ? (
+              <Link href={`/customers`} className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                <ExternalLink className="h-3 w-3" />
+                View all
+              </Link>
+            ) : (
+              <Link href={`/customers`} className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                <User className="h-3 w-3" />
+                Assign customer
+              </Link>
+            )}
+          </div>
+          {onu?.customer_id ? (
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-100 to-indigo-200 dark:from-blue-900/40 dark:to-indigo-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300 font-semibold shrink-0">
+                {onu.customer_name?.charAt(0).toUpperCase()}
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-gray-900 dark:text-white">{onu.customer_name}</p>
+                {onu.customer_phone && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5" />{onu.customer_phone}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+              <div className="w-10 h-10 rounded-full border-2 border-dashed border-gray-200 dark:border-gray-600 flex items-center justify-center">
+                <User className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No subscriber assigned</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Go to Customers to assign this ONU</p>
+              </div>
+            </div>
+          )}
+        </Card>
 
         {/* Provisioning Logs */}
         <Card padding="none" className="overflow-hidden">

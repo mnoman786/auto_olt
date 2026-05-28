@@ -501,6 +501,7 @@ export default function ONUManagementPage() {
                     <th className="px-4 py-3 hidden sm:table-cell whitespace-nowrap">PON Port</th>
                     <th className="px-4 py-3 hidden md:table-cell whitespace-nowrap">Signal</th>
                     <th className="px-4 py-3 hidden md:table-cell whitespace-nowrap">VLAN</th>
+                    <th className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">Subscriber</th>
                     <th className="px-4 py-3 whitespace-nowrap">Status</th>
                     <th className="px-4 py-3 hidden lg:table-cell whitespace-nowrap">Last Seen</th>
                     <th className="px-4 py-3 text-right whitespace-nowrap">Actions</th>
@@ -544,6 +545,18 @@ export default function ONUManagementPage() {
                             VLAN {onu.vlan_id_num}
                           </span>
                         ) : <span className="text-gray-400 dark:text-gray-500 text-xs">—</span>}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        {onu.customer_name ? (
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                            <span className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center text-xs font-semibold shrink-0">
+                              {onu.customer_name.charAt(0).toUpperCase()}
+                            </span>
+                            {onu.customer_name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <ONUStatusBadge status={onu.status} />

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import type {
-  AuthResponse, OLT, OLTCreatePayload, ONU, VLAN,
+  AuthResponse, OLT, OLTCreatePayload, ONU, VLAN, Customer,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
   Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
   AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse, Announcement, Notification,
@@ -346,6 +346,31 @@ export const announcementsApi = {
     apiClient.patch<Announcement>(`/announcements/${id}/`, data),
 
   delete: (id: number) => apiClient.delete(`/announcements/${id}/`),
+};
+
+// Customers API
+export const customerApi = {
+  list: (params?: { search?: string; page?: number; unassigned?: boolean }) =>
+    apiClient.get<PaginatedResponse<Customer>>('/customers/', { params }),
+
+  get: (id: number) => apiClient.get<Customer>(`/customers/${id}/`),
+
+  create: (data: Partial<Omit<Customer, 'id' | 'onu_serial' | 'onu_pon_port' | 'onu_status' | 'olt_name' | 'olt_id' | 'created_at' | 'updated_at'>>) =>
+    apiClient.post<Customer>('/customers/', data),
+
+  update: (id: number, data: Partial<Customer>) =>
+    apiClient.patch<Customer>(`/customers/${id}/`, data),
+
+  delete: (id: number) => apiClient.delete(`/customers/${id}/`),
+
+  importCsv: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return apiClient.post<{ created: number; skipped: number; errors: string[] }>(
+      '/customers/import/', form,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+  },
 };
 
 // Notifications API

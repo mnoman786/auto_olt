@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
   Bell, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay, Megaphone,
-  CheckCheck,
+  CheckCheck, Users,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
@@ -21,13 +21,14 @@ const WS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api')
   .replace(/\/api\/?$/, '');
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard',     icon: LayoutDashboard },
-  { href: '/olts',      label: 'OLT Devices',   icon: Server },
-  { href: '/alerts',    label: 'Alerts',         icon: Bell },
-  { href: '/noc',       label: 'NOC View',       icon: MonitorPlay, newTab: true },
-  { href: '/tickets',   label: 'Support',        icon: LifeBuoy },
-  { href: '/docs',      label: 'Documentation',  icon: BookOpen },
-  { href: '/plans',     label: 'Plans & Pricing',icon: Gift, highlight: true },
+  { href: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
+  { href: '/olts',       label: 'OLT Devices',   icon: Server },
+  { href: '/customers',  label: 'Customers',      icon: Users },
+  { href: '/alerts',     label: 'Alerts',         icon: Bell },
+  { href: '/noc',        label: 'NOC View',       icon: MonitorPlay, newTab: true },
+  { href: '/tickets',    label: 'Support',        icon: LifeBuoy },
+  { href: '/docs',       label: 'Documentation',  icon: BookOpen },
+  { href: '/plans',      label: 'Plans & Pricing',icon: Gift, highlight: true },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

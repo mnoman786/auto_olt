@@ -12,6 +12,9 @@ class ProvisioningLogSerializer(serializers.ModelSerializer):
 class ONUSerializer(serializers.ModelSerializer):
     vlan_name = serializers.CharField(source='vlan.name', read_only=True, default=None)
     vlan_id_num = serializers.IntegerField(source='vlan.vlan_id', read_only=True, default=None)
+    customer_name = serializers.CharField(source='customer.name', read_only=True, default=None)
+    customer_phone = serializers.CharField(source='customer.phone', read_only=True, default=None)
+    customer_id = serializers.IntegerField(source='customer.id', read_only=True, default=None)
 
     class Meta:
         model = ONU
@@ -19,6 +22,7 @@ class ONUSerializer(serializers.ModelSerializer):
             'id', 'serial_number', 'mac_address', 'pon_port', 'onu_index', 'onu_id',
             'status', 'signal_strength', 'service_profile', 'description',
             'vlan', 'vlan_name', 'vlan_id_num',
+            'customer_id', 'customer_name', 'customer_phone',
             'last_seen', 'registered_at', 'created_at', 'updated_at',
         )
         read_only_fields = (

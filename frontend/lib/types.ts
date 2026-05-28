@@ -118,8 +118,29 @@ export interface ONU {
   vlan: number | null;
   vlan_name: string | null;
   vlan_id_num: number | null;
+  customer_id: number | null;
+  customer_name: string | null;
+  customer_phone: string | null;
   last_seen: string | null;
   registered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  address: string;
+  cnic: string;
+  plan_name: string;
+  notes: string;
+  onu: number | null;
+  onu_serial: string | null;
+  onu_pon_port: string | null;
+  onu_status: string | null;
+  olt_name: string | null;
+  olt_id: number | null;
   created_at: string;
   updated_at: string;
 }

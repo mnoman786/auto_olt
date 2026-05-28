@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'apps.plans',
     'apps.announcements',
     'apps.notifications',
+    'apps.customers',
 ]
 
 MIDDLEWARE = [
