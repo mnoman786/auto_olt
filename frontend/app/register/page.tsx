@@ -161,9 +161,9 @@ export default function RegisterPage() {
             {/* Row 1: Company + Phone */}
             <div className="grid grid-cols-2 gap-3">
               <Input label="ISP / Company Name" type="text" placeholder="City Net ISP"
-                value={form.company_name} onChange={set('company_name')} error={errors.company_name} required autoFocus />
+                value={form.company_name} onChange={set('company_name')} error={errors.company_name} required autoFocus maxLength={150} />
               <Input label="Phone Number" type="tel" placeholder="0300-1234567"
-                value={form.phone} onChange={handlePhoneChange} error={errors.phone} required />
+                value={form.phone} onChange={handlePhoneChange} error={errors.phone} required maxLength={20} />
             </div>
 
             {/* Row 2: OLT count + Heard from */}
@@ -179,17 +179,17 @@ export default function RegisterPage() {
             {/* Row 3: Username + Email */}
             <div className="grid grid-cols-2 gap-3">
               <Input label="Username" type="text" placeholder="Choose a username"
-                value={form.username} onChange={set('username')} error={errors.username} required />
+                value={form.username} onChange={set('username')} error={errors.username} required maxLength={150} />
               <Input label="Email" type="email" placeholder="your@email.com"
-                value={form.email} onChange={set('email')} error={errors.email} required />
+                value={form.email} onChange={set('email')} error={errors.email} required maxLength={254} />
             </div>
 
             {/* Row 4: Passwords */}
             <div className="grid grid-cols-2 gap-3">
               <Input label="Password" type="password" placeholder="At least 8 characters"
-                value={form.password} onChange={set('password')} error={errors.password} required />
+                value={form.password} onChange={set('password')} error={errors.password} required maxLength={128} />
               <Input label="Confirm Password" type="password" placeholder="Repeat password"
-                value={form.password2} onChange={set('password2')} error={errors.password2} required />
+                value={form.password2} onChange={set('password2')} error={errors.password2} required maxLength={128} />
             </div>
 
             <Button type="submit" loading={loading} className="w-full" size="lg">
