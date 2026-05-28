@@ -1,8 +1,8 @@
 const stats = [
-  { value: '100%', label: 'Automated', desc: 'Zero manual CLI sessions — full automation from day one' },
-  { value: '∞', label: 'OLTs Supported', desc: 'Add as many OLT devices as your network needs' },
-  { value: '0', label: 'CLI Commands', desc: 'Full automation — no manual telnet sessions' },
-  { value: '4+', label: 'Vendor Support', desc: 'Huawei, ZTE, C-Data, V-SOL and more' },
+  { value: '18+', label: 'Features Built', desc: 'From ONU provisioning to customer management and NOC dashboards' },
+  { value: '4+',  label: 'Vendors Supported', desc: 'Huawei, ZTE, C-Data, V-SOL and growing' },
+  { value: '0',   label: 'CLI Commands', desc: 'Full automation — no manual Telnet or SNMP sessions ever' },
+  { value: '∞',   label: 'ONUs Managed', desc: 'No device limits — scale from 10 to 10,000 ONUs' },
 ];
 
 export default function Stats() {

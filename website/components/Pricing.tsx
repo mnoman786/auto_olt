@@ -10,12 +10,14 @@ const features = [
   'ONU bulk registration',
   'Profile auto-discovery',
   'Real-time monitoring',
-  'Multi-user accounts',
-  'Superuser admin panel',
+  'Bandwidth monitoring',
+  'Signal history charts',
+  'Smart alert rules',
+  'NOC View dashboard',
+  'Customer management',
+  'Auto-provisioning',
   'Support ticket system',
-  'VLAN sync from OLT',
-  'Telnet connection testing',
-  'Error recovery tools',
+  'Multi-user accounts',
   'Your data, your server',
 ];
 
@@ -69,7 +71,7 @@ export default function Pricing() {
 
                 {/* CTA */}
                 <a
-                  href="#contact"
+                  href="#"
                   className="block w-full text-center py-4 px-8 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-xl shadow-blue-700/30 hover:shadow-blue-700/50 hover:-translate-y-0.5 mb-8"
                 >
                   Get Started Free →
