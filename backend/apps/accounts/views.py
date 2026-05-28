@@ -13,7 +13,7 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
 from .models import PasswordResetOTP, EmailVerificationOTP
-from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, validate_password_strength
+from .serializers import RegisterSerializer, LoginSerializer, UserSerializer, validate_password_strength, validate_phone
 from .cookie_auth import _set_token_cookies, _clear_token_cookies, REFRESH_COOKIE
 
 
@@ -271,7 +271,7 @@ def me_view(request):
 @permission_classes([IsAuthenticated])
 def update_profile_view(request):
     user = request.user
-    allowed = {k: v for k, v in request.data.items() if k in ('first_name', 'last_name', 'email', 'company_name')}
+    allowed = {k: v for k, v in request.data.items() if k in ('first_name', 'last_name', 'email', 'company_name', 'phone')}
     if not allowed:
         return Response({'detail': 'No updatable fields provided.'}, status=status.HTTP_400_BAD_REQUEST)
     if 'email' in allowed:
@@ -288,7 +288,12 @@ def update_profile_view(request):
         user.last_name = allowed['last_name']
     if 'company_name' in allowed:
         user.company_name = allowed['company_name']
-    user.save(update_fields=[f for f in ('email', 'first_name', 'last_name', 'company_name') if f in allowed])
+    if 'phone' in allowed:
+        phone_err = validate_phone(allowed['phone'])
+        if phone_err:
+            return Response({'phone': phone_err}, status=status.HTTP_400_BAD_REQUEST)
+        user.phone = allowed['phone']
+    user.save(update_fields=[f for f in ('email', 'first_name', 'last_name', 'company_name', 'phone') if f in allowed])
     return Response(UserSerializer(user).data)
 
 
@@ -456,6 +461,7 @@ def admin_user_list(request):
             'first_name': u.first_name,
             'last_name': u.last_name,
             'company_name': u.company_name,
+            'phone': u.phone,
             'is_active': u.is_active,
             'is_staff': u.is_staff,
             'is_superuser': u.is_superuser,
@@ -521,6 +527,7 @@ def admin_user_detail(request, pk):
         'first_name': target.first_name,
         'last_name': target.last_name,
         'company_name': target.company_name,
+        'phone': target.phone,
         'is_active': target.is_active,
         'is_staff': target.is_staff,
         'is_superuser': target.is_superuser,

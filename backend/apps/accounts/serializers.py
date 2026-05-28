@@ -4,6 +4,25 @@ from django.contrib.auth import authenticate
 from .models import User
 
 
+import re
+
+
+def validate_phone(phone: str) -> str | None:
+    """
+    Returns an error string if invalid, None if valid.
+    Accepts local (03XX-XXXXXXX) and international (+92XXXXXXXXXX) formats.
+    Strips spaces, dashes, parentheses before checking digit count (10–15 digits).
+    """
+    if not phone:
+        return None
+    digits_only = re.sub(r'[\s\-().+]', '', phone)
+    if not digits_only.isdigit():
+        return 'Phone number must contain only digits, spaces, dashes, or +.'
+    if len(digits_only) < 10 or len(digits_only) > 15:
+        return 'Phone number must be 10–15 digits (e.g. 0300-1234567 or +923001234567).'
+    return None
+
+
 def validate_password_strength(password: str) -> list[str]:
     """Return a list of error strings, empty if password is acceptable."""
     errors = []
@@ -22,7 +41,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password2', 'company_name')
+        fields = ('username', 'email', 'password', 'password2', 'company_name', 'phone')
+
+    def validate_phone(self, value):
+        err = validate_phone(value)
+        if err:
+            raise serializers.ValidationError(err)
+        return value
 
     def validate(self, data):
         if User.objects.filter(username=data.get('username'), is_active=True).exists():
@@ -39,10 +64,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')
         company_name = validated_data.pop('company_name', '')
+        phone = validated_data.pop('phone', '')
         user = User.objects.create_user(**validated_data)
         user.company_name = company_name
+        user.phone = phone
         user.is_active = False
-        user.save(update_fields=['is_active', 'company_name'])
+        user.save(update_fields=['is_active', 'company_name', 'phone'])
         return user
 
 
@@ -63,5 +90,5 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'company_name', 'is_staff', 'is_superuser', 'created_at')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'company_name', 'phone', 'is_staff', 'is_superuser', 'created_at')
         read_only_fields = ('id', 'username', 'is_staff', 'is_superuser', 'created_at')

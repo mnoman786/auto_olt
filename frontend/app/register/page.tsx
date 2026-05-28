@@ -11,20 +11,30 @@ import toast from 'react-hot-toast';
 export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ username: '', email: '', password: '', password2: '', company_name: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', password2: '', company_name: '', phone: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validatePhone = (phone: string) => {
+    if (!phone) return 'Phone number is required.';
+    const digits = phone.replace(/[\s\-().+]/g, '');
+    if (!/^\d+$/.test(digits)) return 'Only digits, spaces, dashes, or + allowed.';
+    if (digits.length < 10 || digits.length > 15) return 'Must be 10–15 digits (e.g. 0300-1234567).';
+    return '';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    const phoneErr = validatePhone(form.phone);
+    if (phoneErr) { setErrors({ phone: phoneErr }); return; }
     if (form.password !== form.password2) {
       setErrors({ password2: 'Passwords do not match' });
       return;
     }
     setLoading(true);
     try {
-      const { email, activated } = await register(form.username, form.email, form.password, form.password2, form.company_name);
+      const { email, activated } = await register(form.username, form.email, form.password, form.password2, form.company_name, form.phone);
       if (activated) {
         toast.success('Account created! Welcome to Auto OLT.');
         router.push('/dashboard');
@@ -92,6 +102,15 @@ export default function RegisterPage() {
               error={errors.company_name}
               required
               autoFocus
+            />
+            <Input
+              label="Phone Number"
+              type="tel"
+              placeholder="e.g. 0300-1234567"
+              value={form.phone}
+              onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              error={errors.phone}
+              required
             />
             <Input
               label="Username"

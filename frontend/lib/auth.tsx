@@ -8,7 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string, password2: string, company_name?: string) => Promise<{ email: string; activated: boolean }>;
+  register: (username: string, email: string, password: string, password2: string, company_name?: string, phone?: string) => Promise<{ email: string; activated: boolean }>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
 }
@@ -35,8 +35,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
   };
 
-  const register = async (username: string, email: string, password: string, password2: string, company_name?: string) => {
-    const resp = await auth.register({ username, email, password, password2, company_name: company_name || '' });
+  const register = async (username: string, email: string, password: string, password2: string, company_name?: string, phone?: string) => {
+    const resp = await auth.register({ username, email, password, password2, company_name: company_name || '', phone: phone || '' });
     const data = resp.data as any;
     if (data.user) {
       // First user — activated immediately, cookies set by backend

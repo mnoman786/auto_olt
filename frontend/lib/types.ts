@@ -7,6 +7,7 @@ export interface User {
   first_name: string;
   last_name: string;
   company_name: string;
+  phone: string;
   is_staff: boolean;
   is_superuser: boolean;
   created_at: string;
@@ -214,6 +215,7 @@ export interface AdminUser {
   first_name: string;
   last_name: string;
   company_name: string;
+  phone: string;
   is_active: boolean;
   is_staff: boolean;
   is_superuser: boolean;

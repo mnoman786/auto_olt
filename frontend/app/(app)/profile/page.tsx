@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const { user, isAuthenticated, isLoading, setUser } = useAuth();
   const router = useRouter();
 
-  const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', company_name: '' });
+  const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', company_name: '', phone: '' });
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -51,12 +51,23 @@ export default function ProfilePage() {
         last_name: user.last_name || '',
         email: user.email || '',
         company_name: user.company_name || '',
+        phone: user.phone || '',
       });
     }
   }, [user]);
 
+  const validatePhone = (phone: string) => {
+    if (!phone) return '';
+    const digits = phone.replace(/[\s\-().+]/g, '');
+    if (!/^\d+$/.test(digits)) return 'Only digits, spaces, dashes, or + allowed.';
+    if (digits.length < 10 || digits.length > 15) return 'Must be 10–15 digits (e.g. 0300-1234567).';
+    return '';
+  };
+
   const handleSaveProfile = async () => {
     setProfileErrors({});
+    const phoneErr = validatePhone(profile.phone);
+    if (phoneErr) { setProfileErrors({ phone: phoneErr }); return; }
     setSavingProfile(true);
     try {
       const res = await auth.updateProfile(profile);
@@ -131,16 +142,29 @@ export default function ProfilePage() {
               <h2 className="font-semibold text-gray-900 dark:text-white">Personal Information</h2>
             </div>
             <div className="space-y-4">
-              <Field label="ISP / Company Name">
-                <Input
-                  value={profile.company_name}
-                  onChange={e => setProfile(p => ({ ...p, company_name: e.target.value }))}
-                  placeholder="e.g. City Net ISP"
-                />
-                {profileErrors.company_name && (
-                  <p className="text-xs text-red-600 mt-1">{profileErrors.company_name}</p>
-                )}
-              </Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="ISP / Company Name">
+                  <Input
+                    value={profile.company_name}
+                    onChange={e => setProfile(p => ({ ...p, company_name: e.target.value }))}
+                    placeholder="e.g. City Net ISP"
+                  />
+                  {profileErrors.company_name && (
+                    <p className="text-xs text-red-600 mt-1">{profileErrors.company_name}</p>
+                  )}
+                </Field>
+                <Field label="Phone Number">
+                  <Input
+                    type="tel"
+                    value={profile.phone}
+                    onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
+                    placeholder="e.g. 0300-1234567"
+                  />
+                  {profileErrors.phone && (
+                    <p className="text-xs text-red-600 mt-1">{profileErrors.phone}</p>
+                  )}
+                </Field>
+              </div>
               <Field label="Username">
                 <Input value={user?.username || ''} disabled />
               </Field>
