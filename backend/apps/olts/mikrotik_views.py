@@ -1,8 +1,11 @@
+import logging
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, SerializerMethodField, ListField, IntegerField
+
+logger = logging.getLogger(__name__)
 from .models import MikroTikRouter, OLT
 
 
@@ -34,8 +37,8 @@ class MikroTikRouterCreateSerializer(ModelSerializer):
 
 def _owned_qs(user):
     if user.is_staff or user.is_superuser:
-        return MikroTikRouter.objects.prefetch_related('olts').all()
-    return MikroTikRouter.objects.prefetch_related('olts').filter(user=user)
+        return MikroTikRouter.objects.select_related('user').prefetch_related('olts').all()
+    return MikroTikRouter.objects.select_related('user').prefetch_related('olts').filter(user=user)
 
 
 def _link_olts(router, olt_ids, user):
@@ -60,9 +63,14 @@ def mikrotik_list(request):
     serializer = MikroTikRouterCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     olt_ids = serializer.validated_data.pop('olt_ids', [])
-    router = serializer.save(user=request.user)
-    _link_olts(router, olt_ids, request.user)
-    return Response(MikroTikRouterSerializer(router).data, status=status.HTTP_201_CREATED)
+    try:
+        router = serializer.save(user=request.user)
+        _link_olts(router, olt_ids, request.user)
+        router.refresh_from_db()
+        return Response(MikroTikRouterSerializer(router).data, status=status.HTTP_201_CREATED)
+    except Exception as exc:
+        logger.error('MikroTik create failed: %s', exc, exc_info=True)
+        raise
 
 
 @api_view(['GET', 'PATCH', 'DELETE'])
