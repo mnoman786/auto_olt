@@ -271,7 +271,7 @@ def me_view(request):
 @permission_classes([IsAuthenticated])
 def update_profile_view(request):
     user = request.user
-    allowed = {k: v for k, v in request.data.items() if k in ('first_name', 'last_name', 'email', 'company_name', 'phone')}
+    allowed = {k: v for k, v in request.data.items() if k in ('first_name', 'last_name', 'email', 'company_name', 'phone', 'olt_count_range', 'heard_from')}
     if not allowed:
         return Response({'detail': 'No updatable fields provided.'}, status=status.HTTP_400_BAD_REQUEST)
     if 'email' in allowed:
@@ -293,7 +293,11 @@ def update_profile_view(request):
         if phone_err:
             return Response({'phone': phone_err}, status=status.HTTP_400_BAD_REQUEST)
         user.phone = allowed['phone']
-    user.save(update_fields=[f for f in ('email', 'first_name', 'last_name', 'company_name', 'phone') if f in allowed])
+    if 'olt_count_range' in allowed:
+        user.olt_count_range = allowed['olt_count_range']
+    if 'heard_from' in allowed:
+        user.heard_from = allowed['heard_from']
+    user.save(update_fields=[f for f in ('email', 'first_name', 'last_name', 'company_name', 'phone', 'olt_count_range', 'heard_from') if f in allowed])
     return Response(UserSerializer(user).data)
 
 
@@ -462,6 +466,8 @@ def admin_user_list(request):
             'last_name': u.last_name,
             'company_name': u.company_name,
             'phone': u.phone,
+            'olt_count_range': u.olt_count_range,
+            'heard_from': u.heard_from,
             'is_active': u.is_active,
             'is_staff': u.is_staff,
             'is_superuser': u.is_superuser,
@@ -528,6 +534,8 @@ def admin_user_detail(request, pk):
         'last_name': target.last_name,
         'company_name': target.company_name,
         'phone': target.phone,
+        'olt_count_range': target.olt_count_range,
+        'heard_from': target.heard_from,
         'is_active': target.is_active,
         'is_staff': target.is_staff,
         'is_superuser': target.is_superuser,

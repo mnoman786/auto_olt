@@ -8,6 +8,8 @@ export interface User {
   last_name: string;
   company_name: string;
   phone: string;
+  olt_count_range: string;
+  heard_from: string;
   is_staff: boolean;
   is_superuser: boolean;
   created_at: string;

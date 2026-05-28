@@ -7,6 +7,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     company_name = models.CharField(max_length=150, blank=True, default='')
     phone = models.CharField(max_length=30, blank=True, default='')
+    olt_count_range = models.CharField(max_length=20, blank=True, default='')
+    heard_from = models.CharField(max_length=50, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     USERNAME_FIELD = 'username'
