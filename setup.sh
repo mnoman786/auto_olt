@@ -19,9 +19,11 @@ SERVER_IP="5.154.181.180"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
+WEBSITE_DIR="$PROJECT_DIR/website"
 VENV_DIR="$BACKEND_DIR/venv"
 BE_PORT=9005
 FE_PORT=3001
+WS_PORT=3002
 SERVICE_USER="${SUDO_USER:-$(whoami)}"
 NODE_VERSION="20"
 
@@ -190,6 +192,21 @@ npm install --silent
 npm run build
 info "Frontend built"
 
+# ── Website .env ──────────────────────────────────────────────────────────────
+section "7b — Website .env"
+WS_ENV="$WEBSITE_DIR/.env.local"
+cat > "$WS_ENV" <<EOF
+NEXT_PUBLIC_APP_URL=http://$SERVER_IP:$FE_PORT
+EOF
+info ".env.local written at $WS_ENV"
+
+# ── Website build ─────────────────────────────────────────────────────────────
+section "7c — Website npm install & build"
+cd "$WEBSITE_DIR"
+npm install --silent
+npm run build
+info "Website built"
+
 # ── systemctl — Backend ───────────────────────────────────────────────────────
 section "8 — systemctl service: auto-olt-backend (port $BE_PORT)"
 cat > /etc/systemd/system/auto-olt-backend.service <<EOF
@@ -236,6 +253,30 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 info "Frontend service file written"
+
+# ── systemctl — Website ───────────────────────────────────────────────────────
+section "9b — systemctl service: auto-olt-website (port $WS_PORT)"
+cat > /etc/systemd/system/auto-olt-website.service <<EOF
+[Unit]
+Description=Auto OLT Marketing Website (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=$SERVICE_USER
+WorkingDirectory=$WEBSITE_DIR
+Environment=PORT=$WS_PORT
+Environment=HOSTNAME=0.0.0.0
+ExecStart=$(which npx) next start -p $WS_PORT -H 0.0.0.0
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+info "Website service file written"
 
 # ── systemctl — Celery worker ─────────────────────────────────────────────────
 section "10 — systemctl service: auto-olt-celery (worker)"
@@ -288,15 +329,17 @@ info "Celery Beat service file written"
 # ── Enable & start ────────────────────────────────────────────────────────────
 section "11 — Enable & start services"
 systemctl daemon-reload
-systemctl enable auto-olt-backend auto-olt-frontend auto-olt-celery auto-olt-celery-beat
+systemctl enable auto-olt-backend auto-olt-frontend auto-olt-website auto-olt-celery auto-olt-celery-beat
 systemctl restart auto-olt-backend
 systemctl restart auto-olt-celery
 systemctl restart auto-olt-celery-beat
 systemctl restart auto-olt-frontend
+systemctl restart auto-olt-website
 
 sleep 3
 BE_STATUS=$(systemctl is-active auto-olt-backend)
 FE_STATUS=$(systemctl is-active auto-olt-frontend)
+WS_STATUS=$(systemctl is-active auto-olt-website)
 CELERY_STATUS=$(systemctl is-active auto-olt-celery)
 BEAT_STATUS=$(systemctl is-active auto-olt-celery-beat)
 
@@ -306,10 +349,12 @@ echo -e "${GREEN}║         Auto OLT Setup Complete          ║${NC}"
 echo -e "${GREEN}╠══════════════════════════════════════════╣${NC}"
 echo -e "${GREEN}║${NC}  Backend  : http://$SERVER_IP:$BE_PORT   ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Frontend : http://$SERVER_IP:$FE_PORT   ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Website  : http://$SERVER_IP:$WS_PORT   ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Login    : admin / admin123             ${GREEN}║${NC}"
 echo -e "${GREEN}╠══════════════════════════════════════════╣${NC}"
 echo -e "${GREEN}║${NC}  Backend    service : $BE_STATUS                  ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Frontend   service : $FE_STATUS                  ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  Website    service : $WS_STATUS                  ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Worker     service : $CELERY_STATUS              ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Beat       service : $BEAT_STATUS                ${GREEN}║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
@@ -317,13 +362,16 @@ echo ""
 echo "  Useful commands:"
 echo "  sudo systemctl status  auto-olt-backend"
 echo "  sudo systemctl status  auto-olt-frontend"
+echo "  sudo systemctl status  auto-olt-website"
 echo "  sudo systemctl status  auto-olt-celery"
 echo "  sudo systemctl status  auto-olt-celery-beat"
 echo "  sudo journalctl -u auto-olt-backend      -f"
 echo "  sudo journalctl -u auto-olt-frontend     -f"
+echo "  sudo journalctl -u auto-olt-website      -f"
 echo "  sudo journalctl -u auto-olt-celery       -f"
 echo "  sudo journalctl -u auto-olt-celery-beat  -f"
 echo "  sudo systemctl restart auto-olt-backend"
 echo "  sudo systemctl restart auto-olt-frontend"
+echo "  sudo systemctl restart auto-olt-website"
 echo "  sudo systemctl restart auto-olt-celery"
 echo "  sudo systemctl restart auto-olt-celery-beat"
