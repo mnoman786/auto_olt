@@ -56,12 +56,38 @@ export default function ProfilePage() {
     }
   }, [user]);
 
+  const formatPhone = (raw: string): string => {
+    const hasPlus = raw.startsWith('+');
+    const digits = raw.replace(/\D/g, '');
+    if (hasPlus) {
+      if (digits.length <= 2) return '+' + digits;
+      if (digits.length <= 5) return '+' + digits.slice(0, 2) + '-' + digits.slice(2);
+      return '+' + digits.slice(0, 2) + '-' + digits.slice(2, 5) + '-' + digits.slice(5, 12);
+    }
+    if (digits.length <= 4) return digits;
+    return digits.slice(0, 4) + '-' + digits.slice(4, 11);
+  };
+
   const validatePhone = (phone: string) => {
     if (!phone) return '';
-    const digits = phone.replace(/[\s\-().+]/g, '');
-    if (!/^\d+$/.test(digits)) return 'Only digits, spaces, dashes, or + allowed.';
-    if (digits.length < 10 || digits.length > 15) return 'Must be 10–15 digits (e.g. 0300-1234567).';
+    const hasPlus = phone.startsWith('+');
+    const digits = phone.replace(/\D/g, '');
+    if (!/^\+?[\d\s\-()]+$/.test(phone)) return 'Phone contains invalid characters.';
+    if (hasPlus) {
+      if (!digits.startsWith('92')) return 'International must start with +92 (e.g. +92-300-1234567).';
+      if (digits.length !== 12) return 'International format: +92-300-1234567 (12 digits after +92).';
+    } else {
+      if (!digits.startsWith('0')) return 'Local numbers must start with 0 (e.g. 0300-1234567).';
+      if (digits.length !== 11) return 'Local format: 0300-1234567 (11 digits total).';
+    }
     return '';
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatPhone(e.target.value);
+    setProfile(p => ({ ...p, phone: formatted }));
+    const err = formatted ? validatePhone(formatted) : '';
+    setProfileErrors(prev => ({ ...prev, phone: err }));
   };
 
   const handleSaveProfile = async () => {
@@ -157,8 +183,9 @@ export default function ProfilePage() {
                   <Input
                     type="tel"
                     value={profile.phone}
-                    onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
+                    onChange={handlePhoneChange}
                     placeholder="e.g. 0300-1234567"
+                    maxLength={20}
                   />
                   {profileErrors.phone && (
                     <p className="text-xs text-red-600 mt-1">{profileErrors.phone}</p>
