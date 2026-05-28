@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
   Bell, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay, Megaphone,
-  CheckCheck, Users,
+  CheckCheck, Users, Settings,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
@@ -44,6 +44,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const profileRef = useRef<HTMLDivElement>(null);
   const [bellOpen, setBellOpen] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const adminRef = useRef<HTMLDivElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const seenIdsRef = useRef<Set<number>>(new Set());;
 
@@ -63,6 +65,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       }
       if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
         setBellOpen(false);
+      }
+      if (adminRef.current && !adminRef.current.contains(e.target as Node)) {
+        setAdminOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
@@ -372,6 +377,59 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
+
+          {/* Administration dropdown — admin only */}
+          {isAdmin && (
+            <div ref={adminRef} className="relative">
+              <button
+                onClick={() => setAdminOpen(v => !v)}
+                className={clsx(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
+                  adminOpen
+                    ? 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200',
+                )}
+                type="button"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Administration</span>
+                <ChevronRight className={clsx('h-3 w-3 transition-transform hidden sm:block', adminOpen && 'rotate-90')} />
+              </button>
+
+              {adminOpen && (
+                <div className="absolute right-0 top-full mt-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-lg shadow-gray-200/80 dark:shadow-gray-900/80 border border-gray-100 dark:border-gray-700 z-50 overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-gray-100 dark:border-gray-700">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Admin Panel</p>
+                  </div>
+                  <div className="py-1">
+                    {[
+                      { href: '/admin/users',         label: 'User Management',  icon: ShieldCheck, desc: 'Manage accounts' },
+                      { href: '/admin/announcements',  label: 'Announcements',    icon: Megaphone,   desc: 'Broadcast messages' },
+                    ].map(({ href, label, icon: Icon, desc }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={() => setAdminOpen(false)}
+                        className={clsx(
+                          'flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors',
+                          (pathname === href || pathname.startsWith(href + '/')) && 'bg-violet-50 dark:bg-violet-900/20',
+                        )}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center shrink-0">
+                          <Icon className="h-3.5 w-3.5 text-violet-600 dark:text-violet-400" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{label}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">{desc}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div ref={bellRef} className="relative">
             <button
               onClick={() => setBellOpen(v => !v)}
