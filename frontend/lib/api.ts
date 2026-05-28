@@ -219,6 +219,11 @@ export const onuApi = {
 
   reboot: (oltId: number, onuId: number) =>
     apiClient.post(`/olts/${oltId}/onus/${onuId}/reboot/`),
+
+  search: (q: string, currentOnuId?: number) =>
+    apiClient.get<{ id: number; serial_number: string; pon_port: string; status: string; olt_name: string; olt_id: number }[]>(
+      '/onus/search/', { params: { search: q, current_onu: currentOnuId } }
+    ),
 };
 
 // VLAN API

@@ -2,15 +2,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { customerApi } from '@/lib/api';
+import { customerApi, onuApi } from '@/lib/api';
 import type { Customer } from '@/lib/types';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import {
   Users, Plus, Search, X, RefreshCw, Pencil, Trash2,
-  Wifi, WifiOff, Phone, MapPin, CreditCard, Upload,
-  ChevronRight, UserCheck, UserX,
+  Phone, MapPin, Upload, UserX, Wifi, Link2, Link2Off,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -45,6 +44,15 @@ interface ModalProps {
   onSaved: () => void;
 }
 
+interface OnuSearchResult {
+  id: number;
+  serial_number: string;
+  pon_port: string;
+  status: string;
+  olt_name: string;
+  olt_id: number;
+}
+
 function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
   const isEdit = !!customer?.id;
   const [form, setForm] = useState({
@@ -57,6 +65,49 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
   });
   const [saving, setSaving] = useState(false);
 
+  // ONU picker state
+  const [selectedOnu, setSelectedOnu] = useState<OnuSearchResult | null>(
+    customer?.onu
+      ? { id: customer.onu, serial_number: customer.onu_serial ?? '', pon_port: customer.onu_pon_port ?? '', status: customer.onu_status ?? '', olt_name: customer.olt_name ?? '', olt_id: customer.olt_id ?? 0 }
+      : null
+  );
+  const [onuQuery, setOnuQuery] = useState('');
+  const [onuResults, setOnuResults] = useState<OnuSearchResult[]>([]);
+  const [onuSearching, setOnuSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const onuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Debounced ONU search
+  useEffect(() => {
+    if (onuTimerRef.current) clearTimeout(onuTimerRef.current);
+    if (onuQuery.trim().length < 2) { setOnuResults([]); setShowDropdown(false); return; }
+    onuTimerRef.current = setTimeout(async () => {
+      setOnuSearching(true);
+      try {
+        const res = await onuApi.search(onuQuery.trim(), selectedOnu?.id);
+        setOnuResults(res.data);
+        setShowDropdown(true);
+      } catch {
+        setOnuResults([]);
+      } finally {
+        setOnuSearching(false);
+      }
+    }, 300);
+    return () => { if (onuTimerRef.current) clearTimeout(onuTimerRef.current); };
+  }, [onuQuery]);
+
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,11 +115,12 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
     try {
+      const payload = { ...form, onu: selectedOnu?.id ?? null };
       if (isEdit) {
-        await customerApi.update(customer!.id!, form);
+        await customerApi.update(customer!.id!, payload);
         toast.success('Customer updated');
       } else {
-        await customerApi.create(form);
+        await customerApi.create(payload);
         toast.success('Customer added');
       }
       onSaved();
@@ -81,8 +133,8 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 shrink-0">
           <h2 className="font-semibold text-gray-900 dark:text-white">
             {isEdit ? 'Edit Customer' : 'Add Customer'}
           </h2>
@@ -91,7 +143,7 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
@@ -148,6 +200,77 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
                 placeholder="Optional notes…"
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
+            </div>
+
+            {/* ONU Assignment */}
+            <div className="sm:col-span-2">
+              <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <Wifi className="h-3.5 w-3.5 text-blue-500" />
+                Assign ONU
+              </label>
+
+              {selectedOnu ? (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot(selectedOnu.status)}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{selectedOnu.serial_number}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{selectedOnu.olt_name}{selectedOnu.pon_port ? ` · ${selectedOnu.pon_port}` : ''}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedOnu(null); setOnuQuery(''); }}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                    title="Remove ONU assignment"
+                  >
+                    <Link2Off className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="relative" ref={dropdownRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    <input
+                      value={onuQuery}
+                      onChange={e => setOnuQuery(e.target.value)}
+                      onFocus={() => onuResults.length > 0 && setShowDropdown(true)}
+                      placeholder="Search ONU by serial number…"
+                      className="w-full pl-9 pr-9 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    {onuSearching && (
+                      <RefreshCw className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 animate-spin" />
+                    )}
+                    {onuQuery && !onuSearching && (
+                      <button type="button" onClick={() => { setOnuQuery(''); setOnuResults([]); setShowDropdown(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  {showDropdown && onuResults.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden max-h-48 overflow-y-auto">
+                      {onuResults.map(onu => (
+                        <button
+                          key={onu.id}
+                          type="button"
+                          onClick={() => { setSelectedOnu(onu); setOnuQuery(''); setOnuResults([]); setShowDropdown(false); }}
+                          className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-left"
+                        >
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot(onu.status)}`} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{onu.serial_number}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{onu.olt_name} · {onu.pon_port}</p>
+                          </div>
+                          <Link2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showDropdown && onuResults.length === 0 && onuQuery.trim().length >= 2 && !onuSearching && (
+                    <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg px-3 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                      No unassigned ONUs found
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

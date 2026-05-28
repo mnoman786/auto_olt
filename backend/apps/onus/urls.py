@@ -12,4 +12,5 @@ urlpatterns = [
     path('olts/<int:olt_pk>/onus/bulk-reboot/', views.bulk_reboot_onus, name='onu-bulk-reboot'),
     path('olts/<int:olt_pk>/onus/export/', views.export_onus_csv, name='onu-export'),
     path('olts/<int:olt_pk>/onus/<int:pk>/signal/', views.onu_signal_history, name='onu-signal'),
+    path('onus/search/', views.onu_search, name='onu-search'),
 ]

@@ -329,3 +329,39 @@ def export_onus_csv(request, olt_pk):
     )
     response['Content-Disposition'] = f'attachment; filename="onus_{olt.name}.csv"'
     return response
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def onu_search(request):
+    """Global ONU search across all OLTs the user owns. Used for customer assignment."""
+    q = request.query_params.get('search', '').strip()
+    if not q or len(q) < 2:
+        return Response([])
+
+    user = request.user
+    if user.is_staff or user.is_superuser:
+        qs = ONU.objects.select_related('olt', 'customer').filter(serial_number__icontains=q)
+    else:
+        qs = ONU.objects.select_related('olt', 'customer').filter(
+            olt__user=user, serial_number__icontains=q
+        )
+
+    # Exclude already-assigned ONUs (except possibly the one already on this customer)
+    exclude_assigned = request.query_params.get('exclude_assigned', '1')
+    current_onu = request.query_params.get('current_onu')
+    if exclude_assigned == '1':
+        qs = qs.filter(Q(customer__isnull=True) | Q(id=current_onu) if current_onu else Q(customer__isnull=True))
+
+    results = []
+    for onu in qs[:10]:
+        results.append({
+            'id': onu.id,
+            'serial_number': onu.serial_number,
+            'pon_port': onu.pon_port,
+            'status': onu.status,
+            'olt_name': onu.olt.name,
+            'olt_id': onu.olt.id,
+            'has_customer': hasattr(onu, 'customer') and onu.customer is not None,
+        })
+    return Response(results)
