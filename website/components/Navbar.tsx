@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Network, Menu, X } from 'lucide-react';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || '#';
+
 const links = [
   { label: 'Features', href: '#features' },
   { label: 'Preview', href: '#preview' },
@@ -48,11 +50,8 @@ export default function Navbar() {
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <a href="#contact" className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2">
-            Get Access
-          </a>
           <a
-            href="#"
+            href={APP_URL}
             className="px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-700/30 hover:shadow-blue-700/50"
           >
             Get Started Free →
@@ -74,7 +73,7 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
-          <a href="#" className="block mt-3 px-4 py-2.5 text-sm font-semibold text-center text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
+          <a href={APP_URL} className="block mt-3 px-4 py-2.5 text-sm font-semibold text-center text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg">
             Get Started Free →
           </a>
         </div>

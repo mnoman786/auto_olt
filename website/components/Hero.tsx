@@ -1,5 +1,7 @@
 import { ArrowRight, Zap, Shield, Wifi } from 'lucide-react';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || '#';
+
 export default function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16">
@@ -36,7 +38,7 @@ export default function Hero() {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
           <a
-            href="#"
+            href={APP_URL}
             className="group flex items-center gap-2 px-8 py-4 text-base font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-2xl shadow-blue-700/40 hover:shadow-blue-700/60 hover:-translate-y-0.5"
           >
             Get Started Free

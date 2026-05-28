@@ -1,5 +1,7 @@
 import { ArrowRight, Shield, Mail, MessageCircle } from 'lucide-react';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || '#';
+
 export default function CTA() {
   return (
     <section id="contact" className="py-20 relative overflow-hidden">
@@ -34,7 +36,7 @@ export default function CTA() {
                 <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
               </a>
               <a
-                href="#"
+                href={APP_URL}
                 className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:-translate-y-0.5"
               >
                 <MessageCircle className="h-4 w-4" />

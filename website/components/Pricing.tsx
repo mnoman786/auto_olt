@@ -1,5 +1,7 @@
 import { CheckCircle, Zap, Heart } from 'lucide-react';
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || '#';
+
 const features = [
   'Unlimited OLT devices',      'Unlimited ONU management',
   'SNMP v1/v2c/v3 support',     'WireGuard VPN integration',
@@ -54,7 +56,7 @@ export default function Pricing() {
                   <span className="text-gray-500 text-xs mb-1">/month</span>
                 </div>
                 <a
-                  href="#"
+                  href={APP_URL}
                   className="px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-700/30 hover:-translate-y-0.5"
                 >
                   Get Started Free →
