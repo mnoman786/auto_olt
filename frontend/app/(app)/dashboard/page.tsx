@@ -99,7 +99,8 @@ export default function DashboardPage() {
     if (h < 18) return 'Good afternoon';
     return 'Good evening';
   })();
-  const displayName = (user as any)?.first_name || (user as any)?.username || '';
+  const displayName = user?.first_name || user?.username || '';
+  const companyName = user?.company_name || '';
 
   return (
       <div className="relative">
@@ -119,6 +120,7 @@ export default function DashboardPage() {
                 {greeting}{displayName ? `, ${displayName}` : ''}
               </h1>
               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
+                {companyName ? <><span className="font-medium text-gray-700 dark:text-gray-300">{companyName}</span> · </> : ''}
                 Here's a snapshot of your OLT network today.
               </p>
             </div>

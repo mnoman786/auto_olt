@@ -115,9 +115,12 @@ export default function AdminUsersPage() {
   };
 
   const filtered = users.filter(u => {
+    const q = search.toLowerCase();
     const matchesSearch =
-      u.username.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
+      u.username.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.company_name || '').toLowerCase().includes(q) ||
+      (u.phone || '').includes(q);
     const matchesFilter =
       filter === 'all' ||
       (filter === 'active' && u.is_active) ||
@@ -259,6 +262,9 @@ export default function AdminUsersPage() {
                           )}
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.email}</p>
+                        {u.company_name && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium truncate mt-0.5">{u.company_name}{u.phone ? ` · ${u.phone}` : ''}</p>
+                        )}
                       </div>
 
                       {/* Meta */}

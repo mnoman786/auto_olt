@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
   Bell, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay, Megaphone,
-  CheckCheck, Users, Settings,
+  CheckCheck, Users, Settings, BarChart2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
@@ -362,8 +362,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                   </div>
                   <div className="p-1.5 space-y-0.5">
                     {[
-                      { href: '/admin/users',        label: 'User Management', icon: ShieldCheck, desc: 'Accounts & roles' },
+                        { href: '/admin/users',        label: 'User Management', icon: ShieldCheck, desc: 'Accounts & roles' },
                       { href: '/admin/announcements', label: 'Announcements',   icon: Megaphone,   desc: 'Broadcast messages' },
+                      { href: '/admin/analytics',     label: 'Analytics',       icon: BarChart2,   desc: 'Registrations & insights' },
                     ].map(({ href, label, icon: Icon, desc }) => {
                       const active = pathname === href || pathname.startsWith(href + '/');
                       return (
