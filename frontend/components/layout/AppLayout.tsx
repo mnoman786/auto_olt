@@ -343,8 +343,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 className={clsx(
                   'flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-sm font-medium transition-all',
                   adminOpen
-                    ? 'bg-violet-600 text-white shadow-md shadow-violet-500/30'
-                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-800 dark:hover:text-gray-200',
+                    ? 'bg-violet-700 text-white shadow-md shadow-violet-500/40'
+                    : 'bg-violet-600 text-white hover:bg-violet-700 shadow-sm shadow-violet-500/30',
                 )}
                 type="button"
               >
