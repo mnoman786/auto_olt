@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ONUStatusBadge } from '@/components/ui/Badge';
-import { oltApi, onuApi, vlanApi, onuBulkApi } from '@/lib/api';
+import { oltApi, onuApi, vlanApi, onuBulkApi, customerApi } from '@/lib/api';
 import type { OLT, ONU, VLAN } from '@/lib/types';
 import { ONUPageSkeleton, ONUTableSkeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
@@ -32,15 +32,38 @@ const RegisterModal = memo(function RegisterModal({ onu, oltId, vlans, onClose, 
   const [vlanId, setVlanId] = useState<string>('');
   const [description, setDescription] = useState(onu.description || '');
   const [loading, setLoading] = useState(false);
+  const [createCustomer, setCreateCustomer] = useState(false);
+  const [custName, setCustName] = useState('');
+  const [custPhone, setCustPhone] = useState('');
+  const [custPlan, setCustPlan] = useState('');
 
   const handleRegister = async () => {
+    if (createCustomer && !custName.trim()) {
+      toast.error('Customer name is required');
+      return;
+    }
     setLoading(true);
     try {
       await onuApi.register(oltId, onu.id, {
         vlan_id: vlanId ? parseInt(vlanId) : undefined,
         description,
       });
-      toast.success(`Provisioning ONU ${onu.serial_number}...`);
+      if (createCustomer) {
+        try {
+          await customerApi.create({
+            name: custName.trim(),
+            phone: custPhone.trim(),
+            plan_name: custPlan.trim(),
+            onu: onu.id,
+          });
+          toast.success(`ONU registered & customer "${custName.trim()}" created`);
+        } catch {
+          toast.success(`Provisioning ONU ${onu.serial_number}...`);
+          toast.error('Customer creation failed — add from Customers page');
+        }
+      } else {
+        toast.success(`Provisioning ONU ${onu.serial_number}...`);
+      }
       onSuccess();
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Failed to start provisioning');
@@ -51,41 +74,103 @@ const RegisterModal = memo(function RegisterModal({ onu, oltId, vlans, onClose, 
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Register ONU</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Serial: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded text-gray-800 dark:text-gray-200">{onu.serial_number}</code></p>
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="p-6 pb-0">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Register ONU</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Serial: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded text-gray-800 dark:text-gray-200">{onu.serial_number}</code></p>
+        </div>
 
-        <div className="space-y-3 mb-5">
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">VLAN (optional)</label>
-            <select
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              value={vlanId}
-              onChange={e => setVlanId(e.target.value)}
+        <div className="overflow-y-auto px-6 flex-1">
+          <div className="space-y-3 mb-5">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">VLAN (optional)</label>
+              <select
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                value={vlanId}
+                onChange={e => setVlanId(e.target.value)}
+              >
+                <option value="">No VLAN</option>
+                {vlans.map(v => (
+                  <option key={v.id} value={v.vlan_id}>{v.name} (VLAN {v.vlan_id})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Description (optional)</label>
+              <input
+                className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="e.g., Customer A - Apartment 101"
+              />
+            </div>
+          </div>
+
+          {/* Add Customer toggle */}
+          <div className="border border-gray-200 dark:border-gray-600 rounded-xl mb-5 overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setCreateCustomer(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
             >
-              <option value="">No VLAN</option>
-              {vlans.map(v => (
-                <option key={v.id} value={v.vlan_id}>{v.name} (VLAN {v.vlan_id})</option>
-              ))}
-            </select>
+              <div className="flex items-center gap-2.5">
+                <Users className="h-4 w-4 text-blue-500" />
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">Add Customer</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500">link subscriber to this ONU</span>
+              </div>
+              <div className={clsx(
+                'relative w-10 h-5 rounded-full transition-colors shrink-0',
+                createCustomer ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+              )}>
+                <span className={clsx(
+                  'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform',
+                  createCustomer && 'translate-x-5'
+                )} />
+              </div>
+            </button>
+
+            {createCustomer && (
+              <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-700 space-y-3 pt-3 bg-gray-50/50 dark:bg-gray-800/30">
+                <div>
+                  <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Name <span className="text-red-500">*</span></label>
+                  <input
+                    value={custName}
+                    onChange={e => setCustName(e.target.value)}
+                    placeholder="Customer full name"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Phone</label>
+                    <input
+                      value={custPhone}
+                      onChange={e => setCustPhone(e.target.value)}
+                      placeholder="03XX-XXXXXXX"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300 block mb-1">Plan</label>
+                    <input
+                      value={custPlan}
+                      onChange={e => setCustPlan(e.target.value)}
+                      placeholder="e.g. 10 Mbps"
+                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-1">Description (optional)</label>
-            <input
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="e.g., Customer A - Apartment 101"
-            />
+
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-4 text-xs text-blue-700 dark:text-blue-300">
+            The system will automatically provision this ONU using the configured method
+            (SNMP / Telnet / Hybrid) without any manual CLI interaction.
           </div>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-3 mb-4 text-xs text-blue-700 dark:text-blue-300">
-          The system will automatically provision this ONU using the configured method
-          (SNMP / Telnet / Hybrid) without any manual CLI interaction.
-        </div>
-
-        <div className="flex gap-3">
+        <div className="flex gap-3 p-6 pt-4 border-t border-gray-100 dark:border-gray-700">
           <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
           <Button className="flex-1" loading={loading} onClick={handleRegister}
             icon={<Play className="h-4 w-4" />}>
