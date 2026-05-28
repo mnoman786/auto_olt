@@ -271,7 +271,7 @@ def me_view(request):
 @permission_classes([IsAuthenticated])
 def update_profile_view(request):
     user = request.user
-    allowed = {k: v for k, v in request.data.items() if k in ('first_name', 'last_name', 'email')}
+    allowed = {k: v for k, v in request.data.items() if k in ('first_name', 'last_name', 'email', 'company_name')}
     if not allowed:
         return Response({'detail': 'No updatable fields provided.'}, status=status.HTTP_400_BAD_REQUEST)
     if 'email' in allowed:
@@ -286,7 +286,9 @@ def update_profile_view(request):
         user.first_name = allowed['first_name']
     if 'last_name' in allowed:
         user.last_name = allowed['last_name']
-    user.save(update_fields=[f for f in ('email', 'first_name', 'last_name') if f in allowed])
+    if 'company_name' in allowed:
+        user.company_name = allowed['company_name']
+    user.save(update_fields=[f for f in ('email', 'first_name', 'last_name', 'company_name') if f in allowed])
     return Response(UserSerializer(user).data)
 
 
@@ -453,6 +455,7 @@ def admin_user_list(request):
             'email': u.email,
             'first_name': u.first_name,
             'last_name': u.last_name,
+            'company_name': u.company_name,
             'is_active': u.is_active,
             'is_staff': u.is_staff,
             'is_superuser': u.is_superuser,
@@ -517,6 +520,7 @@ def admin_user_detail(request, pk):
         'email': target.email,
         'first_name': target.first_name,
         'last_name': target.last_name,
+        'company_name': target.company_name,
         'is_active': target.is_active,
         'is_staff': target.is_staff,
         'is_superuser': target.is_superuser,

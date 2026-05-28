@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ username: '', email: '', password: '', password2: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', password2: '', company_name: '' });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -24,7 +24,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      const { email, activated } = await register(form.username, form.email, form.password, form.password2);
+      const { email, activated } = await register(form.username, form.email, form.password, form.password2, form.company_name);
       if (activated) {
         toast.success('Account created! Welcome to Auto OLT.');
         router.push('/dashboard');
@@ -84,6 +84,16 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
+              label="ISP / Company Name"
+              type="text"
+              placeholder="e.g. City Net ISP"
+              value={form.company_name}
+              onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))}
+              error={errors.company_name}
+              required
+              autoFocus
+            />
+            <Input
               label="Username"
               type="text"
               placeholder="Choose a username"
@@ -91,7 +101,6 @@ export default function RegisterPage() {
               onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
               error={errors.username}
               required
-              autoFocus
             />
             <Input
               label="Email"

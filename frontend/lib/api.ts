@@ -95,7 +95,7 @@ apiClient.interceptors.response.use(
 
 // Auth API
 export const auth = {
-  register: (data: { username: string; email: string; password: string; password2: string }) =>
+  register: (data: { username: string; email: string; password: string; password2: string; company_name?: string }) =>
     apiClient.post<AuthResponse>('/auth/register/', data),
 
   login: (data: { username: string; password: string }) =>

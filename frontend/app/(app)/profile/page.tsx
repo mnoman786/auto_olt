@@ -32,7 +32,7 @@ export default function ProfilePage() {
   const { user, isAuthenticated, isLoading, setUser } = useAuth();
   const router = useRouter();
 
-  const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '' });
+  const [profile, setProfile] = useState({ first_name: '', last_name: '', email: '', company_name: '' });
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({});
   const [savingProfile, setSavingProfile] = useState(false);
 
@@ -47,9 +47,10 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       setProfile({
-        first_name: (user as any).first_name || '',
-        last_name: (user as any).last_name || '',
+        first_name: user.first_name || '',
+        last_name: user.last_name || '',
         email: user.email || '',
+        company_name: user.company_name || '',
       });
     }
   }, [user]);
@@ -130,6 +131,16 @@ export default function ProfilePage() {
               <h2 className="font-semibold text-gray-900 dark:text-white">Personal Information</h2>
             </div>
             <div className="space-y-4">
+              <Field label="ISP / Company Name">
+                <Input
+                  value={profile.company_name}
+                  onChange={e => setProfile(p => ({ ...p, company_name: e.target.value }))}
+                  placeholder="e.g. City Net ISP"
+                />
+                {profileErrors.company_name && (
+                  <p className="text-xs text-red-600 mt-1">{profileErrors.company_name}</p>
+                )}
+              </Field>
               <Field label="Username">
                 <Input value={user?.username || ''} disabled />
               </Field>

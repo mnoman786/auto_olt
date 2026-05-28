@@ -22,7 +22,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password2')
+        fields = ('username', 'email', 'password', 'password2', 'company_name')
 
     def validate(self, data):
         if User.objects.filter(username=data.get('username'), is_active=True).exists():
@@ -38,9 +38,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2')
+        company_name = validated_data.pop('company_name', '')
         user = User.objects.create_user(**validated_data)
+        user.company_name = company_name
         user.is_active = False
-        user.save(update_fields=['is_active'])
+        user.save(update_fields=['is_active', 'company_name'])
         return user
 
 
@@ -61,5 +63,5 @@ class LoginSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'is_superuser', 'created_at')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'company_name', 'is_staff', 'is_superuser', 'created_at')
         read_only_fields = ('id', 'username', 'is_staff', 'is_superuser', 'created_at')
