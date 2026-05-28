@@ -23,6 +23,8 @@ class Customer(models.Model):
     cnic = models.CharField(max_length=20, blank=True, default='', verbose_name='CNIC')
     plan_name = models.CharField(max_length=100, blank=True, default='')
     notes = models.TextField(blank=True, default='')
+    pppoe_username = models.CharField(max_length=100, blank=True, default='')
+    pppoe_password = models.CharField(max_length=100, blank=True, default='')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

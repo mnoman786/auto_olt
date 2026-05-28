@@ -36,6 +36,11 @@ class OLT(models.Model):
     # Credentials used to log in to the OLT for setup, polling, and provisioning.
     olt_admin_username = models.CharField(max_length=50, blank=True, default='admin')
     olt_admin_password = EncryptedCharField(max_length=500, blank=True, default='admin')
+    # Optional link to a MikroTik router — if set, PPPoE users are auto-created for customers on this OLT.
+    mikrotik = models.ForeignKey(
+        'MikroTikRouter', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='olts',
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
     system_name = models.CharField(max_length=200, blank=True, default='')
     system_description = models.CharField(max_length=500, blank=True, default='')
@@ -95,6 +100,25 @@ class OLTPort(models.Model):
 
     def __str__(self):
         return f'{self.olt.name} — {self.name} ({self.port_type})'
+
+
+class MikroTikRouter(models.Model):
+    """A MikroTik router that can be linked to one or more OLTs for PPPoE user management."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mikrotik_routers')
+    name = models.CharField(max_length=100)
+    host = models.CharField(max_length=100)
+    port = models.PositiveIntegerField(default=8728)
+    username = models.CharField(max_length=100, default='admin')
+    password = EncryptedCharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'mikrotik_routers'
+        ordering = ['name']
+
+    def __str__(self):
+        return f'{self.name} ({self.host})'
 
 
 class BandwidthSample(models.Model):

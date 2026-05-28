@@ -47,7 +47,7 @@ export default function EditOLTPage() {
     try {
       const res = await oltApi.get(oltId);
       const d = res.data;
-setForm({
+      setForm({
         name: d.name,
         ip_address: d.ip_address,
         connection_type: d.connection_type || 'direct',

@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme';
 import {
   LayoutDashboard, Server, Network, LogOut, ChevronRight, Menu, X, BookOpen,
   Bell, LifeBuoy, UserCircle, ShieldCheck, Gift, Sun, Moon, MonitorPlay, Megaphone,
-  CheckCheck, Users, Settings, BarChart2,
+  CheckCheck, Users, Settings, BarChart2, Router,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
@@ -24,6 +24,7 @@ const navItems = [
   { href: '/dashboard',  label: 'Dashboard',     icon: LayoutDashboard },
   { href: '/olts',       label: 'OLT Devices',   icon: Server },
   { href: '/customers',  label: 'Customers',      icon: Users },
+  { href: '/mikrotik',   label: 'MikroTik',       icon: Router },
   { href: '/alerts',     label: 'Alerts',         icon: Bell },
   { href: '/noc',        label: 'NOC View',       icon: MonitorPlay, newTab: true },
   { href: '/tickets',    label: 'Support',        icon: LifeBuoy },

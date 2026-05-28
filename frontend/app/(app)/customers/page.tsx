@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import {
   Users, Plus, Search, X, RefreshCw, Pencil, Trash2,
-  Phone, MapPin, Upload, UserX, Wifi, Link2, Link2Off,
+  Phone, MapPin, Upload, UserX, Wifi, Link2, Link2Off, Router, Eye, EyeOff,
 } from 'lucide-react';
+import { oltApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -62,8 +63,12 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
     cnic: customer?.cnic ?? '',
     plan_name: customer?.plan_name ?? '',
     notes: customer?.notes ?? '',
+    pppoe_username: customer?.pppoe_username ?? '',
+    pppoe_password: customer?.pppoe_password ?? '',
   });
   const [saving, setSaving] = useState(false);
+  const [showPppoePassword, setShowPppoePassword] = useState(false);
+  const [oltHasMikrotik, setOltHasMikrotik] = useState(customer?.olt_has_mikrotik ?? false);
 
   // ONU picker state
   const [selectedOnu, setSelectedOnu] = useState<OnuSearchResult | null>(
@@ -108,6 +113,14 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
     return () => { if (onuTimerRef.current) clearTimeout(onuTimerRef.current); };
   }, [onuQuery]);
 
+  // When ONU selection changes, check if linked OLT has MikroTik
+  useEffect(() => {
+    if (!selectedOnu) { setOltHasMikrotik(false); return; }
+    oltApi.get(selectedOnu.olt_id).then(res => {
+      setOltHasMikrotik(res.data.has_mikrotik);
+    }).catch(() => setOltHasMikrotik(false));
+  }, [selectedOnu]);
+
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -115,7 +128,12 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
     if (!form.name.trim()) { toast.error('Name is required'); return; }
     setSaving(true);
     try {
-      const payload = { ...form, onu: selectedOnu?.id ?? null };
+      const payload = {
+        ...form,
+        onu: selectedOnu?.id ?? null,
+        pppoe_username: oltHasMikrotik ? form.pppoe_username : '',
+        pppoe_password: oltHasMikrotik ? form.pppoe_password : '',
+      };
       if (isEdit) {
         await customerApi.update(customer!.id!, payload);
         toast.success('Customer updated');
@@ -201,6 +219,43 @@ function CustomerModal({ customer, onClose, onSaved }: ModalProps) {
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
+
+            {/* PPPoE Credentials — only shown when OLT has MikroTik */}
+            {oltHasMikrotik && (
+              <div className="sm:col-span-2 rounded-lg border border-rose-100 dark:border-rose-800 bg-rose-50/50 dark:bg-rose-900/10 p-3 space-y-3">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Router className="h-3.5 w-3.5 text-rose-500" />
+                  <span className="text-xs font-semibold text-rose-700 dark:text-rose-400 uppercase tracking-wide">MikroTik PPPoE</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PPPoE Username</label>
+                    <input
+                      value={form.pppoe_username}
+                      onChange={e => set('pppoe_username', e.target.value)}
+                      placeholder="e.g. ali_gulberg"
+                      className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PPPoE Password</label>
+                    <div className="relative">
+                      <input
+                        type={showPppoePassword ? 'text' : 'password'}
+                        value={form.pppoe_password}
+                        onChange={e => set('pppoe_password', e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3 py-2 pr-9 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      />
+                      <button type="button" onClick={() => setShowPppoePassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                        {showPppoePassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-rose-600 dark:text-rose-400">Will be auto-created on MikroTik when saved.</p>
+              </div>
+            )}
 
             {/* ONU Assignment */}
             <div className="sm:col-span-2">

@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import type {
-  AuthResponse, OLT, OLTCreatePayload, ONU, VLAN, Customer,
+  AuthResponse, OLT, OLTCreatePayload, ONU, VLAN, Customer, MikroTikRouter,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
   Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
   AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse, Announcement, Notification,
@@ -193,6 +193,22 @@ export const oltApi = {
     line_profile_id: number;
     srv_profile_id: number;
   }) => apiClient.put<AutoProvisionConfig>(`/olts/${id}/auto-provision/`, data),
+};
+
+// MikroTik API
+export const mikrotikApi = {
+  list: () => apiClient.get<MikroTikRouter[]>('/mikrotik/'),
+
+  create: (data: { name: string; host: string; port?: number; username?: string; password?: string; olt_ids?: number[] }) =>
+    apiClient.post<MikroTikRouter>('/mikrotik/', data),
+
+  update: (id: number, data: Partial<{ name: string; host: string; port: number; username: string; password: string; olt_ids: number[] }>) =>
+    apiClient.patch<MikroTikRouter>(`/mikrotik/${id}/`, data),
+
+  delete: (id: number) => apiClient.delete(`/mikrotik/${id}/`),
+
+  test: (id: number, data?: { host?: string; port?: number; username?: string; password?: string }) =>
+    apiClient.post<{ success: boolean; message: string }>(`/mikrotik/${id}/test/`, data ?? {}),
 };
 
 // ONU API

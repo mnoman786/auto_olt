@@ -1,7 +1,10 @@
 from django.urls import path
-from . import views
+from . import views, mikrotik_views
 
 urlpatterns = [
+    path('mikrotik/', mikrotik_views.mikrotik_list, name='mikrotik-list'),
+    path('mikrotik/<int:pk>/', mikrotik_views.mikrotik_detail, name='mikrotik-detail'),
+    path('mikrotik/<int:pk>/test/', mikrotik_views.mikrotik_test, name='mikrotik-test'),
     path('olts/', views.OLTListCreateView.as_view(), name='olt-list-create'),
     path('olts/test-connection/', views.test_connection, name='olt-test-connection'),
     path('olts/<int:pk>/', views.OLTDetailView.as_view(), name='olt-detail'),

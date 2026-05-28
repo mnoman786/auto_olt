@@ -52,6 +52,7 @@ class _OLTSerializerBase(serializers.ModelSerializer):
     has_admin_password = serializers.SerializerMethodField()
     has_snmp_read_community = serializers.SerializerMethodField()
     has_snmp_write_community = serializers.SerializerMethodField()
+    has_mikrotik = serializers.SerializerMethodField()
 
     def get_onu_count(self, obj):
         return getattr(obj, '_onu_count', None) or 0
@@ -74,6 +75,9 @@ class _OLTSerializerBase(serializers.ModelSerializer):
     def get_has_snmp_write_community(self, obj):
         return bool(obj.snmp_write_community)
 
+    def get_has_mikrotik(self, obj):
+        return obj.mikrotik_id is not None
+
 
 class OLTListSerializer(_OLTSerializerBase):
     """Lean serializer for list views — omits large profile JSONs."""
@@ -83,6 +87,7 @@ class OLTListSerializer(_OLTSerializerBase):
             'id', 'username', 'name', 'ip_address', 'connection_type', 'vpn_virtual_ip',
             'snmp_version', 'telnet_enabled', 'telnet_port', 'olt_admin_username',
             'has_admin_password', 'has_snmp_read_community', 'has_snmp_write_community',
+            'has_mikrotik',
             'status', 'system_name', 'system_uptime',
             'last_polled', 'created_at', 'updated_at',
             'onu_count', 'registered_onu_count',
@@ -103,6 +108,7 @@ class OLTSerializer(_OLTSerializerBase):
             'telnet_enabled', 'telnet_port',
             'olt_admin_username',
             'has_admin_password', 'has_snmp_read_community', 'has_snmp_write_community',
+            'has_mikrotik',
             'status', 'system_name', 'system_description', 'system_uptime',
             'last_polled', 'created_at', 'updated_at',
             'onu_count', 'registered_onu_count',

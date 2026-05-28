@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -8,6 +9,28 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from .models import Customer
 from .serializers import CustomerSerializer
+
+logger = logging.getLogger(__name__)
+
+
+def _sync_mikrotik_pppoe(customer):
+    """If the linked OLT has MikroTik configured and customer has PPPoE creds, create the user."""
+    if not customer.pppoe_username or not customer.pppoe_password:
+        return
+    if not customer.onu:
+        return
+    olt = customer.onu.olt
+    if not olt.mikrotik_id:
+        return
+    mt = olt.mikrotik
+    try:
+        from services import mikrotik_service
+        mikrotik_service.create_pppoe_user(
+            mt.host, mt.port, mt.username, mt.password,
+            customer.pppoe_username, customer.pppoe_password,
+        )
+    except Exception as exc:
+        logger.warning(f'MikroTik PPPoE sync failed for customer {customer.id}: {exc}')
 
 
 def _is_admin(user):
@@ -58,6 +81,7 @@ def customer_list(request):
             return Response({'onu': 'This ONU already has a customer assigned.'}, status=status.HTTP_400_BAD_REQUEST)
 
     serializer.save(user=request.user)
+    _sync_mikrotik_pppoe(serializer.instance)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -88,6 +112,7 @@ def customer_detail(request, pk):
             return Response({'onu': 'This ONU already has a customer assigned.'}, status=status.HTTP_400_BAD_REQUEST)
 
     serializer.save()
+    _sync_mikrotik_pppoe(serializer.instance)
     return Response(serializer.data)
 
 

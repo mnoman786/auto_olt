@@ -716,3 +716,27 @@ def olt_report_excel(request, pk):
     )
     response['Content-Disposition'] = f'attachment; filename="{fname}"'
     return response
+
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def test_mikrotik(request, pk):
+    from services import mikrotik_service
+    try:
+        olt = OLT.objects.get(pk=pk)
+        if not (request.user.is_staff or request.user.is_superuser) and olt.user != request.user:
+            return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+    except OLT.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    host = request.data.get('mikrotik_host') or olt.mikrotik_host
+    port = request.data.get('mikrotik_port') or olt.mikrotik_port
+    username = request.data.get('mikrotik_username') or olt.mikrotik_username
+    password = request.data.get('mikrotik_password') or olt.mikrotik_password
+
+    if not host:
+        return Response({'success': False, 'message': 'MikroTik host is required'})
+
+    result = mikrotik_service.test_connection(host, port, username, password)
+    return Response(result)

@@ -8,12 +8,18 @@ class CustomerSerializer(serializers.ModelSerializer):
     onu_status = serializers.CharField(source='onu.status', read_only=True, default=None)
     olt_name = serializers.CharField(source='onu.olt.name', read_only=True, default=None)
     olt_id = serializers.IntegerField(source='onu.olt.id', read_only=True, default=None)
+    olt_has_mikrotik = serializers.SerializerMethodField()
+
+    def get_olt_has_mikrotik(self, obj):
+        return bool(obj.onu and obj.onu.olt and obj.onu.olt.mikrotik_id)
 
     class Meta:
         model = Customer
         fields = (
             'id', 'name', 'phone', 'address', 'cnic', 'plan_name', 'notes',
+            'pppoe_username', 'pppoe_password',
             'onu', 'onu_serial', 'onu_pon_port', 'onu_status', 'olt_name', 'olt_id',
+            'olt_has_mikrotik',
             'created_at', 'updated_at',
         )
         read_only_fields = ('id', 'created_at', 'updated_at')

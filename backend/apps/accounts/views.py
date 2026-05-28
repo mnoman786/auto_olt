@@ -1,7 +1,10 @@
 import hmac
+import logging
 import secrets
 import string
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -139,10 +142,11 @@ def register_view(request):
 
     try:
         _send_verification_email(user, otp)
-    except Exception:
+    except Exception as exc:
+        logger.error('Verification email failed for %s: %s', user.email, exc, exc_info=True)
         user.delete()
         return Response(
-            {'detail': 'Failed to send verification email. Please try again.'},
+            {'detail': f'Failed to send verification email: {exc}'},
             status=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 

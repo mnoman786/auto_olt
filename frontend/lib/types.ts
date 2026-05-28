@@ -58,6 +58,7 @@ export interface OLT {
   line_profiles?: { id: number; name: string }[];
   srv_profiles?: { id: number; name: string }[];
   profiles_last_synced?: string | null;
+  has_mikrotik: boolean;
 }
 
 export interface WireGuardInfo {
@@ -84,6 +85,18 @@ export interface OLTCreatePayload {
   telnet_port?: number;
   olt_admin_username?: string;
   olt_admin_password?: string;
+}
+
+export interface MikroTikRouter {
+  id: number;
+  name: string;
+  host: string;
+  port: number;
+  username: string;
+  owner_username: string;
+  linked_olts: { id: number; name: string; ip_address: string }[];
+  created_at: string;
+  updated_at: string;
 }
 
 export type PortType = 'pon' | 'uplink' | 'lag' | 'other';
@@ -141,12 +154,15 @@ export interface Customer {
   cnic: string;
   plan_name: string;
   notes: string;
+  pppoe_username: string;
+  pppoe_password: string;
   onu: number | null;
   onu_serial: string | null;
   onu_pon_port: string | null;
   onu_status: string | null;
   olt_name: string | null;
   olt_id: number | null;
+  olt_has_mikrotik: boolean;
   created_at: string;
   updated_at: string;
 }
