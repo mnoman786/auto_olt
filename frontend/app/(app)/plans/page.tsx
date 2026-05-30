@@ -57,7 +57,7 @@ const colorMap: Record<string, { ring: string; badge: string; icon: string; dot:
   orange:  { ring: 'ring-orange-100 dark:ring-orange-900/40', badge: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-100 dark:border-orange-800', icon: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30', dot: 'bg-orange-500' },
 };
 
-const vendors = ['Huawei', 'ZTE', 'C-Data', 'V-SOL'];
+const vendors = ['Huawei', 'ZTE'];
 
 const included = [
   'All features included',

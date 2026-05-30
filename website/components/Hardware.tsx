@@ -19,24 +19,6 @@ const vendors = [
     logoColor: 'from-blue-600 to-indigo-700',
     desc: 'SNMP discovery and Telnet automation for ZTE C300/C320 GPON series.',
   },
-  {
-    name: 'C-Data',
-    models: ['FD1104S', 'FD1108S', 'FD8908'],
-    status: 'Supported',
-    badge: 'bg-green-500/10 text-green-400 border-green-500/20',
-    logo: 'C',
-    logoColor: 'from-green-600 to-emerald-700',
-    desc: 'SNMP-based ONU discovery and Telnet-driven provisioning for C-Data OLTs.',
-  },
-  {
-    name: 'V-SOL',
-    models: ['V1600D', 'V1600G', 'V1600D4L'],
-    status: 'Supported',
-    badge: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
-    logo: 'V',
-    logoColor: 'from-violet-600 to-purple-700',
-    desc: 'SNMP polling and automated ONU registration for V-SOL GPON OLTs.',
-  },
 ];
 
 const protocols = [

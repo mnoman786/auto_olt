@@ -221,7 +221,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Auto OLT</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-sm font-bold text-gray-900 dark:text-white tracking-tight">Auto OLT</h1>
+                <span className="px-1.5 py-0.5 text-[9px] font-bold bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded uppercase tracking-wide">Beta</span>
+              </div>
               <p className="text-[11px] text-gray-500 dark:text-gray-400">ISP Management</p>
             </div>
           )}

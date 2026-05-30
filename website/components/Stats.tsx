@@ -1,6 +1,6 @@
 const stats = [
   { value: '18+', label: 'Features Built', desc: 'From ONU provisioning to customer management and NOC dashboards' },
-  { value: '4+',  label: 'Vendors Supported', desc: 'Huawei, ZTE, C-Data, V-SOL and growing' },
+  { value: '2',   label: 'Vendors Supported', desc: 'Huawei and ZTE — more vendors coming soon' },
   { value: '0',   label: 'CLI Commands', desc: 'Full automation — no manual Telnet or SNMP sessions ever' },
   { value: '∞',   label: 'ONUs Managed', desc: 'No device limits — scale from 10 to 10,000 ONUs' },
 ];
