@@ -208,6 +208,7 @@ def _validate_olt_target(host: str, port: int):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([OLTSetupThrottle])
 def test_connection(request):
     """
     Pre-flight Telnet credential check before adding/saving an OLT.
@@ -589,6 +590,15 @@ def auto_provision(request, pk):
         if not VLAN.objects.filter(id=vlan_id, olt=olt).exists():
             return Response({'default_vlan': 'VLAN does not belong to this OLT.'}, status=400)
 
+    # Block enabling auto-provision if profiles haven't been discovered yet —
+    # otherwise it silently falls back to profile ID 1 which usually doesn't exist on the OLT.
+    if request.data.get('enabled') and (not olt.line_profiles or not olt.srv_profiles):
+        return Response(
+            {'detail': 'Cannot enable auto-provisioning: ONU profiles have not been synced yet. '
+                       'Run "Sync Profiles" first (requires Telnet enabled on this OLT).'},
+            status=400,
+        )
+
     serializer = AutoProvisionConfigSerializer(config, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -730,10 +740,11 @@ def test_mikrotik(request, pk):
     except OLT.DoesNotExist:
         return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    host = request.data.get('mikrotik_host') or olt.mikrotik_host
-    port = request.data.get('mikrotik_port') or olt.mikrotik_port
-    username = request.data.get('mikrotik_username') or olt.mikrotik_username
-    password = request.data.get('mikrotik_password') or olt.mikrotik_password
+    mt = olt.mikrotik
+    host = request.data.get('mikrotik_host') or (mt.host if mt else None)
+    port = request.data.get('mikrotik_port') or (mt.port if mt else 8728)
+    username = request.data.get('mikrotik_username') or (mt.username if mt else None)
+    password = request.data.get('mikrotik_password') or (mt.password if mt else None)
 
     if not host:
         return Response({'success': False, 'message': 'MikroTik host is required'})

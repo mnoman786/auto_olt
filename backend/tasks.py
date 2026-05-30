@@ -102,14 +102,17 @@ def _trigger_auto_provision(olt_id: int) -> None:
         if not config:
             return
         unregistered = ONU.objects.filter(olt_id=olt_id, status='unregistered').values_list('id', flat=True)
-        for onu_id in unregistered:
-            provision_onu_task.delay(
-                onu_id,
-                vlan_id=config.default_vlan_id,
-                line_profile_id=config.line_profile_id,
-                srv_profile_id=config.srv_profile_id,
+        for i, onu_id in enumerate(unregistered):
+            provision_onu_task.apply_async(
+                args=[onu_id],
+                kwargs={
+                    'vlan_id': config.default_vlan_id,
+                    'line_profile_id': config.line_profile_id,
+                    'srv_profile_id': config.srv_profile_id,
+                },
+                countdown=i * 15,
             )
-            logger.info(f"Auto-provision queued for ONU {onu_id} (OLT {olt_id})")
+            logger.info(f"Auto-provision queued for ONU {onu_id} (OLT {olt_id}), starts in {i * 15}s")
     except Exception as exc:
         logger.warning(f"_trigger_auto_provision failed for OLT {olt_id}: {exc}")
 
@@ -124,7 +127,7 @@ def reboot_onu_task(self, onu_id: int) -> dict:
         raise self.retry(exc=exc)
 
 
-@shared_task(bind=True, max_retries=0, name='tasks.provision_onu')
+@shared_task(bind=True, max_retries=1, default_retry_delay=30, name='tasks.provision_onu')
 def provision_onu_task(self, onu_id: int, vlan_id=None,
                        line_profile_id: int = 1, srv_profile_id: int = 1) -> dict:
     from services.provisioning_service import provision_onu

@@ -102,6 +102,22 @@ def run_olt_setup(olt_id: int) -> None:
       7. Mark OLT as active
     """
     from apps.olts.models import OLT
+    try:
+        _run_olt_setup_inner(olt_id)
+    except Exception as exc:
+        logger.exception(f"OLT {olt_id} setup crashed unexpectedly: {exc}")
+        try:
+            olt = OLT.objects.get(id=olt_id)
+            olt.status = 'error'
+            olt.save(update_fields=['status'])
+            _create_log(olt, 'setup_error',
+                        f'Setup failed with unexpected error: {exc}', 'error')
+        except Exception:
+            logger.error(f"Could not mark OLT {olt_id} as error after crash")
+
+
+def _run_olt_setup_inner(olt_id: int) -> None:
+    from apps.olts.models import OLT
     from services import snmp_service, telnet_service
 
     try:
@@ -692,6 +708,11 @@ def pick_default_profile_ids(olt) -> Tuple[int, int]:
     Pick the line + service profile IDs to use when registering a new ONU.
     Returns (line_profile_id, srv_profile_id). Falls back to 1/1 if none cached.
     """
+    if not olt.line_profiles or not olt.srv_profiles:
+        logger.warning(
+            f"OLT {olt.id} has no cached profiles — falling back to profile ID 1/1. "
+            f"Run 'Sync Profiles' (Telnet must be enabled) to discover real profile IDs."
+        )
     line_id = olt.line_profiles[0]['id'] if olt.line_profiles else 1
     srv_id = olt.srv_profiles[0]['id'] if olt.srv_profiles else 1
     return line_id, srv_id
@@ -721,9 +742,15 @@ def reboot_onu(onu_id: int) -> Dict[str, Any]:
         result['message'] = 'Telnet is not enabled on this OLT. Enable Telnet to reboot ONUs.'
         return result
 
-    pon_parts = onu.pon_port.split('/')
+    if not onu.pon_port:
+        result['message'] = 'PON port is not set for this ONU. Update the ONU and try again.'
+        return result
+
+    # Normalize separators: accept both "0/1/0" and "0-1-0" formats
+    normalized_pon = onu.pon_port.replace('-', '/')
+    pon_parts = normalized_pon.split('/')
     if len(pon_parts) != 3:
-        result['message'] = f'Cannot parse PON port "{onu.pon_port}" — expected frame/slot/port format.'
+        result['message'] = f'Cannot parse PON port "{onu.pon_port}" — expected frame/slot/port format (e.g. 0/1/0).'
         return result
 
     frame, slot, port = pon_parts

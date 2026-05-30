@@ -92,6 +92,12 @@ def register_onu(request, olt_pk, pk):
     if vlan_id_param:
         try:
             vlan_obj = VLAN.objects.get(olt=olt, vlan_id=vlan_id_param)
+            if not vlan_obj.pushed_to_olt and vlan_obj.source == 'managed':
+                return Response(
+                    {'detail': f'VLAN {vlan_id_param} has not been pushed to the OLT yet. '
+                               f'Push the VLAN first before registering an ONU on it.'},
+                    status=400
+                )
             onu.vlan = vlan_obj
             vlan_db_id = vlan_obj.id
         except VLAN.DoesNotExist:
@@ -242,7 +248,10 @@ def onu_signal_history(request, olt_pk, pk):
     from .models import SignalSample
     olt = get_olt_for_user(olt_pk, request.user)
     onu = get_object_or_404(ONU, pk=pk, olt=olt)
-    hours = min(int(request.query_params.get('hours', 24)), 168)
+    try:
+        hours = min(int(request.query_params.get('hours', 24)), 168)
+    except (TypeError, ValueError):
+        hours = 24
     from django.utils import timezone
     from datetime import timedelta
     since = timezone.now() - timedelta(hours=hours)
@@ -351,7 +360,11 @@ def onu_search(request):
     exclude_assigned = request.query_params.get('exclude_assigned', '1')
     current_onu = request.query_params.get('current_onu')
     if exclude_assigned == '1':
-        qs = qs.filter(Q(customer__isnull=True) | Q(id=current_onu) if current_onu else Q(customer__isnull=True))
+        try:
+            current_onu_id = int(current_onu) if current_onu else None
+        except (TypeError, ValueError):
+            current_onu_id = None
+        qs = qs.filter(Q(customer__isnull=True) | Q(id=current_onu_id) if current_onu_id else Q(customer__isnull=True))
 
     results = []
     for onu in qs[:10]:
