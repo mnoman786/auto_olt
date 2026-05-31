@@ -398,6 +398,11 @@ export const customerApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } },
     );
   },
+
+  pppoeRetry: (id: number) =>
+    apiClient.post<{ pppoe_sync_status: Customer['pppoe_sync_status']; pppoe_sync_error: string; pppoe_synced_at: string | null }>(
+      `/customers/${id}/pppoe-retry/`,
+    ),
 };
 
 // Notifications API

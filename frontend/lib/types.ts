@@ -172,6 +172,9 @@ export interface Customer {
   notes: string;
   pppoe_username: string;
   pppoe_password: string;
+  pppoe_sync_status: 'not_required' | 'pending' | 'synced' | 'failed';
+  pppoe_sync_error: string;
+  pppoe_synced_at: string | null;
   onu: number | null;
   onu_serial: string | null;
   onu_pon_port: string | null;

@@ -13,24 +13,51 @@ from .serializers import CustomerSerializer
 logger = logging.getLogger(__name__)
 
 
+def _set_pppoe_status(customer, status_val, error=''):
+    """Persist sync outcome on the Customer so the UI can show + retry."""
+    from django.utils import timezone
+    update_fields = ['pppoe_sync_status', 'pppoe_sync_error']
+    customer.pppoe_sync_status = status_val
+    customer.pppoe_sync_error = (error or '')[:500]
+    if status_val == 'synced':
+        customer.pppoe_synced_at = timezone.now()
+        update_fields.append('pppoe_synced_at')
+    customer.save(update_fields=update_fields)
+
+
 def _sync_mikrotik_pppoe(customer):
-    """If the linked OLT has MikroTik configured and customer has PPPoE creds, create the user."""
+    """If the linked OLT has MikroTik configured and customer has PPPoE creds, create the user.
+
+    Writes the outcome to pppoe_sync_status / pppoe_sync_error so the ISP owner
+    can see (and retry) anything that didn't actually land on the router.
+    """
+    # Nothing to push — clear any stale failure state.
     if not customer.pppoe_username or not customer.pppoe_password:
+        _set_pppoe_status(customer, 'not_required')
         return
     if not customer.onu:
+        _set_pppoe_status(customer, 'failed', 'Customer has no ONU assigned')
         return
     olt = customer.onu.olt
     if not olt.mikrotik_id:
+        _set_pppoe_status(customer, 'failed', 'OLT has no MikroTik router linked')
         return
+
     mt = olt.mikrotik
     try:
         from services import mikrotik_service
-        mikrotik_service.create_pppoe_user(
+        result = mikrotik_service.create_pppoe_user(
             mt.host, mt.port, mt.username, mt.password,
             customer.pppoe_username, customer.pppoe_password,
         )
+        if result.get('success'):
+            _set_pppoe_status(customer, 'synced')
+        else:
+            _set_pppoe_status(customer, 'failed', result.get('message', 'Unknown error'))
+            logger.warning(f'MikroTik PPPoE sync failed for customer {customer.id}: {result.get("message")}')
     except Exception as exc:
-        logger.warning(f'MikroTik PPPoE sync failed for customer {customer.id}: {exc}')
+        _set_pppoe_status(customer, 'failed', str(exc))
+        logger.warning(f'MikroTik PPPoE sync exception for customer {customer.id}: {exc}')
 
 
 def _is_admin(user):
@@ -172,3 +199,22 @@ def customer_import_csv(request):
         created += 1
 
     return Response({'created': created, 'skipped': skipped, 'errors': errors})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def customer_pppoe_retry(request, pk):
+    """
+    Re-attempt the MikroTik PPPoE push for a customer whose previous sync failed.
+    """
+    try:
+        customer = _customer_qs(request.user).get(pk=pk)
+    except Customer.DoesNotExist:
+        return Response({'detail': 'Not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    _sync_mikrotik_pppoe(customer)
+    return Response({
+        'pppoe_sync_status': customer.pppoe_sync_status,
+        'pppoe_sync_error': customer.pppoe_sync_error,
+        'pppoe_synced_at': customer.pppoe_synced_at,
+    })

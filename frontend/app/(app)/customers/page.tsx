@@ -10,6 +10,7 @@ import { Pagination } from '@/components/ui/Pagination';
 import {
   Users, Plus, Search, X, RefreshCw, Pencil, Trash2,
   Phone, MapPin, Upload, UserX, Wifi, Link2, Link2Off, Router, Eye, EyeOff,
+  AlertTriangle, CheckCircle2,
 } from 'lucide-react';
 import { oltApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -358,6 +359,26 @@ export default function CustomersPage() {
   const [modal, setModal] = useState<Partial<Customer> | null | false>(false);
   const csvRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
+  const [retryingId, setRetryingId] = useState<number | null>(null);
+
+  const handlePppoeRetry = async (c: Customer) => {
+    setRetryingId(c.id);
+    try {
+      const res = await customerApi.pppoeRetry(c.id);
+      if (res.data.pppoe_sync_status === 'synced') {
+        toast.success('PPPoE user created on MikroTik');
+      } else if (res.data.pppoe_sync_status === 'failed') {
+        toast.error(res.data.pppoe_sync_error || 'Retry failed');
+      } else {
+        toast.success('Sync re-attempted');
+      }
+      refresh();
+    } catch {
+      toast.error('Retry failed');
+    } finally {
+      setRetryingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');
@@ -549,6 +570,30 @@ export default function CustomersPage() {
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
+                    {/* PPPoE sync badge — only when MikroTik push was attempted */}
+                    {c.pppoe_sync_status === 'failed' && (
+                      <button
+                        onClick={() => handlePppoeRetry(c)}
+                        disabled={retryingId === c.id}
+                        title={c.pppoe_sync_error || 'PPPoE not created on MikroTik — click to retry'}
+                        className="hidden md:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors disabled:opacity-50"
+                      >
+                        {retryingId === c.id
+                          ? <RefreshCw className="h-3 w-3 animate-spin" />
+                          : <AlertTriangle className="h-3 w-3" />}
+                        PPPoE failed
+                      </button>
+                    )}
+                    {c.pppoe_sync_status === 'synced' && (
+                      <span
+                        title={`PPPoE created on MikroTik${c.pppoe_synced_at ? ' on ' + new Date(c.pppoe_synced_at).toLocaleString() : ''}`}
+                        className="hidden lg:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800"
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                        PPPoE
+                      </span>
+                    )}
+
                     {/* ONU badge */}
                     {c.onu_serial ? (
                       <span className="hidden md:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-100 dark:border-green-800">
