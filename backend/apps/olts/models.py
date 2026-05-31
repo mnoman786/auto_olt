@@ -161,6 +161,27 @@ class AutoProvisionConfig(models.Model):
         return f'AutoProvision [{state}] — {self.olt.name}'
 
 
+class WireGuardHandshakeSample(models.Model):
+    """5-minute snapshot of WireGuard peer status per VPN OLT.
+    Used to compute daily/weekly tunnel uptime percentage.
+    """
+    olt = models.ForeignKey(OLT, on_delete=models.CASCADE, related_name='wg_handshake_samples')
+    timestamp = models.DateTimeField(db_index=True)
+    connected = models.BooleanField(default=False)
+    last_handshake = models.BigIntegerField(default=0)
+
+    class Meta:
+        db_table = 'wg_handshake_samples'
+        ordering = ['timestamp']
+        indexes = [
+            models.Index(fields=['olt', 'timestamp'], name='wg_olt_time_idx'),
+        ]
+
+    def __str__(self):
+        state = 'UP' if self.connected else 'DOWN'
+        return f'{self.olt.name} [{state}] @ {self.timestamp}'
+
+
 class SetupLog(models.Model):
     LEVEL_CHOICES = [
         ('info', 'Info'),

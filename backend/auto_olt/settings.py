@@ -257,6 +257,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'tasks.dispatch_bandwidth_poll',
         'schedule': 300,  # seconds
     },
+    'sample-wg-handshakes-every-5-min': {
+        'task': 'tasks.sample_wg_handshakes',
+        'schedule': 300,  # seconds — 288 samples/day per OLT = uptime resolution
+    },
     'cleanup-old-logs-daily': {
         'task': 'tasks.cleanup_old_logs',
         'schedule': 86400,  # seconds

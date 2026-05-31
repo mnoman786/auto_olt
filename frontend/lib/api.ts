@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from 'axios';
 import type {
   AuthResponse, OLT, OLTCreatePayload, ONU, VLAN, Customer, MikroTikRouter,
   SetupLogsResponse, OLTStats, ProvisioningLog, PaginatedResponse, OLTPortsResponse, WireGuardInfo,
+  WireGuardUptime,
   Ticket, TicketListItem, TicketReply, AdminUser, AdminUserDetail, BandwidthResponse,
   AutoProvisionConfig, AlertRule, AlertEvent, SignalHistoryResponse, Announcement, Notification,
 } from './types';
@@ -173,6 +174,11 @@ export const oltApi = {
 
   saveWgPeer: (id: number, data: { wg_client_public_key: string; wg_client_subnet: string }) =>
     apiClient.post<WireGuardInfo>(`/olts/${id}/wireguard/`, data),
+
+  getWgUptime: (id: number, days = 7) =>
+    apiClient.get<WireGuardUptime>(`/olts/${id}/wireguard/uptime/`, { params: { days } }),
+
+  wgScriptUrl: (id: number) => `${API_URL}/olts/${id}/wireguard/script.rsc/`,
 
   syncProfiles: (id: number) =>
     apiClient.post<{

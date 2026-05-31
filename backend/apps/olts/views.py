@@ -482,6 +482,93 @@ def wg_info(request, pk):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def wg_script_download(request, pk):
+    """
+    GET /olts/<id>/wireguard/script.rsc/
+    Return the MikroTik setup script as a downloadable .rsc file that
+    RouterOS can import directly via /import file-name=...
+    """
+    from services import wireguard_service
+    from django.http import HttpResponse
+
+    olt = get_olt_for_user(pk, request.user)
+    if olt.connection_type != 'vpn':
+        return Response({'detail': 'This OLT is not configured for VPN (WireGuard).'}, status=400)
+
+    server_pubkey = wireguard_service.get_server_public_key()
+    endpoint = wireguard_service.WG_ENDPOINT or getattr(settings, 'WG_ENDPOINT', '')
+    script = wireguard_service.build_mikrotik_full_script(olt, server_pubkey, endpoint)
+
+    if not script:
+        return Response({'detail': 'Cannot generate script — server endpoint or OLT data missing.'}, status=400)
+
+    safe_name = ''.join(c if c.isalnum() else '_' for c in olt.name).strip('_') or f'olt_{olt.id}'
+    response = HttpResponse(script, content_type='text/plain; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="autoolt_wg_{safe_name}.rsc"'
+    return response
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def wg_uptime(request, pk):
+    """
+    GET /olts/<id>/wireguard/uptime/?days=7
+    Return per-day uptime percentage for the tunnel.
+    Uptime % = (samples where connected=True) / (total samples that day) * 100
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Count, Q
+    from django.db.models.functions import TruncDate
+    from apps.olts.models import WireGuardHandshakeSample
+
+    olt = get_olt_for_user(pk, request.user)
+    if olt.connection_type != 'vpn':
+        return Response({'detail': 'This OLT is not configured for VPN (WireGuard).'}, status=400)
+
+    try:
+        days = min(int(request.query_params.get('days', 7)), 30)
+    except (TypeError, ValueError):
+        days = 7
+
+    since = timezone.now() - timedelta(days=days)
+    rows = (
+        WireGuardHandshakeSample.objects
+        .filter(olt=olt, timestamp__gte=since)
+        .annotate(day=TruncDate('timestamp'))
+        .values('day')
+        .annotate(
+            total=Count('id'),
+            up=Count('id', filter=Q(connected=True)),
+        )
+        .order_by('day')
+    )
+
+    series = [
+        {
+            'day': r['day'].isoformat(),
+            'uptime_pct': round((r['up'] / r['total']) * 100, 2) if r['total'] else 0,
+            'total_samples': r['total'],
+            'up_samples': r['up'],
+        }
+        for r in rows
+    ]
+
+    overall = {
+        'total': sum(s['total_samples'] for s in series),
+        'up': sum(s['up_samples'] for s in series),
+    }
+    overall_pct = round((overall['up'] / overall['total']) * 100, 2) if overall['total'] else 0
+
+    return Response({
+        'days': days,
+        'series': series,
+        'overall_uptime_pct': overall_pct,
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def bandwidth(request, pk):
     """
     GET /olts/<id>/bandwidth/?hours=24&port_id=<id>

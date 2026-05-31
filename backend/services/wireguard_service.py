@@ -133,4 +133,52 @@ def get_wg_info(olt) -> dict:
         'last_handshake': last_handshake,
         'mikrotik_dnat_cmd': mikrotik_dnat,
         'mikrotik_masquerade_cmd': mikrotik_masq,
+        'mikrotik_full_script': build_mikrotik_full_script(olt, server_pubkey, endpoint),
     }
+
+
+def build_mikrotik_full_script(olt, server_pubkey: str, endpoint: str) -> str:
+    """
+    Combine all RouterOS commands into a single copy-paste block.
+
+    Assumes the customer has already created their WireGuard interface (Step 1
+    of the setup wizard) since RouterOS generates the client keypair locally
+    and we never see the private key. This script handles steps 2-5: peer,
+    IP address, DNAT and masquerade rules.
+    """
+    if not (olt.vpn_virtual_ip and olt.ip_address and server_pubkey and endpoint):
+        return ''
+
+    try:
+        endpoint_host, endpoint_port = endpoint.rsplit(':', 1)
+    except ValueError:
+        endpoint_host, endpoint_port = endpoint, '51820'
+
+    lines = [
+        '# === Auto OLT WireGuard setup for MikroTik RouterOS 7.1+ ===',
+        f'# OLT: {olt.name}  |  Virtual IP: {olt.vpn_virtual_ip}  |  LAN IP: {olt.ip_address}',
+        '# Run AFTER you have created the wg-autoolt interface and shared its public key.',
+        '',
+        '# Step 1: Register the Auto OLT server as a peer',
+        '/interface/wireguard/peers/add \\',
+        '    interface=wg-autoolt \\',
+        f'    public-key="{server_pubkey}" \\',
+        f'    endpoint-address={endpoint_host} \\',
+        f'    endpoint-port={endpoint_port} \\',
+        '    allowed-address=10.100.0.0/16 \\',
+        '    persistent-keepalive=25s',
+        '',
+        '# Step 2: Assign virtual IP to the WireGuard interface',
+        f'/ip/address/add address={olt.vpn_virtual_ip}/32 interface=wg-autoolt',
+        '',
+        '# Step 3: DNAT virtual IP to the real OLT LAN IP',
+        f'/ip/firewall/nat/add chain=dstnat in-interface=wg-autoolt \\',
+        f'    dst-address={olt.vpn_virtual_ip} action=dst-nat to-addresses={olt.ip_address}',
+        '',
+        '# Step 4: Masquerade return traffic so the OLT sees the MikroTik as source',
+        f'/ip/firewall/nat/add chain=srcnat \\',
+        f'    src-address={olt.vpn_virtual_ip} action=masquerade',
+    ]
+    return '\n'.join(lines)
+
+

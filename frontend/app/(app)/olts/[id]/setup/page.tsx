@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { OLTStatusBadge } from '@/components/ui/Badge';
 import { oltApi } from '@/lib/api';
-import type { OLT, SetupLog, OLTStatus, WireGuardInfo } from '@/lib/types';
+import type { OLT, SetupLog, OLTStatus, WireGuardInfo, WireGuardUptime } from '@/lib/types';
 import {
   ArrowLeft, CheckCircle2, XCircle, Loader2, RefreshCw,
   Server, Play, ChevronRight, Wifi, Terminal, Shield,
-  ShieldCheck, Copy, Check, Pencil
+  Copy, Check, Pencil, Download, Activity,
 } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -68,6 +68,8 @@ export default function OLTSetupPage() {
   const [wgTesting, setWgTesting] = useState(false);
   const [wgConnected, setWgConnected] = useState<boolean | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const [uptime, setUptime] = useState<WireGuardUptime | null>(null);
+  const [uptimeLoading, setUptimeLoading] = useState(false);
 
   const logEndRef = useRef<HTMLDivElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -186,6 +188,31 @@ export default function OLTSetupPage() {
     }
   };
 
+  const fetchUptime = useCallback(async () => {
+    if (!oltId) return;
+    setUptimeLoading(true);
+    try {
+      const res = await oltApi.getWgUptime(oltId, 7);
+      setUptime(res.data);
+    } catch {
+      // Silent — endpoint returns 400 if OLT isn't VPN type
+    } finally {
+      setUptimeLoading(false);
+    }
+  }, [oltId]);
+
+  // Load uptime once the peer is configured
+  useEffect(() => {
+    if (isVpnReady()) fetchUptime();
+    function isVpnReady() {
+      return olt?.connection_type === 'vpn' && wgReady;
+    }
+  }, [wgReady, olt?.connection_type, fetchUptime]);
+
+  const handleDownloadScript = () => {
+    window.open(oltApi.wgScriptUrl(oltId), '_blank');
+  };
+
   const handleTestWgPeer = async () => {
     setWgTesting(true);
     setWgConnected(null);
@@ -244,7 +271,8 @@ export default function OLTSetupPage() {
   const isComplete = oltStatus === 'active';
   const hasError = oltStatus === 'error';
   const isVpn = olt?.connection_type === 'vpn';
-  const canStartSetup = !isVpn || wgReady;
+  // For VPN OLTs, require both peer configured AND tunnel verified before allowing OLT setup
+  const canStartSetup = !isVpn || (wgReady && wgConnected === true);
 
   const runningStepIdx = (() => {
     if (!polling) return -1;
@@ -302,30 +330,51 @@ export default function OLTSetupPage() {
           </div>
         </div>
 
-        {/* ── WireGuard Step (VPN OLTs only) ───────────────────────────────── */}
+        {/* ── VPN Flow Header ────────────────────────────────────────────── */}
+        {isVpn && (
+          <div className="mb-5 flex items-center justify-between gap-3 text-xs text-gray-600 dark:text-gray-400">
+            <ol className="flex items-center gap-2 flex-wrap">
+              {[
+                { num: 1, label: 'Configure Peer', done: wgReady },
+                { num: 2, label: 'Apply MikroTik Script', done: wgConnected === true },
+                { num: 3, label: 'OLT Setup', done: isComplete },
+              ].map((s, i, arr) => (
+                <li key={s.num} className="flex items-center gap-2">
+                  <span className={clsx(
+                    'inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold border',
+                    s.done ? 'bg-green-500 border-green-500 text-white' :
+                    'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500'
+                  )}>
+                    {s.done ? <Check className="h-3 w-3" /> : s.num}
+                  </span>
+                  <span className={s.done ? 'text-green-700 dark:text-green-400 font-medium' : ''}>
+                    {s.label}
+                  </span>
+                  {i < arr.length - 1 && <ChevronRight className="h-3 w-3 text-gray-300 dark:text-gray-600" />}
+                </li>
+              ))}
+            </ol>
+            <Link href="/docs/wireguard" target="_blank" className="text-xs text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap">
+              Setup Guide →
+            </Link>
+          </div>
+        )}
+
+        {/* ── Step 1 — WireGuard Peer Configuration (VPN OLTs only) ───────── */}
         {isVpn && (
           <Card className="mb-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <ShieldCheck className={clsx(
-                  'h-5 w-5',
-                  wgConnected === true ? 'text-green-500' :
-                  wgConnected === false ? 'text-red-500' :
-                  wgReady ? 'text-yellow-500' : 'text-gray-400'
-                )} />
-                Step 1 — WireGuard Peer Configuration
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
+                WireGuard Peer Configuration
               </h2>
               <div className="flex items-center gap-2">
                 <span className={clsx(
                   'text-xs px-2 py-1 rounded-full font-medium',
-                  wgConnected === true ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
-                  wgConnected === false ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
-                  wgReady ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' :
+                  wgReady ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
                   'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                 )}>
-                  {wgConnected === true ? 'Connected' :
-                   wgConnected === false ? 'Not Connected' :
-                   wgReady ? 'Configured (pending)' : 'Not Configured'}
+                  {wgReady ? 'Configured' : 'Not Configured'}
                 </span>
                 {wgReady && !wgEditing && (
                   <button
@@ -395,41 +444,12 @@ export default function OLTSetupPage() {
                         <p className="text-xs font-mono text-gray-700 dark:text-gray-300 mt-0.5">{wgInfo.client_subnet}</p>
                       </div>
                     )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleTestWgPeer}
-                      loading={wgTesting}
-                      className="w-full"
-                    >
-                      {wgTesting ? 'Testing...' : 'Test Connection'}
-                    </Button>
-                    {wgConnected === true && (
-                      <div className="p-2 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-lg">
-                        <p className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1 font-medium">
-                          <CheckCircle2 className="h-3 w-3" />
-                          ✓ Connected — handshake confirmed.
-                        </p>
-                      </div>
-                    )}
-                    {wgConnected === false && (
-                      <div className="p-2 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg">
-                        <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-1 font-medium">
-                          <XCircle className="h-3 w-3" />
-                          ✗ Not connected — check MikroTik config.
-                        </p>
-                      </div>
-                    )}
-                    {wgConnected === null && (
-                      <div className="p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-lg">
-                        <p className="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
-                          ⏳ Peer configured but handshake not yet established.
-                        </p>
-                        <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-1">
-                          Click "Test Connection" to verify the peer is connected.
-                        </p>
-                      </div>
-                    )}
+                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg">
+                      <p className="text-xs text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+                        <ChevronRight className="h-3 w-3" />
+                        Peer registered. Continue to Step 2 to apply the MikroTik script.
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -476,6 +496,173 @@ export default function OLTSetupPage() {
           </Card>
         )}
 
+        {/* ── Step 2 — Apply MikroTik Script + Test Tunnel ─────────────────── */}
+        {isVpn && wgReady && wgInfo?.mikrotik_full_script && (
+          <Card className="mb-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
+                Apply MikroTik Script
+              </h2>
+              <span className={clsx(
+                'text-xs px-2 py-1 rounded-full font-medium',
+                wgConnected === true ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                wgConnected === false ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' :
+                'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+              )}>
+                {wgConnected === true ? 'Tunnel Connected' :
+                 wgConnected === false ? 'Tunnel Not Connected' :
+                 'Tunnel Untested'}
+              </span>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Use one of the options below to install the WireGuard peer, IP and NAT rules on the customer&apos;s MikroTik. Run after the <code className="bg-gray-100 dark:bg-gray-700 px-1 py-0.5 rounded text-[10px]">wg-autoolt</code> interface is created.
+            </p>
+
+            {/* Action row — Copy / Download / Test */}
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <button
+                onClick={() => copyToClipboard(wgInfo.mikrotik_full_script || '', 'fullscript')}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 transition-colors"
+              >
+                {copied === 'fullscript'
+                  ? <><Check className="h-3.5 w-3.5 text-green-500" /> Copied</>
+                  : <><Copy className="h-3.5 w-3.5" /> Copy All</>}
+              </button>
+              <button
+                onClick={handleDownloadScript}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800 transition-colors"
+                title="Download as .rsc file (import in MikroTik via /import file-name=...)"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Download .rsc
+              </button>
+              <div className="flex-1" />
+              <Button
+                onClick={handleTestWgPeer}
+                loading={wgTesting}
+                size="sm"
+                variant={wgConnected === true ? 'outline' : undefined}
+                icon={<Wifi className="h-3.5 w-3.5" />}
+              >
+                {wgTesting
+                  ? 'Testing...'
+                  : wgConnected === true
+                    ? 'Re-test Tunnel'
+                    : "I've pasted the script — Test Tunnel"}
+              </Button>
+            </div>
+
+            <pre className="bg-gray-950 text-green-300 font-mono text-[11px] leading-relaxed p-4 rounded-lg overflow-x-auto whitespace-pre max-h-72">
+{wgInfo.mikrotik_full_script}
+            </pre>
+
+            {/* Test result feedback */}
+            {wgConnected === true && (
+              <div className="mt-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-400 flex items-center gap-2 font-medium">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Tunnel is up — handshake confirmed. You can proceed to Step 3 below.
+                </p>
+              </div>
+            )}
+            {wgConnected === false && (
+              <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-700 dark:text-red-400 flex items-center gap-2 font-medium">
+                  <XCircle className="h-4 w-4" />
+                  No handshake detected yet
+                </p>
+                <ul className="text-xs text-red-600 dark:text-red-400 mt-2 list-disc list-inside space-y-0.5">
+                  <li>Confirm the script was pasted into the correct MikroTik terminal</li>
+                  <li>Check that <code>persistent-keepalive=25</code> is set on the peer</li>
+                  <li>Make sure MikroTik can reach the server endpoint (UDP 51820)</li>
+                  <li>Wait ~30 seconds and click Re-test Tunnel</li>
+                </ul>
+              </div>
+            )}
+            {wgConnected === null && (
+              <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800 rounded-lg">
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  After pasting the script in the MikroTik terminal, click <strong>Test Tunnel</strong> to verify the handshake.
+                </p>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* ── Tunnel Uptime Graph ───────────────────────────────────────────── */}
+        {isVpn && wgReady && (
+          <Card className="mb-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Activity className="h-5 w-5 text-emerald-500" />
+                Tunnel Uptime (last 7 days)
+              </h2>
+              <div className="flex items-center gap-3">
+                {uptime && (
+                  <span className={clsx(
+                    'text-sm font-semibold',
+                    uptime.overall_uptime_pct >= 99 ? 'text-green-600 dark:text-green-400' :
+                    uptime.overall_uptime_pct >= 95 ? 'text-yellow-600 dark:text-yellow-400' :
+                    'text-red-600 dark:text-red-400'
+                  )}>
+                    {uptime.overall_uptime_pct}% overall
+                  </span>
+                )}
+                <button
+                  onClick={fetchUptime}
+                  className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  disabled={uptimeLoading}
+                  title="Refresh"
+                >
+                  <RefreshCw className={clsx('h-3.5 w-3.5', uptimeLoading && 'animate-spin')} />
+                </button>
+              </div>
+            </div>
+
+            {uptimeLoading && !uptime ? (
+              <div className="h-32 flex items-center justify-center text-gray-400">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            ) : !uptime || uptime.series.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 italic py-6 text-center">
+                No samples yet — uptime data appears after the first 5-minute Beat cycle.
+              </p>
+            ) : (
+              <>
+                <div className="flex items-end gap-1.5 h-32">
+                  {uptime.series.map(d => (
+                    <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group">
+                      <div className="flex-1 w-full flex items-end">
+                        <div
+                          className={clsx(
+                            'w-full rounded-t transition-all',
+                            d.uptime_pct >= 99 ? 'bg-green-500 dark:bg-green-400' :
+                            d.uptime_pct >= 95 ? 'bg-yellow-500 dark:bg-yellow-400' :
+                            d.uptime_pct > 0 ? 'bg-red-500 dark:bg-red-400' :
+                            'bg-gray-200 dark:bg-gray-700'
+                          )}
+                          style={{ height: `${Math.max(d.uptime_pct, 2)}%` }}
+                          title={`${d.day}: ${d.uptime_pct}% (${d.up_samples}/${d.total_samples} samples)`}
+                        />
+                      </div>
+                      <span className="text-[9px] text-gray-400 font-mono">
+                        {new Date(d.day).toLocaleDateString('en-US', { weekday: 'short' })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> ≥99%</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-500" /> 95-99%</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-500" /> &lt;95%</span>
+                </div>
+              </>
+            )}
+          </Card>
+        )}
+
         {/* ── Setup Steps + Console ─────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Steps Panel */}
@@ -483,7 +670,7 @@ export default function OLTSetupPage() {
             <Card padding="none" className="overflow-hidden">
               <div className="px-5 py-3 bg-linear-to-r from-blue-50/60 dark:from-blue-900/20 to-transparent border-b border-gray-100 dark:border-gray-700">
                 <h2 className="font-semibold text-gray-800 dark:text-gray-200 text-xs uppercase tracking-wider">
-                  {isVpn ? 'Step 2 — OLT Setup' : 'Setup Steps'}
+                  {isVpn ? 'Step 3 — OLT Setup' : 'Setup Steps'}
                 </h2>
               </div>
               <div className="p-5">
@@ -544,13 +731,14 @@ export default function OLTSetupPage() {
                       onClick={triggerSetup}
                       size="sm"
                       disabled={!canStartSetup}
-                      title={!canStartSetup ? 'Configure WireGuard peer first' : undefined}
+                      title={!canStartSetup ? 'Complete Steps 1 and 2 first (peer + tunnel test)' : undefined}
                     >
                       Start Setup
                     </Button>
                     {!canStartSetup && (
                       <p className="text-xs text-yellow-600 text-center">
-                        Configure WireGuard peer above first
+                        {!wgReady ? 'Configure WireGuard peer (Step 1) first'
+                                  : 'Apply MikroTik script and test tunnel (Step 2) first'}
                       </p>
                     )}
                   </div>

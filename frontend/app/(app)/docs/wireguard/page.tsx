@@ -1,9 +1,10 @@
-﻿'use client';
+'use client';
 import { Card } from '@/components/ui/Card';
 import { useState } from 'react';
 import {
   ShieldCheck, Monitor, Router, Server, CheckCircle2,
-  Copy, Check, ChevronDown, ChevronUp, AlertTriangle, Wifi
+  Copy, Check, ChevronDown, ChevronUp, AlertTriangle, Wifi,
+  Zap, Download, Activity, Terminal,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -90,7 +91,7 @@ export default function WireGuardDocsPage() {
             <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600/80 dark:text-indigo-400/80">Guide</p>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mt-0.5">WireGuard VPN Setup</h1>
             <p className="text-gray-500 dark:text-gray-400 text-sm">
-              Step-by-step guide to connect your OLT via WireGuard VPN using MikroTik.
+              Connect your OLT to Auto OLT through a secure WireGuard tunnel — no public IP required.
             </p>
           </div>
         </div>
@@ -100,11 +101,11 @@ export default function WireGuardDocsPage() {
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">How it works</p>
           <div className="flex items-center justify-between text-sm flex-wrap gap-2">
             {[
-              { icon: Wifi, label: 'Auto OLT App', sub: 'sends to 10.100.0.5', color: 'bg-green-100 text-green-600' },
+              { icon: Wifi, label: 'Auto OLT App', sub: 'sends to virtual IP', color: 'bg-green-100 text-green-600' },
               { label: '→', color: '' },
               { icon: Server, label: 'Server (wg0)', sub: '10.100.0.1', color: 'bg-blue-100 text-blue-600' },
               { label: '→ Tunnel →', color: '' },
-              { icon: Router, label: 'MikroTik', sub: 'wg-autoolt = 10.100.0.5', color: 'bg-purple-100 text-purple-600' },
+              { icon: Router, label: 'MikroTik', sub: 'wg-autoolt = 10.100.0.X', color: 'bg-purple-100 text-purple-600' },
               { label: '→ DNAT →', color: '' },
               { icon: Monitor, label: 'OLT Device', sub: '192.168.1.1', color: 'bg-orange-100 text-orange-600' },
             ].map((item, i) => (
@@ -122,14 +123,83 @@ export default function WireGuardDocsPage() {
             ))}
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
-            Each customer gets a unique virtual IP from the 10.100.0.0/16 pool so multiple customers
-            with the same default LAN (e.g. 192.168.1.0/24) do not collide. MikroTik&apos;s DNAT rule
+            Each OLT gets a unique virtual IP from the <code>10.100.0.0/16</code> pool so multiple customers
+            with overlapping LANs (e.g. <code>192.168.1.0/24</code>) do not collide. MikroTik&apos;s DNAT rule
             rewrites the virtual IP to the OLT&apos;s real LAN IP.
           </p>
         </div>
 
-        {/* Section 1 - Before you start */}
-        <Section title="Before You Start" icon={CheckCircle2} color="bg-green-500">
+        {/* Section 1 - Quick Setup (NEW) */}
+        <Section title="Quick Setup (Recommended)" icon={Zap} color="bg-amber-500">
+          <p>
+            The Setup Wizard auto-generates a ready-to-paste MikroTik script with the server endpoint,
+            public key and virtual IP already filled in for your OLT. This is the fastest way to connect.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Copy className="h-4 w-4 text-blue-500" />
+                <p className="font-semibold text-sm text-gray-900 dark:text-white">Option A — Copy &amp; Paste</p>
+              </div>
+              <ol className="list-decimal list-inside text-xs space-y-1 text-gray-600 dark:text-gray-400">
+                <li>In MikroTik, create the <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">wg-autoolt</code> interface (Step 1 of manual setup below)</li>
+                <li>Paste its public key into the Setup Wizard → Save</li>
+                <li>Click <strong>Copy All</strong> on the &quot;MikroTik Quick Setup&quot; card</li>
+                <li>Paste into MikroTik New Terminal — all 4 commands run at once</li>
+              </ol>
+            </div>
+
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Download className="h-4 w-4 text-indigo-500" />
+                <p className="font-semibold text-sm text-gray-900 dark:text-white">Option B — .rsc Import</p>
+              </div>
+              <ol className="list-decimal list-inside text-xs space-y-1 text-gray-600 dark:text-gray-400">
+                <li>Click <strong>Download .rsc</strong> on the Quick Setup card</li>
+                <li>In Winbox: <strong>Files</strong> → upload the .rsc file</li>
+                <li>Open New Terminal and run:
+                  <CodeBlock code="/import file-name=autoolt_wg_<your_olt_name>.rsc" />
+                </li>
+                <li>All commands applied automatically</li>
+              </ol>
+            </div>
+          </div>
+
+          <Note>
+            Both options assume you have already created the <code>wg-autoolt</code> interface and pasted
+            its public key in the Setup Wizard. See &quot;Manual Setup&quot; below for the interface creation step.
+          </Note>
+        </Section>
+
+        {/* Section 2 - Tunnel Monitoring (NEW) */}
+        <Section title="Monitoring Tunnel Uptime" icon={Activity} color="bg-emerald-500" defaultOpen={false}>
+          <p>
+            Auto OLT samples each VPN tunnel&apos;s WireGuard handshake every 5 minutes and stores 30 days
+            of history. The Setup Wizard shows a 7-day uptime graph with a color-coded bar per day:
+          </p>
+          <div className="grid grid-cols-3 gap-2 text-xs my-3">
+            <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded">
+              <span className="w-3 h-3 rounded bg-green-500" />
+              <span><strong>≥ 99%</strong> — healthy</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded">
+              <span className="w-3 h-3 rounded bg-yellow-500" />
+              <span><strong>95–99%</strong> — minor drops</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
+              <span className="w-3 h-3 rounded bg-red-500" />
+              <span><strong>&lt; 95%</strong> — investigate</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            A tunnel is counted as &quot;up&quot; for a given sample if the peer&apos;s last handshake was within
+            the previous 10 minutes. The overall percentage is shown next to the graph header.
+          </p>
+        </Section>
+
+        {/* Section 3 - Before You Start */}
+        <Section title="Before You Start" icon={CheckCircle2} color="bg-green-500" defaultOpen={false}>
           <div className="space-y-2">
             {[
               'MikroTik router with RouterOS 7.1 or newer (WireGuard support required)',
@@ -146,15 +216,20 @@ export default function WireGuardDocsPage() {
           </div>
         </Section>
 
-        {/* Section 2 - MikroTik Setup */}
-        <Section title="Step-by-Step: MikroTik WireGuard Setup" icon={Router} color="bg-purple-500">
-          <div className="space-y-6">
-            <Step num={1} title="Add WireGuard Interface">
+        {/* Section 4 - Manual MikroTik Setup */}
+        <Section title="Manual Setup (Step-by-Step in Winbox)" icon={Router} color="bg-purple-500" defaultOpen={false}>
+          <Note>
+            Use this section if the Quick Setup above does not work, if you prefer Winbox over the
+            terminal, or to understand what each command does. The end result is identical.
+          </Note>
+
+          <div className="space-y-6 mt-3">
+            <Step num={1} title="Add WireGuard Interface (always required)">
               <p>Go to <strong>WireGuard &rarr; + (Add)</strong></p>
               <p>Give it a name like <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">wg-autoolt</code></p>
               <p>MikroTik will auto-generate a private/public key pair.</p>
               <p>Click <strong>OK</strong> to save.</p>
-              <Note>Copy the <strong>Public Key</strong> shown &mdash; you will paste this in the Auto OLT Setup Wizard.</Note>
+              <Note>Copy the <strong>Public Key</strong> shown — you will paste this in the Auto OLT Setup Wizard. The Quick Setup script handles the remaining steps automatically.</Note>
             </Step>
 
             <Step num={2} title="Add Peer (Auto OLT Server)">
@@ -162,7 +237,7 @@ export default function WireGuardDocsPage() {
               <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Interface:</span><span>wg-autoolt</span></div>
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Public Key:</span><span className="text-blue-600">{'<Server Public Key from app>'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Endpoint:</span><span>162.217.248.75:51820</span></div>
+                <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Endpoint:</span><span className="text-blue-600">{'<Server Endpoint from app>'}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Allowed Address:</span><span>10.100.0.0/16</span></div>
                 <div className="flex justify-between"><span className="text-gray-500 dark:text-gray-400">Persistent Keepalive:</span><span>25</span></div>
               </div>
@@ -179,7 +254,7 @@ export default function WireGuardDocsPage() {
             </Step>
 
             <Step num={4} title="Add DNAT rule — virtual IP → OLT LAN IP (CRITICAL)">
-              <Note type="warn">Without this step, the tunnel will connect but SNMP / Telnet to the OLT will fail. The server addresses the OLT via the virtual IP &mdash; MikroTik must rewrite that to the OLT&apos;s real LAN IP.</Note>
+              <Note type="warn">Without this step, the tunnel will connect but SNMP / Telnet to the OLT will fail. The server addresses the OLT via the virtual IP — MikroTik must rewrite that to the OLT&apos;s real LAN IP.</Note>
               <p className="mt-2">In Winbox: <strong>IP &rarr; Firewall &rarr; NAT &rarr; + (Add)</strong></p>
               <p className="font-medium mt-2">General tab:</p>
               <div className="bg-gray-50 dark:bg-gray-700/60 rounded-lg p-3 space-y-1 font-mono text-xs">
@@ -195,7 +270,7 @@ export default function WireGuardDocsPage() {
               <p className="mt-2 text-sm text-gray-500">Or via CLI:</p>
               <CodeBlock code={`/ip firewall nat add chain=dstnat in-interface=wg-autoolt \\\n  dst-address=<virtual_ip> action=dst-nat \\\n  to-addresses=<olt_lan_ip>`} />
               <Note>You also need a masquerade rule so return traffic from the OLT goes back through the tunnel:</Note>
-              <CodeBlock code={`/ip firewall nat add chain=srcnat out-interface=<LAN_interface> \\\n  src-address=<virtual_ip> action=masquerade`} />
+              <CodeBlock code={`/ip firewall nat add chain=srcnat \\\n  src-address=<virtual_ip> action=masquerade`} />
             </Step>
 
             <Step num={5} title="Verify Connection">
@@ -208,8 +283,8 @@ export default function WireGuardDocsPage() {
           </div>
         </Section>
 
-        {/* Section 3 - App Side */}
-        <Section title="App Side: Setup Wizard Steps" icon={Monitor} color="bg-blue-500">
+        {/* Section 5 - App Side */}
+        <Section title="App Side: Setup Wizard Flow" icon={Monitor} color="bg-blue-500" defaultOpen={false}>
           <div className="space-y-6">
             <Step num={1} title="Add VPN OLT">
               <p>In Auto OLT &rarr; Add OLT &rarr; select <strong>Connection Type: VPN (WireGuard)</strong></p>
@@ -217,50 +292,56 @@ export default function WireGuardDocsPage() {
               <p>System auto-assigns a Virtual IP from the <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">10.100.0.0/16</code> pool.</p>
             </Step>
 
-            <Step num={2} title="Setup Wizard — Configure Peer">
-              <p>Give the customer (MikroTik admin):</p>
+            <Step num={2} title="Configure Peer">
+              <p>Give the MikroTik admin:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>Server Endpoint</li>
                 <li>Server Public Key</li>
                 <li>Assigned Virtual IP</li>
               </ul>
-              <p className="mt-2">Get from customer:</p>
+              <p className="mt-2">Get from MikroTik admin:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>MikroTik WireGuard Public Key</li>
+                <li>MikroTik WireGuard Public Key (from Step 1 of Manual Setup)</li>
                 <li>Customer LAN Subnet (e.g. 192.168.1.0/24)</li>
               </ul>
               <p className="mt-2">Paste the public key &rarr; click <strong>Save &amp; Configure Peer</strong></p>
               <Note>The app automatically runs <code>wg set wg0 peer ...</code> on the server.</Note>
             </Step>
 
-            <Step num={3} title="Test &amp; Start">
-              <p>Click <strong>Test Connection</strong> &mdash; should show green if MikroTik is connected.</p>
-              <p>Click <strong>Start Setup</strong> &mdash; SNMP and Telnet will go through the VPN tunnel to reach the OLT.</p>
+            <Step num={3} title="Apply MikroTik Quick Setup">
+              <p>The <strong>MikroTik Quick Setup</strong> card now appears with the full pre-filled script.</p>
+              <p>Use <strong>Copy All</strong> or <strong>Download .rsc</strong> and apply on MikroTik.</p>
+            </Step>
+
+            <Step num={4} title="Test &amp; Start">
+              <p>Click <strong>Test Connection</strong> — should show green if MikroTik has completed a handshake.</p>
+              <p>Click <strong>Start Setup</strong> — SNMP and Telnet will flow through the VPN tunnel to reach the OLT.</p>
+              <p>The <strong>Tunnel Uptime</strong> graph will start populating after the first 5-minute Beat cycle.</p>
             </Step>
           </div>
         </Section>
 
-        {/* Section 4 - CLI Reference */}
-        <Section title="Server CLI Reference" icon={Server} color="bg-gray-600" defaultOpen={false}>
+        {/* Section 6 - CLI Reference */}
+        <Section title="Server CLI Reference" icon={Terminal} color="bg-gray-600" defaultOpen={false}>
           <CodeBlock label="Check all connected peers:" code="wg show wg0" />
           <CodeBlock label="Check peer handshakes:" code="wg show wg0 latest-handshakes" />
-          <CodeBlock label="Manually add a peer:" code={`wg set wg0 peer <public_key> allowed-ips <virtual_ip>/32,<lan_subnet>\nwg-quick save wg0`} />
+          <CodeBlock label="Manually add a peer:" code={`wg set wg0 peer <public_key> allowed-ips <virtual_ip>/32\nwg-quick save wg0`} />
           <CodeBlock label="Remove a peer:" code={`wg set wg0 peer <public_key> remove\nwg-quick save wg0`} />
           <CodeBlock label="Restart WireGuard:" code="systemctl restart wg-quick@wg0" />
         </Section>
 
-        {/* Section 5 - Troubleshooting */}
+        {/* Section 7 - Troubleshooting */}
         <Section title="Troubleshooting" icon={AlertTriangle} color="bg-red-500" defaultOpen={false}>
           <div className="space-y-4">
             {[
               {
                 problem: 'Test Connection shows "Not connected"',
                 solutions: [
-                  'Check MikroTik WireGuard peer is configured with correct server public key',
-                  'Verify the Endpoint IP and port (162.217.248.75:51820)',
-                  'Make sure Persistent Keepalive is set to 25',
-                  'Check MikroTik has internet access',
-                  'Try pinging 10.99.0.1 from MikroTik terminal',
+                  'Check the MikroTik peer is configured with the correct server public key shown in the Setup Wizard',
+                  'Verify the Endpoint IP and port (UDP 51820) matches what the wizard shows',
+                  'Make sure Persistent Keepalive is set to 25 — otherwise the tunnel can stay idle behind NAT',
+                  'Confirm MikroTik has internet access and that nothing blocks outbound UDP 51820',
+                  'From MikroTik terminal: /ping 10.100.0.1 — if this fails, the tunnel itself is not up',
                 ]
               },
               {
@@ -268,18 +349,26 @@ export default function WireGuardDocsPage() {
                 solutions: [
                   'MikroTik has not initiated a connection yet — set Persistent Keepalive to 25',
                   'Firewall on server may be blocking UDP 51820 — check ufw/iptables',
-                  'MikroTik clock may be wrong — sync NTP',
+                  'MikroTik clock may be wrong — sync NTP (WireGuard rejects packets when clocks drift)',
                 ]
               },
               {
                 problem: 'SNMP/Telnet fails after VPN connected (handshake OK but no data)',
                 solutions: [
                   'Most common cause: the MikroTik DNAT rule (Step 4) is missing or wrong',
-                  'Verify: from MikroTik terminal, run "/ip firewall nat print" and confirm a dstnat rule rewrites the virtual IP to the OLT LAN IP',
-                  'Confirm in. interface is wg-autoolt on the DNAT rule',
+                  'Run /ip firewall nat print on MikroTik and confirm a dstnat rule rewrites the virtual IP to the OLT LAN IP',
+                  'Confirm in-interface is wg-autoolt on the DNAT rule',
                   'Check OLT is reachable from MikroTik: /ping <OLT LAN IP>',
-                  'Make sure the masquerade rule (srcnat) exists so OLT replies reach the tunnel',
-                  'Test from server: ping <virtual_ip> — should reply via tunnel; then snmpget against the virtual IP',
+                  'Make sure the masquerade srcnat rule exists so OLT replies reach the tunnel',
+                  'The .rsc Quick Setup script includes both rules — re-run it if you set this up manually and missed one',
+                ]
+              },
+              {
+                problem: 'Tunnel Uptime graph shows < 100% but tunnel feels fine',
+                solutions: [
+                  'A short reboot or link flap counts as one or two missed 5-minute samples',
+                  'If Persistent Keepalive is not 25, handshakes can stall between polls — fix the MikroTik peer',
+                  'Server reboots also create gaps — check the cleanup-old-logs schedule did not run during a partial migration',
                 ]
               },
             ].map(({ problem, solutions }, i) => (

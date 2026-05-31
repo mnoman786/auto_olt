@@ -64,12 +64,28 @@ export interface OLT {
 export interface WireGuardInfo {
   server_public_key: string;
   server_endpoint: string;
+  server_endpoint_warning?: string;
   virtual_ip: string | null;
+  olt_lan_ip?: string;
   client_public_key: string;
   client_subnet: string;
   peer_configured: boolean;
   peer_connected: boolean;
   last_handshake: number;
+  mikrotik_dnat_cmd?: string;
+  mikrotik_masquerade_cmd?: string;
+  mikrotik_full_script?: string;
+}
+
+export interface WireGuardUptime {
+  days: number;
+  overall_uptime_pct: number;
+  series: {
+    day: string;
+    uptime_pct: number;
+    total_samples: number;
+    up_samples: number;
+  }[];
 }
 
 export interface OLTCreatePayload {

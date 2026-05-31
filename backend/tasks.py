@@ -344,6 +344,39 @@ def poll_bandwidth_olt_task(self, olt_id: int) -> dict:
         cache.delete(lock_key)
 
 
+@shared_task(bind=True, max_retries=0, name='tasks.sample_wg_handshakes')
+def sample_wg_handshakes_task(self) -> dict:
+    """
+    Fired by Beat every 5 minutes.
+    Snapshot WireGuard peer status for every VPN OLT so we can compute
+    daily/weekly tunnel uptime. Bulk-creates one row per OLT.
+    """
+    from django.utils import timezone
+    from apps.olts.models import OLT, WireGuardHandshakeSample
+    from services import wireguard_service
+    import time
+
+    now = timezone.now()
+    samples = []
+    vpn_olts = OLT.objects.filter(connection_type='vpn').exclude(wg_client_public_key='')
+    for olt in vpn_olts:
+        try:
+            last_handshake = wireguard_service.get_peer_handshake(olt.wg_client_public_key)
+            connected = bool(last_handshake) and (time.time() - last_handshake) < 600
+            samples.append(WireGuardHandshakeSample(
+                olt=olt,
+                timestamp=now,
+                connected=connected,
+                last_handshake=last_handshake,
+            ))
+        except Exception as exc:
+            logger.warning(f"WG handshake sample failed for OLT {olt.id}: {exc}")
+
+    if samples:
+        WireGuardHandshakeSample.objects.bulk_create(samples)
+    return {'sampled': len(samples)}
+
+
 @shared_task(bind=True, max_retries=0, name='tasks.cleanup_old_logs')
 def cleanup_old_logs_task(self) -> dict:
     """Delete old provisioning/setup logs and bandwidth samples to keep DB lean."""
@@ -395,6 +428,16 @@ def cleanup_old_logs_task(self) -> dict:
     except Exception as exc:
         logger.warning(f"cleanup: BandwidthSample delete failed: {exc}")
         result['bandwidth_samples_error'] = str(exc)
+
+    # WireGuardHandshakeSample: keep 30 days (matches uptime graph max window)
+    try:
+        from apps.olts.models import WireGuardHandshakeSample
+        cutoff = now - timedelta(days=30)
+        deleted, _ = WireGuardHandshakeSample.objects.filter(timestamp__lt=cutoff).delete()
+        result['wg_samples_deleted'] = deleted
+    except Exception as exc:
+        logger.warning(f"cleanup: WireGuardHandshakeSample delete failed: {exc}")
+        result['wg_samples_error'] = str(exc)
 
     # SignalSample: keep 30 days
     try:

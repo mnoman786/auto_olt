@@ -11,7 +11,7 @@ import { OLTStatusBadge } from '@/components/ui/Badge';
 import { Pagination } from '@/components/ui/Pagination';
 import {
   Server, Plus, RefreshCw, Search, X,
-  ChevronRight, Network, Cpu, Wifi, User,
+  ChevronRight, Network, Cpu, Wifi, User, Globe, ShieldCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -212,10 +212,27 @@ export default function OLTsPage() {
                           <p className="font-medium text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {olt.name}
                           </p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                            {olt.ip_address}
-                            {olt.system_name ? ` • ${olt.system_name}` : ''}
-                            {olt.system_uptime ? ` • ↑ ${olt.system_uptime}` : ''}
+                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate flex items-center gap-1.5">
+                            {olt.connection_type === 'vpn' ? (
+                              <ShieldCheck
+                                className="h-3.5 w-3.5 text-indigo-500 shrink-0"
+                                aria-label="WireGuard VPN"
+                              >
+                                <title>WireGuard VPN tunnel</title>
+                              </ShieldCheck>
+                            ) : (
+                              <Globe
+                                className="h-3.5 w-3.5 text-amber-500 shrink-0"
+                                aria-label="Direct connection"
+                              >
+                                <title>Direct connection (public IP / local network)</title>
+                              </Globe>
+                            )}
+                            <span className="truncate">
+                              {olt.ip_address}
+                              {olt.system_name ? ` • ${olt.system_name}` : ''}
+                              {olt.system_uptime ? ` • ↑ ${olt.system_uptime}` : ''}
+                            </span>
                           </p>
                         </div>
                       </div>

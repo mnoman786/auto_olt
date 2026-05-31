@@ -32,15 +32,100 @@ if [[ $EUID -ne 0 ]]; then
   echo -e "${RED}Please run as root: sudo bash setup.sh${NC}"; exit 1
 fi
 
+# ── What to install? ──────────────────────────────────────────────────────────
+# Each flag gates a specific section so the user can re-run setup.sh and only
+# touch the parts they care about. Defaults to a full install.
+DO_SYSPKG=false
+DO_REDIS=false
+DO_NODE=false
+DO_PYTHON=false
+DO_WG=false
+DO_BACKEND=false   # backend .env + migrate + systemd unit
+DO_CELERY=false    # celery worker + beat systemd units
+DO_FRONTEND=false  # frontend env + npm build + systemd unit
+DO_WEBSITE=false   # website env + npm build + systemd unit
+
+echo -e "${YELLOW}What do you want to install?${NC}"
+echo "  1) All                              (recommended for first run)"
+echo "  2) Backend stack only               (sys pkgs + Redis + Python + WireGuard + backend + Celery)"
+echo "  3) Frontend only                    (Node.js + frontend build + service)"
+echo "  4) Website only                     (Node.js + website build + service)"
+echo "  5) WireGuard only                   (sys pkgs + WireGuard server config)"
+echo "  6) Update services + restart only   (re-write systemd units, skip installs)"
+echo "  7) Custom                           (comma-separated: syspkg,redis,node,python,wg,backend,celery,frontend,website)"
+read -rp "Choice [1-7] (default 1): " INSTALL_CHOICE
+INSTALL_CHOICE="${INSTALL_CHOICE:-1}"
+
+case "$INSTALL_CHOICE" in
+  1)
+    DO_SYSPKG=true; DO_REDIS=true; DO_NODE=true; DO_PYTHON=true; DO_WG=true
+    DO_BACKEND=true; DO_CELERY=true; DO_FRONTEND=true; DO_WEBSITE=true
+    ;;
+  2)
+    DO_SYSPKG=true; DO_REDIS=true; DO_PYTHON=true; DO_WG=true
+    DO_BACKEND=true; DO_CELERY=true
+    ;;
+  3)
+    DO_NODE=true; DO_FRONTEND=true
+    ;;
+  4)
+    DO_NODE=true; DO_WEBSITE=true
+    ;;
+  5)
+    DO_SYSPKG=true; DO_WG=true
+    ;;
+  6)
+    DO_BACKEND=true; DO_CELERY=true; DO_FRONTEND=true; DO_WEBSITE=true
+    ;;
+  7)
+    read -rp "  Pick components (comma-separated): " CUSTOM
+    IFS=',' read -ra PARTS <<< "$CUSTOM"
+    for p in "${PARTS[@]}"; do
+      case "$(echo "$p" | tr '[:upper:]' '[:lower:]' | xargs)" in
+        syspkg|sys|packages)         DO_SYSPKG=true ;;
+        redis)                       DO_REDIS=true ;;
+        node|nodejs)                 DO_NODE=true ;;
+        python|venv|py)              DO_PYTHON=true ;;
+        wg|wireguard)                DO_WG=true ;;
+        backend|be)                  DO_BACKEND=true ;;
+        celery|worker|beat)          DO_CELERY=true ;;
+        frontend|fe)                 DO_FRONTEND=true ;;
+        website|ws)                  DO_WEBSITE=true ;;
+        *) warn "Unknown component '$p' — skipped" ;;
+      esac
+    done
+    ;;
+  *)
+    warn "Invalid choice — defaulting to full install"
+    DO_SYSPKG=true; DO_REDIS=true; DO_NODE=true; DO_PYTHON=true; DO_WG=true
+    DO_BACKEND=true; DO_CELERY=true; DO_FRONTEND=true; DO_WEBSITE=true
+    ;;
+esac
+
+# Auto-pull dependencies — e.g. WireGuard needs the system packages section to
+# install wireguard-tools, and backend/celery need the Python venv to exist.
+if $DO_WG || $DO_PYTHON; then
+  DO_SYSPKG=true
+fi
+if $DO_FRONTEND || $DO_WEBSITE; then
+  : # Node will be installed if user explicitly picked it — but if it's missing the build steps would fail anyway, so warn rather than auto-enable to avoid surprise installs.
+fi
+
+info "Plan: syspkg=$DO_SYSPKG redis=$DO_REDIS node=$DO_NODE python=$DO_PYTHON wireguard=$DO_WG backend=$DO_BACKEND celery=$DO_CELERY frontend=$DO_FRONTEND website=$DO_WEBSITE"
+
+# Always detect Python version once — used by venv setup and apt package selection.
+PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null || echo "3")
+
+if $DO_SYSPKG; then
 section "1 — System packages"
 apt-get update -qq
-apt-get install -y -qq python3 python3-pip python3-venv curl git build-essential
-# Also install versioned venv package for Python 3.12 / 3.11 if present
-PY_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+apt-get install -y -qq python3 python3-pip python3-venv curl git build-essential wireguard wireguard-tools iptables
 apt-get install -y -qq "python${PY_VER}-venv" 2>/dev/null || true
 info "System packages installed (Python $PY_VER)"
+fi
 
 # ── Redis (native — no Docker) ────────────────────────────────────────────────
+if $DO_REDIS; then
 section "1b — Redis"
 if ! command -v redis-server &>/dev/null; then
   apt-get install -y -qq redis-server
@@ -59,16 +144,20 @@ else
   echo -e "${RED}[ERROR] Redis did not start correctly — check: journalctl -u redis-server${NC}"
   exit 1
 fi
+fi
 
 # ── Node.js ───────────────────────────────────────────────────────────────────
+if $DO_NODE; then
 section "2 — Node.js $NODE_VERSION"
 if ! command -v node &>/dev/null || [[ "$(node -v | cut -d. -f1 | tr -d 'v')" -lt "$NODE_VERSION" ]]; then
   curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash -
   apt-get install -y -qq nodejs
 fi
 info "Node $(node -v) / npm $(npm -v)"
+fi
 
 # ── Python venv + deps ────────────────────────────────────────────────────────
+if $DO_PYTHON; then
 section "3 — Python virtualenv & dependencies"
 if [[ ! -d "$VENV_DIR" ]]; then
   python3 -m venv "$VENV_DIR" || {
@@ -82,8 +171,95 @@ fi
 "$VENV_DIR/bin/pip" install --upgrade pip -q
 "$VENV_DIR/bin/pip" install -r "$BACKEND_DIR/requirements.txt"
 info "Python deps installed"
+fi
+
+# ── WireGuard server (auto setup, idempotent) ────────────────────────────────
+if $DO_WG; then
+section "3b — WireGuard server"
+WG_IFACE="wg0"
+WG_PORT="51820"
+WG_NETWORK="10.100.0.0/16"
+WG_CONF="/etc/wireguard/${WG_IFACE}.conf"
+
+mkdir -p /etc/wireguard
+chmod 700 /etc/wireguard
+
+if [[ -f "$WG_CONF" ]]; then
+  # Reuse existing keypair — regenerating would break every connected MikroTik peer.
+  WG_SERVER_PUBKEY=$(wg show "$WG_IFACE" public-key 2>/dev/null || \
+                     grep -E '^PrivateKey' "$WG_CONF" | awk '{print $3}' | wg pubkey)
+  info "Existing $WG_CONF detected — reusing keypair (peers preserved)"
+else
+  WG_PRIV=$(wg genkey)
+  WG_SERVER_PUBKEY=$(echo "$WG_PRIV" | wg pubkey)
+  cat > "$WG_CONF" <<EOF
+[Interface]
+PrivateKey = $WG_PRIV
+Address = 10.100.0.1/16
+ListenPort = $WG_PORT
+SaveConfig = true
+EOF
+  chmod 600 "$WG_CONF"
+  info "Wrote $WG_CONF with fresh keypair"
+fi
+
+# Open UDP firewall port (best-effort — works on Ubuntu's ufw)
+if command -v ufw &>/dev/null; then
+  ufw allow "${WG_PORT}/udp" >/dev/null 2>&1 || true
+  info "ufw: opened ${WG_PORT}/udp"
+fi
+# Also via iptables in case ufw is inactive (idempotent — only inserts if missing)
+iptables -C INPUT -p udp --dport "$WG_PORT" -j ACCEPT 2>/dev/null || \
+  iptables -I INPUT -p udp --dport "$WG_PORT" -j ACCEPT
+
+# Enable IP forwarding (needed for tunnel routing)
+if ! grep -qE '^\s*net\.ipv4\.ip_forward\s*=\s*1' /etc/sysctl.conf; then
+  echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+fi
+sysctl -p >/dev/null 2>&1 || true
+
+# Enable + start the systemd unit (idempotent — won't restart if already active)
+systemctl enable "wg-quick@${WG_IFACE}" >/dev/null 2>&1 || true
+systemctl start "wg-quick@${WG_IFACE}" 2>/dev/null || \
+  systemctl restart "wg-quick@${WG_IFACE}"
+
+if systemctl is-active --quiet "wg-quick@${WG_IFACE}"; then
+  info "wg-quick@${WG_IFACE} is up"
+  info "Server public key: $WG_SERVER_PUBKEY"
+else
+  warn "wg-quick@${WG_IFACE} not active — check: journalctl -u wg-quick@${WG_IFACE}"
+fi
+
+# Allow the service user to run wg/wg-quick without a password — the
+# Django backend uses `sudo wg set ...` to register/remove peers at runtime.
+SUDOERS_FILE="/etc/sudoers.d/auto-olt-wireguard"
+cat > "$SUDOERS_FILE" <<EOF
+# Allows Auto OLT backend to manage WireGuard peers without a TTY/password.
+$SERVICE_USER ALL=(ALL) NOPASSWD: /usr/bin/wg, /usr/bin/wg-quick
+EOF
+chmod 440 "$SUDOERS_FILE"
+# Validate — visudo -c -f exits non-zero on syntax error
+if visudo -cf "$SUDOERS_FILE" >/dev/null; then
+  info "sudoers: $SERVICE_USER may run wg/wg-quick without password"
+else
+  rm -f "$SUDOERS_FILE"
+  warn "sudoers entry failed validation — removed. WG peer add/remove will need manual sudo config."
+fi
+fi  # end DO_WG
+
+# WG defaults — needed by the backend .env even when DO_WG was skipped on this run
+WG_IFACE="${WG_IFACE:-wg0}"
+WG_PORT="${WG_PORT:-51820}"
+if [[ -z "${WG_SERVER_PUBKEY:-}" ]]; then
+  if command -v wg &>/dev/null && wg show "$WG_IFACE" public-key &>/dev/null; then
+    WG_SERVER_PUBKEY=$(wg show "$WG_IFACE" public-key)
+  else
+    WG_SERVER_PUBKEY="REPLACE_WITH_WG_SERVER_PUBLIC_KEY"
+  fi
+fi
 
 # ── Backend .env ──────────────────────────────────────────────────────────────
+if $DO_BACKEND; then
 section "4 — Backend .env"
 ENV_FILE="$BACKEND_DIR/.env"
 # Preserve SECRET_KEY if one already exists (changing it invalidates all JWT tokens)
@@ -156,9 +332,9 @@ OLT_MGMT_PASSWORD=REPLACE_WITH_MGMT_PASSWORD
 OLT_MGMT_PRIVILEGE=15
 
 # ── WireGuard ────────────────────────────────────────────────
-WG_INTERFACE=wg0
-WG_ENDPOINT=$SERVER_IP:51820
-WG_SERVER_PUBLIC_KEY=REPLACE_WITH_WG_SERVER_PUBLIC_KEY
+WG_INTERFACE=$WG_IFACE
+WG_ENDPOINT=$SERVER_IP:$WG_PORT
+WG_SERVER_PUBLIC_KEY=$WG_SERVER_PUBKEY
 
 # ── Celery / Redis ────────────────────────────────────────────
 # Allow sync ORM calls inside gevent-pooled Celery workers
@@ -175,8 +351,10 @@ section "5 — Django migrate"
 cd "$BACKEND_DIR"
 "$VENV_DIR/bin/python" manage.py migrate --run-syncdb
 info "Database ready"
+fi  # end DO_BACKEND (.env + migrate)
 
 # ── Frontend .env ─────────────────────────────────────────────────────────────
+if $DO_FRONTEND; then
 section "6 — Frontend .env"
 FE_ENV="$FRONTEND_DIR/.env.local"
 cat > "$FE_ENV" <<EOF
@@ -191,8 +369,10 @@ cd "$FRONTEND_DIR"
 npm install --silent
 npm run build
 info "Frontend built"
+fi  # end DO_FRONTEND
 
 # ── Website .env ──────────────────────────────────────────────────────────────
+if $DO_WEBSITE; then
 section "7b — Website .env"
 WS_ENV="$WEBSITE_DIR/.env.local"
 cat > "$WS_ENV" <<EOF
@@ -206,8 +386,10 @@ cd "$WEBSITE_DIR"
 npm install --silent
 npm run build
 info "Website built"
+fi  # end DO_WEBSITE
 
 # ── systemctl — Backend ───────────────────────────────────────────────────────
+if $DO_BACKEND; then
 section "8 — systemctl service: auto-olt-backend (port $BE_PORT)"
 cat > /etc/systemd/system/auto-olt-backend.service <<EOF
 [Unit]
@@ -229,8 +411,10 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 info "Backend service file written"
+fi  # end DO_BACKEND (systemd unit)
 
 # ── systemctl — Frontend ──────────────────────────────────────────────────────
+if $DO_FRONTEND; then
 section "9 — systemctl service: auto-olt-frontend (port $FE_PORT)"
 cat > /etc/systemd/system/auto-olt-frontend.service <<EOF
 [Unit]
@@ -253,8 +437,10 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 info "Frontend service file written"
+fi  # end DO_FRONTEND (systemd unit)
 
 # ── systemctl — Website ───────────────────────────────────────────────────────
+if $DO_WEBSITE; then
 section "9b — systemctl service: auto-olt-website (port $WS_PORT)"
 cat > /etc/systemd/system/auto-olt-website.service <<EOF
 [Unit]
@@ -277,8 +463,10 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 info "Website service file written"
+fi  # end DO_WEBSITE (systemd unit)
 
 # ── systemctl — Celery worker ─────────────────────────────────────────────────
+if $DO_CELERY; then
 section "10 — systemctl service: auto-olt-celery (worker)"
 cat > /etc/systemd/system/auto-olt-celery.service <<EOF
 [Unit]
@@ -325,23 +513,37 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 info "Celery Beat service file written"
+fi  # end DO_CELERY
 
 # ── Enable & start ────────────────────────────────────────────────────────────
 section "11 — Enable & start services"
 systemctl daemon-reload
-systemctl enable auto-olt-backend auto-olt-frontend auto-olt-website auto-olt-celery auto-olt-celery-beat
-systemctl restart auto-olt-backend
-systemctl restart auto-olt-celery
-systemctl restart auto-olt-celery-beat
-systemctl restart auto-olt-frontend
-systemctl restart auto-olt-website
+
+# Only enable + restart the units this run actually touched. Leaves other
+# units untouched so "Frontend only" reruns don't bounce the backend.
+SVCS_TO_ENABLE=()
+$DO_BACKEND  && SVCS_TO_ENABLE+=(auto-olt-backend)
+$DO_FRONTEND && SVCS_TO_ENABLE+=(auto-olt-frontend)
+$DO_WEBSITE  && SVCS_TO_ENABLE+=(auto-olt-website)
+$DO_CELERY   && SVCS_TO_ENABLE+=(auto-olt-celery auto-olt-celery-beat)
+
+if [[ ${#SVCS_TO_ENABLE[@]} -gt 0 ]]; then
+  systemctl enable "${SVCS_TO_ENABLE[@]}"
+  for svc in "${SVCS_TO_ENABLE[@]}"; do
+    systemctl restart "$svc"
+  done
+  info "Enabled + restarted: ${SVCS_TO_ENABLE[*]}"
+else
+  info "No service changes — skipping enable/restart"
+fi
 
 sleep 3
-BE_STATUS=$(systemctl is-active auto-olt-backend)
-FE_STATUS=$(systemctl is-active auto-olt-frontend)
-WS_STATUS=$(systemctl is-active auto-olt-website)
-CELERY_STATUS=$(systemctl is-active auto-olt-celery)
-BEAT_STATUS=$(systemctl is-active auto-olt-celery-beat)
+BE_STATUS=$(systemctl is-active auto-olt-backend 2>/dev/null || echo "n/a")
+FE_STATUS=$(systemctl is-active auto-olt-frontend 2>/dev/null || echo "n/a")
+WS_STATUS=$(systemctl is-active auto-olt-website 2>/dev/null || echo "n/a")
+CELERY_STATUS=$(systemctl is-active auto-olt-celery 2>/dev/null || echo "n/a")
+BEAT_STATUS=$(systemctl is-active auto-olt-celery-beat 2>/dev/null || echo "n/a")
+WG_STATUS=$(systemctl is-active "wg-quick@${WG_IFACE}" 2>/dev/null || echo "n/a")
 
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
@@ -357,6 +559,10 @@ echo -e "${GREEN}║${NC}  Frontend   service : $FE_STATUS                  ${GR
 echo -e "${GREEN}║${NC}  Website    service : $WS_STATUS                  ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Worker     service : $CELERY_STATUS              ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  Beat       service : $BEAT_STATUS                ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  WireGuard  service : $WG_STATUS                  ${GREEN}║${NC}"
+echo -e "${GREEN}╠══════════════════════════════════════════╣${NC}"
+echo -e "${GREEN}║${NC}  WG endpoint  : $SERVER_IP:$WG_PORT       ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}  WG pubkey    : (in backend/.env)         ${GREEN}║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
 echo "  Useful commands:"
