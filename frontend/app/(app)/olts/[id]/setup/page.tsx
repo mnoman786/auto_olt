@@ -625,41 +625,70 @@ export default function OLTSetupPage() {
               <div className="h-32 flex items-center justify-center text-gray-400">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
-            ) : !uptime || uptime.series.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400 italic py-6 text-center">
-                No samples yet — uptime data appears after the first 5-minute Beat cycle.
-              </p>
-            ) : (
-              <>
-                <div className="flex items-end gap-1.5 h-32">
-                  {uptime.series.map(d => (
-                    <div key={d.day} className="flex-1 flex flex-col items-center gap-1 group">
-                      <div className="flex-1 w-full flex items-end">
-                        <div
-                          className={clsx(
-                            'w-full rounded-t transition-all',
-                            d.uptime_pct >= 99 ? 'bg-green-500 dark:bg-green-400' :
-                            d.uptime_pct >= 95 ? 'bg-yellow-500 dark:bg-yellow-400' :
-                            d.uptime_pct > 0 ? 'bg-red-500 dark:bg-red-400' :
-                            'bg-gray-200 dark:bg-gray-700'
-                          )}
-                          style={{ height: `${Math.max(d.uptime_pct, 2)}%` }}
-                          title={`${d.day}: ${d.uptime_pct}% (${d.up_samples}/${d.total_samples} samples)`}
-                        />
-                      </div>
-                      <span className="text-[9px] text-gray-400 font-mono">
-                        {new Date(d.day).toLocaleDateString('en-US', { weekday: 'short' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-3 flex items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> ≥99%</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-500" /> 95-99%</span>
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-500" /> &lt;95%</span>
-                </div>
-              </>
-            )}
+            ) : (() => {
+              // Always render 7 columns (today + 6 days back). Days with no
+              // samples show as a faint placeholder so the chart never looks
+              // empty just because we just started collecting.
+              const byDay = new Map(uptime?.series.map(s => [s.day, s]) ?? []);
+              const today = new Date();
+              const days = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(today);
+                d.setDate(today.getDate() - (6 - i));
+                const key = d.toISOString().slice(0, 10);
+                return byDay.get(key) ?? { day: key, uptime_pct: 0, total_samples: 0, up_samples: 0 };
+              });
+              return (
+                <>
+                  <div className="flex items-end gap-2 h-36 px-1">
+                    {days.map(d => {
+                      const hasData = d.total_samples > 0;
+                      const heightPct = hasData ? Math.max(d.uptime_pct, 4) : 100;
+                      return (
+                        <div key={d.day} className="flex-1 flex flex-col items-center gap-1.5 group min-w-0">
+                          <div className="flex-1 w-full flex items-end relative">
+                            {hasData && (
+                              <span className="absolute -top-1 left-1/2 -translate-x-1/2 -translate-y-full text-[10px] font-medium text-gray-600 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-gray-900 text-white px-1.5 py-0.5 rounded">
+                                {d.uptime_pct}%
+                              </span>
+                            )}
+                            <div
+                              className={clsx(
+                                'w-full rounded-t transition-all',
+                                !hasData ? 'bg-gray-100 dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-700' :
+                                d.uptime_pct >= 99 ? 'bg-green-500 dark:bg-green-400' :
+                                d.uptime_pct >= 95 ? 'bg-yellow-500 dark:bg-yellow-400' :
+                                d.uptime_pct > 0 ? 'bg-red-500 dark:bg-red-400' :
+                                'bg-gray-300 dark:bg-gray-700'
+                              )}
+                              style={{ height: `${heightPct}%` }}
+                              title={
+                                hasData
+                                  ? `${d.day}: ${d.uptime_pct}% (${d.up_samples}/${d.total_samples} samples)`
+                                  : `${d.day}: no samples yet`
+                              }
+                            />
+                          </div>
+                          <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                            {new Date(d.day).toLocaleDateString('en-US', { weekday: 'short' })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-green-500" /> ≥99%</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-yellow-500" /> 95-99%</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-red-500" /> &lt;95%</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded border border-dashed border-gray-300 dark:border-gray-600" /> no data</span>
+                  </div>
+                  {(!uptime || uptime.series.length === 0) && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 italic mt-2 text-center">
+                      Collecting samples — chart fills in as Beat runs every 5 minutes.
+                    </p>
+                  )}
+                </>
+              );
+            })()}
           </Card>
         )}
 
