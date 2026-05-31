@@ -245,6 +245,34 @@ else
   rm -f "$SUDOERS_FILE"
   warn "sudoers entry failed validation — removed. WG peer add/remove will need manual sudo config."
 fi
+
+# Sync the WG values into an existing backend/.env (in-place, no full rewrite).
+# This matters when the user re-runs with "WireGuard only" — we mustn't touch
+# SECRET_KEY, passwords or any other env var, just the three WG_* lines.
+ENV_FILE="$BACKEND_DIR/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  update_env_var() {
+    local key="$1"
+    local val="$2"
+    # Escape sed delimiters in the value (just the | we use)
+    local safe_val
+    safe_val=$(printf '%s' "$val" | sed -e 's/[\/&|]/\\&/g')
+    if grep -qE "^${key}=" "$ENV_FILE"; then
+      sed -i "s|^${key}=.*|${key}=${safe_val}|" "$ENV_FILE"
+    else
+      printf '\n%s=%s\n' "$key" "$val" >> "$ENV_FILE"
+    fi
+  }
+  update_env_var WG_INTERFACE "$WG_IFACE"
+  update_env_var WG_ENDPOINT "$SERVER_IP:$WG_PORT"
+  update_env_var WG_SERVER_PUBLIC_KEY "$WG_SERVER_PUBKEY"
+  info "Synced WG_* values into $ENV_FILE"
+  # If the backend service is already running, it picks up the new key only after a restart.
+  if systemctl is-active --quiet auto-olt-backend 2>/dev/null; then
+    systemctl restart auto-olt-backend
+    info "Restarted auto-olt-backend so the new WG public key takes effect"
+  fi
+fi
 fi  # end DO_WG
 
 # WG defaults — needed by the backend .env even when DO_WG was skipped on this run
