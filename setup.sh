@@ -561,9 +561,17 @@ echo -e "${GREEN}║${NC}  Worker     service : $CELERY_STATUS              ${GR
 echo -e "${GREEN}║${NC}  Beat       service : $BEAT_STATUS                ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}  WireGuard  service : $WG_STATUS                  ${GREEN}║${NC}"
 echo -e "${GREEN}╠══════════════════════════════════════════╣${NC}"
-echo -e "${GREEN}║${NC}  WG endpoint  : $SERVER_IP:$WG_PORT       ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}  WG pubkey    : (in backend/.env)         ${GREEN}║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
+echo ""
+echo -e "${YELLOW}WireGuard server${NC}"
+echo "  Endpoint   : $SERVER_IP:$WG_PORT"
+if [[ "$WG_SERVER_PUBKEY" == "REPLACE_WITH_WG_SERVER_PUBLIC_KEY" ]]; then
+  echo "  Public key : (not configured — re-run with option 5 to set up WireGuard)"
+else
+  echo "  Public key : $WG_SERVER_PUBKEY"
+fi
+echo "  (Auto OLT app shows this to customers automatically in the Setup Wizard.)"
+echo ""
 echo ""
 echo "  Useful commands:"
 echo "  sudo systemctl status  auto-olt-backend"
